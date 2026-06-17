@@ -84,6 +84,9 @@ flutter:
     - assets/coloring/
     - assets/coloring/1/
     - assets/coloring/2/
+    - assets/coloring/3/
+    - assets/coloring/4/
+    - assets/coloring/5/
     - assets/ui/
     - assets/icon.png
 
