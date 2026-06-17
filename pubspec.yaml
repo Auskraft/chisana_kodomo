@@ -65,6 +65,8 @@ flutter:
   assets:
     - assets/games/
     - assets/voice/pack/
+    - assets/backgrounds/
+    - assets/icon.png
 
   fonts:
     - family: Unbounded

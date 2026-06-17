@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'core/audio/sfx.dart';
@@ -14,6 +15,9 @@ import 'features/menu/lobby_screen.dart';
 /// офлайн. Инициализирует хранилище/голос/настройки и бутит в лобби.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations(
+    <DeviceOrientation>[DeviceOrientation.portraitUp],
+  );
 
   await GameStorage.init();
   final storage = GameStorage.instance;

@@ -1,29 +1,62 @@
 import 'package:flutter/material.dart';
 
+import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
 import '../settings/settings_screen.dart';
 
-/// Лобби-заглушка приложения «Chisana kodomo».
-///
-/// Базовый скелет: тёплый дружелюбный экран с маскотом и «витриной-тизером»
-/// будущих игр. Вёрстка **адаптивная** (размеры — доли от экрана, без
-/// абсолютных значений), цвета берутся из активной темы через `context.appColors`,
-/// поэтому экран корректно выглядит на разных телефонах и в любой из тем.
-class LobbyScreen extends StatelessWidget {
+/// Главный экран: переключаемый иллюстрированный фон (9 сцен, свайп + точки) и
+/// витрина игр поверх него. Бренд тёплый/мягкий (по дизайн-референсу).
+class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
 
-  /// Игры: играбельные открываются по тапу, остальные — «скоро».
-  static const List<_GameTeaser> _teasers = <_GameTeaser>[
-    _GameTeaser('counting', '🔢', 'Счёт',
-        playable: true, image: 'assets/games/count_main.png'),
-    _GameTeaser('pairs', '🃏', 'Парочки'),
-    _GameTeaser('colors_shapes', '🎨', 'Цвета и формы'),
-    _GameTeaser('animals', '🐶', 'Звуки животных'),
-    _GameTeaser('music', '🎹', 'Музыка'),
-    _GameTeaser('coloring', '🖍️', 'Раскраска'),
+  @override
+  State<LobbyScreen> createState() => _LobbyScreenState();
+}
+
+class _LobbyScreenState extends State<LobbyScreen> {
+  static const int _bgCount = 9;
+  static const String _tagline = 'Играем, учимся, растём!';
+
+  static const List<_Game> _games = <_Game>[
+    _Game('counting', 'Счёт', '🔢',
+        image: 'assets/games/count_main.png', playable: true),
+    _Game('pairs', 'Парочки', '🃏'),
+    _Game('colors_shapes', 'Цвета и формы', '🎨',
+        image: 'assets/games/form-main.png'),
+    _Game('animals', 'Звуки животных', '🐶'),
+    _Game('music', 'Музыка', '🎹', image: 'assets/games/music-main.png'),
+    _Game('coloring', 'Раскраска', '🖍️'),
   ];
+
+  late int _index = GameStorage.instance.backgroundIndex.clamp(0, _bgCount - 1);
+  late final PageController _pager = PageController(initialPage: _index);
+
+  @override
+  void dispose() {
+    _pager.dispose();
+    super.dispose();
+  }
+
+  void _onPage(int i) {
+    setState(() => _index = i);
+    GameStorage.instance.setBackgroundIndex(i);
+  }
+
+  void _openSettings() => Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+      );
+
+  void _open(_Game g) {
+    if (g.id == 'counting') {
+      Navigator.of(context).push(
+        MaterialPageRoute<void>(
+          builder: (_) => CountingGameScreen(set: CountSet.all.first),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,271 +64,274 @@ class LobbyScreen extends StatelessWidget {
     final text = Theme.of(context).textTheme;
 
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: <Color>[
-              colors.background,
-              Color.lerp(colors.background, colors.primary, 0.12)!,
-            ],
+      body: Stack(
+        fit: StackFit.expand,
+        children: <Widget>[
+          // Фон-карусель (свайп) — 9 сцен.
+          PageView.builder(
+            controller: _pager,
+            itemCount: _bgCount,
+            onPageChanged: _onPage,
+            itemBuilder: (context, i) => Image.asset(
+              'assets/backgrounds/${i + 1}.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
+            ),
           ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final w = constraints.maxWidth;
-              final shortest = constraints.biggest.shortestSide;
+          // Лёгкий скрим сверху — читаемость заголовка на любом фоне.
+          IgnorePointer(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.center,
+                  colors: <Color>[
+                    colors.background.withValues(alpha: 0.5),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // UI поверх фона. Пустые зоны прозрачны — свайп доходит до фона.
+          SafeArea(
+            child: LayoutBuilder(
+              builder: (context, c) {
+                final w = c.maxWidth;
+                final shortest = c.biggest.shortestSide;
+                final pad = (w * 0.05).clamp(12.0, 32.0).toDouble();
+                final gap = (shortest * 0.03).clamp(8.0, 18.0).toDouble();
+                const cols = 3;
+                final tile = (w - pad * 2 - gap * (cols - 1)) / cols;
 
-              // Все размеры — доли от экрана с разумными границами (clamp),
-              // чтобы хорошо смотрелось и на узких, и на крупных телефонах.
-              final pad = (w * 0.06).clamp(12.0, 40.0).toDouble();
-              final gap = (shortest * 0.035).clamp(8.0, 22.0).toDouble();
-              final vGap = (shortest * 0.025).clamp(6.0, 22.0).toDouble();
-              final mascot = (shortest * 0.34).clamp(96.0, 220.0).toDouble();
-              final cols = w >= 600 ? 5 : 3;
-              final innerW = w - pad * 2;
-              final tile = (innerW - gap * (cols - 1)) / cols;
-
-              return Padding(
-                padding: EdgeInsets.fromLTRB(pad, vGap, pad, pad),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.center,
+                return Column(
                   children: <Widget>[
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: IconButton(
-                        tooltip: 'Настройки',
-                        icon: Icon(
-                          Icons.settings_rounded,
-                          color: colors.onBackground.withValues(alpha: 0.55),
-                        ),
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (_) => const SettingsScreen(),
-                          ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(pad, 4, pad, 0),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: _RoundIconButton(
+                          icon: Icons.settings_rounded,
+                          colors: colors,
+                          onTap: _openSettings,
                         ),
                       ),
                     ),
-                    _Mascot(diameter: mascot, colors: colors),
-                    SizedBox(height: vGap),
                     Text(
-                      'Chisana kodomo',
+                      'Chisana\nkodomo',
                       textAlign: TextAlign.center,
-                      style: text.headlineMedium?.copyWith(
+                      style: text.displaySmall?.copyWith(
                         fontWeight: FontWeight.w800,
+                        height: 1.05,
                         color: colors.onBackground,
                       ),
                     ),
+                    SizedBox(height: shortest * 0.012),
                     Text(
-                      'ちいさなこども',
+                      _tagline,
                       textAlign: TextAlign.center,
                       style: text.titleMedium?.copyWith(
                         color: colors.primary,
-                        fontWeight: FontWeight.w600,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    SizedBox(height: vGap * 0.4),
-                    Text(
-                      'Развивающие игры для малышей',
-                      textAlign: TextAlign.center,
-                      style: text.bodyMedium?.copyWith(
-                        color: colors.onBackground.withValues(alpha: 0.7),
+                    const Spacer(),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: pad),
+                      child: Wrap(
+                        spacing: gap,
+                        runSpacing: gap,
+                        alignment: WrapAlignment.center,
+                        children: <Widget>[
+                          for (final _Game g in _games)
+                            _GameCard(
+                              game: g,
+                              size: tile,
+                              colors: colors,
+                              onTap: () => _open(g),
+                            ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: vGap * 1.5),
-                    Expanded(
-                      child: Center(
-                        child: SingleChildScrollView(
-                          child: Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: gap,
-                            runSpacing: gap,
-                            children: <Widget>[
-                              for (final _GameTeaser t in _teasers)
-                                _TeaserCard(teaser: t, size: tile, colors: colors),
-                            ],
-                          ),
-                        ),
+                    SizedBox(height: gap * 1.2),
+                    _Dots(
+                      count: _bgCount,
+                      index: _index,
+                      colors: colors,
+                      onTap: (i) => _pager.animateToPage(
+                        i,
+                        duration: const Duration(milliseconds: 350),
+                        curve: Curves.easeOut,
                       ),
                     ),
-                    SizedBox(height: vGap),
-                    Text(
-                      'Выбирай и играй! 🌟',
-                      textAlign: TextAlign.center,
-                      style: text.titleSmall?.copyWith(
-                        color: colors.onBackground.withValues(alpha: 0.8),
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
+                    SizedBox(height: gap),
                   ],
-                ),
-              );
-            },
+                );
+              },
+            ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Запись об игре в витрине.
+class _Game {
+  const _Game(this.id, this.title, this.emoji, {this.image, this.playable = false});
+
+  final String id;
+  final String title;
+  final String emoji;
+  final String? image;
+  final bool playable;
+}
+
+/// Карточка игры (мягкая кремовая, иконка-иллюстрация/эмодзи + подпись).
+class _GameCard extends StatelessWidget {
+  const _GameCard({
+    required this.game,
+    required this.size,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final _Game game;
+  final double size;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(size * 0.26);
+    final Widget icon = game.image != null
+        ? Image.asset(
+            game.image!,
+            width: size * 0.56,
+            height: size * 0.56,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) =>
+                Text(game.emoji, style: TextStyle(fontSize: size * 0.34)),
+          )
+        : Text(game.emoji, style: TextStyle(fontSize: size * 0.34));
+
+    final card = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.92),
+        borderRadius: radius,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.12),
+            blurRadius: size * 0.1,
+            offset: Offset(0, size * 0.05),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          icon,
+          SizedBox(height: size * 0.05),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: size * 0.08),
+            child: Text(
+              game.title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!game.playable) {
+      return Opacity(opacity: 0.55, child: card);
+    }
+    return Material(
+      color: Colors.transparent,
+      borderRadius: radius,
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(onTap: onTap, child: card),
+    );
+  }
+}
+
+/// Круглая кнопка (шестерёнка) поверх фона.
+class _RoundIconButton extends StatelessWidget {
+  const _RoundIconButton({
+    required this.icon,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: colors.surface.withValues(alpha: 0.9),
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(9),
+          child: Icon(icon, color: colors.onSurface.withValues(alpha: 0.7), size: 22),
         ),
       ),
     );
   }
 }
 
-/// Маскот-заглушка (эмодзи; настоящий арт — на этапе стора).
-class _Mascot extends StatelessWidget {
-  const _Mascot({required this.diameter, required this.colors});
-
-  final double diameter;
-  final AppColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: diameter,
-      height: diameter,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        shape: BoxShape.circle,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colors.primary.withValues(alpha: 0.25),
-            blurRadius: diameter * 0.18,
-            offset: Offset(0, diameter * 0.08),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Text('🐻', style: TextStyle(fontSize: diameter * 0.56)),
-    );
-  }
-}
-
-/// Тизер игры: id, эмодзи/картинка, подпись и флаг «играбельна» (иначе «скоро»).
-class _GameTeaser {
-  const _GameTeaser(
-    this.id,
-    this.emoji,
-    this.title, {
-    this.playable = false,
-    this.image,
-  });
-
-  final String id;
-  final String emoji;
-  final String title;
-  final bool playable;
-
-  /// Кастомная картинка-иконка вместо эмодзи (опц.).
-  final String? image;
-}
-
-/// Карточка-тизер игры. Играбельная — тапается и ведёт в игру; остальные
-/// притушены («скоро»). Размер задаётся снаружи (доля от экрана).
-class _TeaserCard extends StatelessWidget {
-  const _TeaserCard({
-    required this.teaser,
-    required this.size,
+/// Индикатор/переключатель фона (точки).
+class _Dots extends StatelessWidget {
+  const _Dots({
+    required this.count,
+    required this.index,
     required this.colors,
+    required this.onTap,
   });
 
-  final _GameTeaser teaser;
-  final double size;
+  final int count;
+  final int index;
   final AppColors colors;
-
-  void _open(BuildContext context) {
-    switch (teaser.id) {
-      case 'counting':
-        Navigator.of(context).push(
-          MaterialPageRoute<void>(
-            builder: (_) => CountingGameScreen(set: CountSet.all.first),
-          ),
-        );
-    }
-  }
+  final ValueChanged<int> onTap;
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(size * 0.22);
-    final title = Padding(
-      padding: EdgeInsets.symmetric(horizontal: size * 0.06),
-      child: Text(
-        teaser.title,
-        textAlign: TextAlign.center,
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
-
-    final Widget card = DecoratedBox(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: radius,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colors.onBackground.withValues(alpha: 0.08),
-            blurRadius: size * 0.12,
-            offset: Offset(0, size * 0.06),
-          ),
-        ],
-      ),
-      child: ClipRRect(
-        borderRadius: radius,
-        child: teaser.image != null
-            // Квадратная картинка заполняет квадратную карточку целиком — без
-            // полей и без обрезки; подпись — полоской поверх низа (там облако).
-            ? Stack(
-                fit: StackFit.expand,
-                children: <Widget>[
-                  Image.asset(
-                    teaser.image!,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Center(
-                      child: Text(teaser.emoji,
-                          style: TextStyle(fontSize: size * 0.4)),
-                    ),
-                  ),
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      width: double.infinity,
-                      color: colors.surface.withValues(alpha: 0.92),
-                      padding: EdgeInsets.symmetric(vertical: size * 0.05),
-                      child: title,
-                    ),
-                  ),
-                ],
-              )
-            : Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
-                  SizedBox(height: size * 0.06),
-                  title,
-                ],
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: <Widget>[
+        for (var i = 0; i < count; i++)
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => onTap(i),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: i == index ? 10 : 7,
+                height: i == index ? 10 : 7,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: i == index
+                      ? colors.primary
+                      : colors.onBackground.withValues(alpha: 0.3),
+                ),
               ),
-      ),
-    );
-
-    if (!teaser.playable) {
-      return SizedBox(
-        width: size,
-        height: size,
-        child: Opacity(opacity: 0.5, child: card),
-      );
-    }
-
-    return SizedBox(
-      width: size,
-      height: size,
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: radius,
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(onTap: () => _open(context), child: card),
-      ),
+            ),
+          ),
+      ],
     );
   }
 }

@@ -59,6 +59,10 @@ class GameStorage {
   bool get voiceUsePack => _prefs.getBool('voice_use_pack') ?? false;
   Future<void> setVoiceUsePack(bool v) => _prefs.setBool('voice_use_pack', v);
 
+  // ── Выбранный фон главного экрана (0-based) ─────────────────────────────────
+  int get backgroundIndex => _prefs.getInt('bg_index') ?? 0;
+  Future<void> setBackgroundIndex(int i) => _prefs.setInt('bg_index', i);
+
   // ── Прогресс по играм: открытые наборы + звёзды за набор ────────────────────
   // Ключи живут по id игры (= папка/feature), как и в сборнике-эталоне.
 
