@@ -34,6 +34,7 @@ abstract final class RewardsCatalog {
     StarGame(id: 'colors_shapes', title: 'Цвета и формы', emoji: '🎨', setCount: CSSet.all.length),
     StarGame(id: 'animals', title: 'Звуки животных', emoji: '🐶', setCount: AnimalSet.all.length),
     StarGame(id: 'odd_one_out', title: 'Что лишнее?', emoji: '🧩', setCount: OddSet.all.length),
+    StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
   ];
 
   /// Максимум звёзд по всем играм.
@@ -65,6 +66,8 @@ abstract final class Stickers {
     Sticker('🦄', 51),
     Sticker('🌈', 57),
     Sticker('🏅', 63),
+    Sticker('🎖️', 69),
+    Sticker('💎', 75),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.

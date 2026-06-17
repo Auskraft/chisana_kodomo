@@ -106,9 +106,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
           builder: (_) => const ColoringGameScreen(),
         ));
       case 'farm':
-        await Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const FarmGameScreen(),
-        ));
+        await _openSets(g, AnimalSet.all.length,
+            (int i) => FarmGameScreen(set: AnimalSet.all[i]));
       case 'odd_one_out':
         await _openSets(g, OddSet.all.length,
             (int i) => OddOneOutGameScreen(set: OddSet.all[i]));

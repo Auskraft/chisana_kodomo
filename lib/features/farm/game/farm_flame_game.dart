@@ -4,42 +4,76 @@ import 'package:flame/components.dart';
 import 'package:flame/effects.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
+import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
+import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../animals/animal_icons.dart';
 import '../../animals/logic/animals_logic.dart';
 
-/// Фаза «Фермы». Свободная игра-игрушка — без раундов/звёзд.
-enum FarmPhase { ready, playing }
+/// Фаза экрана «Ферма» (квиз «угадай звук»).
+enum FarmPhase { ready, playing, setDone }
 
-/// Flame-«Ферма» / «Кто как говорит?»: сетка зверей; тап по зверю → отскок +
-/// голос произносит звукоподражание (`Animal.says`, работает офлайн через TTS)
-/// + звук-файл (`assets/animals/<key>.wav`, когда есть). **Без проигрышей.**
+/// Flame-квиз «Ферма» / «Угадай, кто это»: играет звук зверя-загадки (реальный
+/// CC0-`.wav`, а пока файла нет — имя голосом), малыш выбирает нужного зверя из
+/// карточек-иконок. «Сок»/пауза/звёзды как у других квизов. «Без проигрышей».
+///
+/// Логика раунда — общая [AnimalSession]/[AnimalSet]; здесь рендер и поток.
 class FarmGame extends FlameGame {
-  FarmGame({required this.colors, this.onAnimal});
+  FarmGame({
+    required this.set,
+    required this.colors,
+    this.roundsPerSet = 5,
+    this.onSay,
+    this.onCue,
+    this.setDonePhrase = 'Молодец! Всё получилось!',
+    Random? random,
+  }) : _rng = random ?? Random();
 
+  final AnimalSet set;
   final AppColors colors;
+  final int roundsPerSet;
+  final void Function(String text, {bool flush})? onSay;
 
-  /// Тап по зверю — хост сам решает звук: реальный CC0-файл
-  /// `assets/animals/<soundKey>.wav`, а пока его нет — имя зверя голосом.
-  final void Function(Animal animal)? onAnimal;
+  /// «Озвучить загадку» (звук зверя): хост играет CC0-`.wav`, а пока нет — имя.
+  final void Function(Animal target)? onCue;
+
+  /// Финальная похвала за набор (согласована по полу — задаёт хост).
+  final String setDonePhrase;
+
+  final Random _rng;
+
+  late AnimalSession _session;
+  int _mistakes = 0;
+  bool _locked = false;
 
   final ValueNotifier<FarmPhase> phase = ValueNotifier<FarmPhase>(FarmPhase.ready);
   final ValueNotifier<bool> isPaused = ValueNotifier<bool>(false);
+  final ValueNotifier<int> roundNumber = ValueNotifier<int>(1);
+  final ValueNotifier<int> earnedStars = ValueNotifier<int>(0);
 
   bool get _active => phase.value == FarmPhase.playing && !isPaused.value;
 
   @override
   Color backgroundColor() => colors.background;
 
+  @override
+  Future<void> onLoad() async {
+    _session = AnimalSession(set, random: _rng);
+  }
+
   void start() {
+    _session = AnimalSession(set, random: _rng);
+    _mistakes = 0;
+    _locked = false;
+    roundNumber.value = 1;
     phase.value = FarmPhase.playing;
     isPaused.value = false;
     paused = false;
-    _build();
+    _buildRound();
   }
 
   void togglePause() {
@@ -54,27 +88,96 @@ class FarmGame extends FlameGame {
     paused = false;
   }
 
-  /// Тап по зверю (зовётся компонентом).
-  void onAnimalTap(Animal a) {
+  /// Повторить звук-загадку (тап по кнопке-динамику).
+  void replayCue() {
     if (!_active) return;
-    Sfx.play(SfxEvent.tap);
-    Haptics.tap();
-    onAnimal?.call(a);
+    onCue?.call(_session.round.target);
   }
 
-  void _build() {
-    for (final c in children.whereType<_FarmBoard>().toList()) {
+  /// Тап по варианту. true — верно (иначе карточка трясётся сама).
+  bool onChoose(int index) {
+    if (!_active || _locked) return true;
+    if (_session.choose(index).isCorrect) {
+      _solveRound();
+      return true;
+    }
+    _mistakes++;
+    Sfx.play(SfxEvent.soft);
+    onSay?.call('Попробуй ещё', flush: true);
+    return false;
+  }
+
+  void _buildRound() {
+    _locked = false;
+    _clearRound();
+    add(_Board(owner: this, round: _session.round));
+    onCue?.call(_session.round.target); // проиграть загадку-звук
+  }
+
+  void _solveRound() {
+    _locked = true;
+    Sfx.play(SfxEvent.correct);
+    Haptics.success();
+    _burst(Vector2(size.x / 2, size.y * 0.3));
+    onSay?.call('${animalNameCap(_session.round.target)}!', flush: true);
+    if (roundNumber.value < roundsPerSet) {
+      onSay?.call(Praise.pick(_rng));
+    }
+    add(TimerComponent(period: 1.8, removeOnFinish: true, onTick: _advance));
+  }
+
+  void _advance() {
+    if (roundNumber.value >= roundsPerSet) {
+      _finishSet();
+    } else {
+      roundNumber.value += 1;
+      _session.nextRound();
+      _buildRound();
+    }
+  }
+
+  void _finishSet() {
+    _clearRound();
+    earnedStars.value = Praise.starsForMistakes(_mistakes);
+    Sfx.play(SfxEvent.complete);
+    onSay?.call(setDonePhrase);
+    phase.value = FarmPhase.setDone;
+  }
+
+  void _clearRound() {
+    for (final c in children.whereType<_Board>().toList()) {
       c.removeFromParent();
     }
-    add(_FarmBoard(owner: this));
+  }
+
+  void _burst(Vector2 at) {
+    final palette = <Color>[colors.accent, colors.primary, colors.secondary, colors.success];
+    final particle = Particle.generate(
+      count: 24,
+      generator: (int i) {
+        final angle = _rng.nextDouble() * pi * 2;
+        final speed = 90 + _rng.nextDouble() * 170;
+        return AcceleratedParticle(
+          acceleration: Vector2(0, 260),
+          speed: Vector2(cos(angle), sin(angle)) * speed,
+          lifespan: 0.9,
+          child: CircleParticle(
+            radius: 3 + _rng.nextDouble() * 3,
+            paint: Paint()..color = palette[i % palette.length],
+          ),
+        );
+      },
+    );
+    add(ParticleSystemComponent(particle: particle, position: at));
   }
 }
 
-/// Сетка зверей долями от экрана; неполный последний ряд центрируется.
-class _FarmBoard extends PositionComponent {
-  _FarmBoard({required this.owner});
+/// Контейнер раунда: кнопка-звук сверху (тап = повторить) + сетка вариантов.
+class _Board extends PositionComponent {
+  _Board({required this.owner, required this.round});
 
   final FarmGame owner;
+  final AnimalRound round;
 
   @override
   Future<void> onLoad() async => _layout();
@@ -90,49 +193,106 @@ class _FarmBoard extends PositionComponent {
       c.removeFromParent();
     }
     final s = owner.size;
-    final animals = Animals.all;
-    final n = animals.length;
-    const cols = 3;
+    final shortest = min(s.x, s.y);
+
+    final promptSize = (shortest * 0.3).clamp(110.0, 210.0).toDouble();
+    add(_SoundButton(
+      colors: owner.colors,
+      cardSize: promptSize,
+      position: Vector2(s.x / 2, s.y * 0.24),
+      onTap: owner.replayCue,
+    ));
+
+    final n = round.options.length;
+    final cols = n <= 3 ? n : 2;
     final rows = (n / cols).ceil();
-
-    final topPad = s.y * 0.12;
-    final cellW = (s.x * 0.92) / cols;
-    final cellH = (s.y * 0.8) / rows;
-    final side = (min(cellW, cellH) * 0.9).clamp(48.0, 130.0).toDouble();
-
+    final tile = (min(s.x * 0.86 / cols, s.y * 0.46 / rows))
+        .clamp(64.0, 150.0)
+        .toDouble();
+    final gap = tile * 0.22;
+    final topY = s.y * 0.52;
     for (var i = 0; i < n; i++) {
       final r = i ~/ cols;
       final colInRow = i % cols;
       final rowCount = (r == rows - 1) ? (n - cols * (rows - 1)) : cols;
-      final rowW = rowCount * cellW;
-      final cx = (s.x - rowW) / 2 + cellW * colInRow + cellW / 2;
-      final cy = topPad + cellH * r + cellH / 2;
-      add(_AnimalToy(
-        animal: animals[i],
-        side: side,
+      final rowW = rowCount * tile + (rowCount - 1) * gap;
+      final cx = (s.x - rowW) / 2 + tile / 2 + colInRow * (tile + gap);
+      final cy = topY + r * (tile + gap);
+      add(_AnimalCard(
+        animal: Animals.all[round.options[i]],
+        index: i,
+        tile: tile,
         position: Vector2(cx, cy),
-        onTap: owner.onAnimalTap,
+        onChosen: owner.onChoose,
       ));
     }
   }
 }
 
-/// Зверь-кнопка: эмодзи; тап — отскок + колбэк.
-class _AnimalToy extends PositionComponent with TapCallbacks {
-  _AnimalToy({
-    required this.animal,
-    required double side,
+/// Кнопка-загадка «🔊» (скруглённая карточка с тенью): тап — повторить звук.
+class _SoundButton extends PositionComponent with TapCallbacks {
+  _SoundButton({
+    required this.colors,
+    required this.cardSize,
     required Vector2 position,
     required this.onTap,
-  }) : super(size: Vector2.all(side), anchor: Anchor.center, position: position);
+  }) : super(size: Vector2.all(cardSize), anchor: Anchor.center, position: position);
+
+  final AppColors colors;
+  final double cardSize;
+  final VoidCallback onTap;
+  late final TextPaint _spk;
+
+  @override
+  Future<void> onLoad() async {
+    _spk = TextPaint(style: TextStyle(fontSize: cardSize * 0.46));
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, size.x, size.y),
+      Radius.circular(size.x * 0.28),
+    );
+    canvas.drawRRect(
+      rrect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0x22000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawRRect(rrect, Paint()..color = colors.surface);
+    _spk.render(canvas, '🔊', Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    add(ScaleEffect.to(
+      Vector2.all(1.08),
+      EffectController(duration: 0.1, alternate: true),
+    ));
+    onTap();
+  }
+}
+
+/// Карточка-вариант: арт-иконка зверя (скруглённая с тенью) или эмодзи-запас.
+class _AnimalCard extends PositionComponent with TapCallbacks {
+  _AnimalCard({
+    required this.animal,
+    required this.index,
+    required this.tile,
+    required Vector2 position,
+    required this.onChosen,
+  }) : super(size: Vector2.all(tile), anchor: Anchor.center, position: position);
 
   final Animal animal;
-  final void Function(Animal animal) onTap;
+  final int index;
+  final double tile;
+  final bool Function(int index) onChosen;
   late final TextPaint _emoji;
 
   @override
   Future<void> onLoad() async {
-    _emoji = TextPaint(style: TextStyle(fontSize: size.x * 0.7));
+    _emoji = TextPaint(style: TextStyle(fontSize: size.x * 0.56));
     await AnimalIcons.load(animal.soundKey);
   }
 
@@ -140,7 +300,7 @@ class _AnimalToy extends PositionComponent with TapCallbacks {
   void render(Canvas canvas) {
     final icon = AnimalIcons.cached(animal.soundKey);
     if (icon != null) {
-      AnimalIcons.paintContained(canvas, icon, size.x);
+      AnimalIcons.paintRoundedCard(canvas, icon, size.x);
     } else {
       _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
     }
@@ -149,9 +309,14 @@ class _AnimalToy extends PositionComponent with TapCallbacks {
   @override
   void onTapDown(TapDownEvent event) {
     add(ScaleEffect.to(
-      Vector2.all(1.18),
-      EffectController(duration: 0.12, alternate: true),
+      Vector2.all(1.12),
+      EffectController(duration: 0.1, alternate: true),
     ));
-    onTap(animal);
+    if (!onChosen(index)) {
+      add(MoveEffect.by(
+        Vector2(10, 0),
+        EffectController(duration: 0.05, alternate: true, repeatCount: 3),
+      ));
+    }
   }
 }

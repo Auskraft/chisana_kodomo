@@ -2,10 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../../../core/components/overlay_kit.dart';
 
-/// HUD «Фермы»: только кнопка паузы (свободная игра — без набора/раунда).
+/// HUD «Фермы» (квиз): набор + раунд + кнопка паузы.
 class FarmHud extends StatelessWidget {
-  const FarmHud({super.key, required this.onPause});
+  const FarmHud({
+    super.key,
+    required this.setNumber,
+    required this.roundNumber,
+    required this.roundsPerSet,
+    required this.onPause,
+  });
 
+  final int setNumber;
+  final int roundNumber;
+  final int roundsPerSet;
   final VoidCallback onPause;
 
   @override
@@ -15,6 +24,9 @@ class FarmHud extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: <Widget>[
+            StatChip(label: 'Набор', value: '$setNumber'),
+            const SizedBox(width: 10),
+            StatChip(label: 'Раунд', value: '$roundNumber / $roundsPerSet'),
             const Spacer(),
             PauseButton(onTap: onPause),
           ],

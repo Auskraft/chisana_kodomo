@@ -3,8 +3,8 @@ import 'package:chisana_kodomo/features/rewards/logic/rewards_logic.dart';
 
 void main() {
   group('реестр игр со звёздами', () {
-    test('5 игр, у каждой положительное число наборов', () {
-      expect(RewardsCatalog.games, hasLength(5));
+    test('6 игр, у каждой положительное число наборов', () {
+      expect(RewardsCatalog.games, hasLength(6));
       for (final g in RewardsCatalog.games) {
         expect(g.setCount, greaterThan(0));
         expect(g.maxStars, g.setCount * 3);
