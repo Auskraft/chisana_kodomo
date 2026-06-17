@@ -24,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   List<VoiceOption> _voices = const <VoiceOption>[];
   String? _selected = GameStorage.instance.voiceName;
+  bool _usePack = GameStorage.instance.voiceUsePack;
   bool _loading = true;
 
   @override
@@ -43,9 +44,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   Future<void> _pick(VoiceOption v) async {
     await Voice.instance.applyVoice(v.name, v.locale);
+    Voice.instance.setUsePack(false);
     await _s.setVoiceChoice(v.name, v.locale);
+    await _s.setVoiceUsePack(false);
     Haptics.select();
-    setState(() => _selected = v.name);
+    setState(() {
+      _selected = v.name;
+      _usePack = false;
+    });
+    await Voice.instance.say('Привет! Давай посчитаем!', flush: true);
+  }
+
+  Future<void> _pickPack() async {
+    Voice.instance.setUsePack(true);
+    await _s.setVoiceUsePack(true);
+    Haptics.select();
+    setState(() => _usePack = true);
     await Voice.instance.say('Привет! Давай посчитаем!', flush: true);
   }
 
@@ -100,12 +114,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: Text(
-              'Нажми голос, чтобы услышать. «Живые» встроенные голоса добавим сюда же.',
+              'Нажми голос, чтобы услышать. «Встроенный» работает офлайн (озвучку добавляем отдельно).',
               style: text.bodySmall?.copyWith(
                 color: colors.onBackground.withValues(alpha: 0.6),
               ),
             ),
           ),
+          // Встроенный (офлайн) — всегда доступен; пока нет клипов, звучит через TTS.
+          ListTile(
+            onTap: _pickPack,
+            leading: Icon(
+              _usePack ? Icons.check_circle_rounded : Icons.circle_outlined,
+              color: _usePack
+                  ? colors.primary
+                  : colors.onSurface.withValues(alpha: 0.35),
+            ),
+            title: const Text('Встроенный голос (офлайн)'),
+            subtitle: const Text('Без интернета, одинаково на всех'),
+            trailing: const Icon(Icons.volume_up_rounded),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
+          // Голоса телефона
           if (_loading)
             const Padding(
               padding: EdgeInsets.all(24),
@@ -127,10 +156,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ListTile(
                 onTap: () => _pick(v),
                 leading: Icon(
-                  v.name == _selected
+                  (!_usePack && v.name == _selected)
                       ? Icons.check_circle_rounded
                       : Icons.circle_outlined,
-                  color: v.name == _selected
+                  color: (!_usePack && v.name == _selected)
                       ? colors.primary
                       : colors.onSurface.withValues(alpha: 0.35),
                 ),

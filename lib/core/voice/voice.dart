@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:flutter_tts/flutter_tts.dart';
 
 /// Один доступный системный голос (для выбора в настройках).
@@ -14,48 +16,88 @@ class VoiceOption {
   final String locale;
 }
 
-/// Голосовые подсказки и похвала через системный TTS (`flutter_tts`).
+/// Голос помощника: произносит фиксированный набор фраз (числа, похвала,
+/// подсказки) одним из двух способов:
+/// - **встроенный пак** (`usePack`) — заранее озвученные клипы `assets/voice/pack/`
+///   (офлайн, одинаково у всех, без Google) — играются через [AudioPlayer];
+/// - **системный TTS** (`flutter_tts`) — голос телефона (можно выбрать получше).
 ///
-/// Русская речь (`ru-RU`), чуть медленнее — под малышей. **Очередь фраз:** по
-/// умолчанию фразы идут последовательно и НЕ перебивают друг друга (число →
-/// похвала → подсказка); `flush: true` — прервать и сказать сразу (счёт по тапу,
-/// «попробуй ещё»). Голос выбирается в настройках ([russianVoices]/[applyVoice]).
-/// **Безопасно без TTS/в тестах** — молчит.
+/// Фразы идут **очередью** и не перебивают друг друга; `flush: true` — сказать
+/// сразу (счёт/ошибка). Если клипа нет — мягкий фолбэк на TTS. **В тестах/без
+/// движка — молчит.**
 class Voice {
   Voice._();
   static final Voice instance = Voice._();
 
-  /// Под `flutter test` платформы TTS нет — не трогаем её вовсе.
   static final bool _inTest = Platform.environment.containsKey('FLUTTER_TEST');
 
   FlutterTts? _tts;
+  AudioPlayer? _clip;
   bool enabled = true;
+
+  /// Использовать встроенный пак клипов вместо системного TTS.
+  bool usePack = false;
 
   final List<String> _queue = <String>[];
   bool _draining = false;
+  final Map<String, bool> _clipReadyCache = <String, bool>{};
+
+  /// Текст фразы → имя файла клипа (`assets/voice/pack/<key>.wav`). Должен
+  /// совпадать с тем, что произносят игры (см. `_numberWord`, `Praise.phrases`).
+  static const Map<String, String> _clipKeys = <String, String>{
+    'ноль': 'num_0',
+    'один': 'num_1',
+    'два': 'num_2',
+    'три': 'num_3',
+    'четыре': 'num_4',
+    'пять': 'num_5',
+    'шесть': 'num_6',
+    'семь': 'num_7',
+    'восемь': 'num_8',
+    'девять': 'num_9',
+    'десять': 'num_10',
+    'Молодец!': 'praise_0',
+    'Умница!': 'praise_1',
+    'Здорово!': 'praise_2',
+    'Верно!': 'praise_3',
+    'Супер!': 'praise_4',
+    'Класс!': 'praise_5',
+    'Получилось!': 'praise_6',
+    'Ты справился!': 'praise_7',
+    'Посчитай!': 'prompt_count',
+    'Сколько?': 'prompt_howmany',
+    'Попробуй ещё': 'try_again',
+    'Молодец! Ты справился!': 'set_done',
+    'Привет! Давай посчитаем!': 'greet',
+  };
 
   /// Инициализация (вызывать из `main()` после `GameStorage.init()`).
-  /// Если в настройках выбран голос — применяем его.
-  Future<void> init({String? voiceName, String? voiceLocale}) async {
+  Future<void> init({
+    String? voiceName,
+    String? voiceLocale,
+    bool usePack = false,
+  }) async {
+    this.usePack = usePack;
     if (_inTest || _tts != null) return;
     try {
       final t = FlutterTts();
-      await t.awaitSpeakCompletion(true); // speak() завершится по окончании фразы
+      await t.awaitSpeakCompletion(true);
       await t.setLanguage('ru-RU');
-      await t.setSpeechRate(0.45); // чуть медленнее, по-детски
-      await t.setPitch(1.25); // повыше — дружелюбнее
+      await t.setSpeechRate(0.45);
+      await t.setPitch(1.25);
       await t.setVolume(1.0);
       _tts = t;
       if (voiceName != null && voiceName.isNotEmpty) {
         await applyVoice(voiceName, voiceLocale ?? 'ru-RU');
       }
     } catch (_) {
-      _tts = null; // нет движка/голоса — будем молчать
+      _tts = null;
     }
   }
 
-  /// Доступные русские голоса устройства (для экрана настроек). Пусто, если
-  /// TTS недоступен или русских голосов не установлено.
+  void setUsePack(bool value) => usePack = value;
+
+  /// Доступные русские голоса устройства (для экрана настроек).
   Future<List<VoiceOption>> russianVoices() async {
     final t = _tts;
     if (t == null) return const <VoiceOption>[];
@@ -82,7 +124,6 @@ class Voice {
     }
   }
 
-  /// Применить выбранный голос (без персиста — это делает настройки/GameStorage).
   Future<void> applyVoice(String name, String locale) async {
     final t = _tts;
     if (t == null) return;
@@ -91,21 +132,15 @@ class Voice {
     } catch (_) {}
   }
 
-  /// Произнести фразу. [flush]=false (по умолчанию) — в очередь, без перебивания;
-  /// [flush]=true — прервать текущее и очередь, сказать сразу.
+  /// Произнести фразу. [flush]=false — в очередь, без перебивания; [flush]=true —
+  /// прервать текущее и сказать сразу.
   Future<void> say(String text, {bool flush = false}) async {
     if (!enabled || _inTest) return;
-    final t = _tts;
-    if (t == null) return;
     if (flush) {
-      // Кладём фразу в очередь ДО `await stop()` — иначе следующий say() успеет
-      // вклиниться в окно ожидания и проиграться первым (баг «похвала раньше числа»).
       _queue
         ..clear()
         ..add(text);
-      try {
-        await t.stop();
-      } catch (_) {}
+      await _stopCurrent();
     } else {
       _queue.add(text);
     }
@@ -117,25 +152,68 @@ class Voice {
     _draining = true;
     try {
       while (_queue.isNotEmpty) {
-        final t = _tts;
-        if (t == null) break;
-        final next = _queue.removeAt(0);
-        try {
-          await t.speak(next); // ждёт окончания (awaitSpeakCompletion)
-        } catch (_) {}
+        final text = _queue.removeAt(0);
+        final key = usePack ? _clipKeys[text.trim()] : null;
+        if (key != null && await _clipReady(key)) {
+          await _playClip(key);
+        } else {
+          final t = _tts;
+          if (t == null) break;
+          try {
+            await t.speak(text);
+          } catch (_) {}
+        }
       }
     } finally {
       _draining = false;
     }
   }
 
+  /// Есть ли клип в бандле (с кэшем, чтобы не грузить повторно).
+  Future<bool> _clipReady(String key) async {
+    final cached = _clipReadyCache[key];
+    if (cached != null) return cached;
+    var ok = false;
+    try {
+      await rootBundle.load('assets/voice/pack/$key.wav');
+      ok = true;
+    } catch (_) {
+      ok = false;
+    }
+    _clipReadyCache[key] = ok;
+    return ok;
+  }
+
+  Future<void> _playClip(String key) async {
+    final p = _clip ??= AudioPlayer();
+    final done = Completer<void>();
+    StreamSubscription<void>? sub;
+    try {
+      sub = p.onPlayerComplete.listen((_) {
+        if (!done.isCompleted) done.complete();
+      });
+      await p.stop();
+      await p.play(AssetSource('voice/pack/$key.wav'));
+      await done.future.timeout(const Duration(seconds: 5), onTimeout: () {});
+    } catch (_) {
+      // не удалось — тихо (фолбэк уже не нужен, фраза пропускается)
+    } finally {
+      await sub?.cancel();
+    }
+  }
+
+  Future<void> _stopCurrent() async {
+    try {
+      await _tts?.stop();
+    } catch (_) {}
+    try {
+      await _clip?.stop();
+    } catch (_) {}
+  }
+
   /// Остановить речь и очистить очередь.
   Future<void> stop() async {
     _queue.clear();
-    final t = _tts;
-    if (t == null) return;
-    try {
-      await t.stop();
-    } catch (_) {}
+    await _stopCurrent();
   }
 }

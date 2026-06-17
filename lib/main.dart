@@ -25,6 +25,7 @@ Future<void> main() async {
     Voice.instance.init(
       voiceName: storage.voiceName,
       voiceLocale: storage.voiceLocale,
+      usePack: storage.voiceUsePack,
     ),
     _enableHighRefreshRate(),
   ]);

@@ -55,6 +55,10 @@ class GameStorage {
     await _prefs.setString('voice_locale', locale);
   }
 
+  /// Использовать встроенный голосовой пак (офлайн) вместо системного TTS.
+  bool get voiceUsePack => _prefs.getBool('voice_use_pack') ?? false;
+  Future<void> setVoiceUsePack(bool v) => _prefs.setBool('voice_use_pack', v);
+
   // ── Прогресс по играм: открытые наборы + звёзды за набор ────────────────────
   // Ключи живут по id игры (= папка/feature), как и в сборнике-эталоне.
 
