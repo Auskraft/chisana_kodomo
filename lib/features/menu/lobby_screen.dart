@@ -228,25 +228,27 @@ class _TeaserCard extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         child: teaser.image != null
-            // Картинка заполняет карточку целиком (без белых полей), подпись —
-            // полоской под ней.
-            ? Column(
+            // Квадратная картинка заполняет квадратную карточку целиком — без
+            // полей и без обрезки; подпись — полоской поверх низа (там облако).
+            ? Stack(
+                fit: StackFit.expand,
                 children: <Widget>[
-                  Expanded(
-                    child: Image.asset(
-                      teaser.image!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      errorBuilder: (_, _, _) => Center(
-                        child: Text(teaser.emoji,
-                            style: TextStyle(fontSize: size * 0.4)),
-                      ),
+                  Image.asset(
+                    teaser.image!,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => Center(
+                      child: Text(teaser.emoji,
+                          style: TextStyle(fontSize: size * 0.4)),
                     ),
                   ),
-                  Padding(
-                    padding:
-                        EdgeInsets.only(top: size * 0.05, bottom: size * 0.06),
-                    child: title,
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      width: double.infinity,
+                      color: colors.surface.withValues(alpha: 0.92),
+                      padding: EdgeInsets.symmetric(vertical: size * 0.05),
+                      child: title,
+                    ),
                   ),
                 ],
               )
