@@ -6,11 +6,9 @@ abstract final class LegalTexts {
   static const String contactEmail = 'auskraft@gmail.com';
   static const String city = 'г. Волгоград';
 
-  /// Благодарности за сторонние ассеты (атрибуция). Уточни под реально
-  /// использованные источники: для Magnific/Freepik Free подпись обязательна.
-  static const String credits =
-      'Иллюстрации для раскрасок: Designed by Freepik / Magnific (magnific.com).\n'
-      'Иконки и звуки: CC0 / собственные.';
+  /// Благодарности за сторонние ассеты. Если используешь ассеты с обязательной
+  /// атрибуцией (напр. Freepik/Magnific Free) — впиши нужную строку сюда.
+  static const String credits = 'Графика и звуки — собственные или CC0.';
 
   /// Витрина-резюме приватности для экрана согласия (коротко и по-доброму).
   static const List<String> consentPoints = <String>[
