@@ -11,6 +11,7 @@ void main() {
       for (final a in Animals.all) {
         expect(a.emoji, isNotEmpty);
         expect(a.name, isNotEmpty);
+        expect(a.says, isNotEmpty);
         expect(keys.add(a.soundKey), isTrue, reason: 'дубликат ключа ${a.soundKey}');
       }
     });
@@ -76,7 +77,7 @@ void main() {
 
   group('имена', () {
     test('заглавная буква', () {
-      expect(animalNameCap(const Animal('🐶', 'собачка', 'dog')), 'Собачка');
+      expect(animalNameCap(const Animal('🐶', 'собачка', 'Гав-гав!', 'dog')), 'Собачка');
     });
   });
 }

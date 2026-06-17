@@ -9,6 +9,7 @@ import '../colors_shapes/colors_shapes_game_screen.dart';
 import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
+import '../farm/farm_game_screen.dart';
 import '../music/music_game_screen.dart';
 import '../pairs/logic/pairs_logic.dart';
 import '../pairs/pairs_game_screen.dart';
@@ -44,6 +45,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/music.png', playable: true),
     _Game('coloring', 'Раскраска', '🖍️',
         image: 'assets/games/coloring.png', playable: true),
+    _Game('farm', 'Ферма', '🐮',
+        image: 'assets/games/farm.png', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
@@ -97,6 +100,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'coloring':
         await Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const ColoringGameScreen(),
+        ));
+      case 'farm':
+        await Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const FarmGameScreen(),
         ));
     }
     if (mounted) setState(() => _stars = _computeStars());
