@@ -105,6 +105,17 @@ class ParentZoneScreen extends StatelessWidget {
           ),
           const Divider(),
           Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Text(
+              'Благодарности',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+            child: Text(LegalTexts.credits, style: text.bodyMedium),
+          ),
+          Padding(
             padding: const EdgeInsets.all(16),
             child: Text(
               '${LegalTexts.appName} · версия ${LegalTexts.appVersion}\n'

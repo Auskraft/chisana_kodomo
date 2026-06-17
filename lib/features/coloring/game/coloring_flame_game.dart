@@ -1,15 +1,19 @@
 import 'dart:math';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/theme/app_colors.dart';
 import '../logic/coloring_logic.dart';
+import '../logic/flood_fill.dart';
 import 'coloring_pictures.dart';
 
 /// Flame-холст «Раскраска»: три режима за переключателем.
@@ -36,17 +40,30 @@ class ColoringGame extends FlameGame {
   bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
   ColoringState? get state => _state;
 
-  PaintablePicture get _picture => ColoringGallery.all[pictureIndex.value];
+  /// «Залить» использует растровые картинки `assets/coloring/`, если они есть;
+  /// иначе — векторные фигуры (Домик/Цветок). «По номерам» — всегда векторные.
+  bool get _useRaster =>
+      mode.value == ColoringMode.fill && RasterGallery.hasImages;
+
+  int get _sourceLength =>
+      _useRaster ? RasterGallery.images.length : ColoringGallery.all.length;
+
+  PaintablePicture get _picture =>
+      ColoringGallery.all[pictureIndex.value % ColoringGallery.all.length];
 
   @override
   Color backgroundColor() => colors.background;
 
   @override
-  Future<void> onLoad() async => _rebuild();
+  Future<void> onLoad() async {
+    await RasterGallery.ensureLoaded();
+    _rebuild();
+  }
 
   void setMode(ColoringMode m) {
     if (mode.value == m) return;
     mode.value = m;
+    pictureIndex.value = 0; // источник картинок зависит от режима
     completed.value = false;
     _rebuild();
   }
@@ -54,7 +71,8 @@ class ColoringGame extends FlameGame {
   void setColor(int i) => selectedColor.value = i;
 
   void setPicture(int i) {
-    pictureIndex.value = i % ColoringGallery.all.length;
+    final len = _sourceLength;
+    pictureIndex.value = len == 0 ? 0 : i % len;
     completed.value = false;
     _rebuild();
   }
@@ -68,6 +86,9 @@ class ColoringGame extends FlameGame {
     if (mode.value == ColoringMode.freeDraw) {
       final canvases = children.whereType<_FreeCanvas>().toList();
       if (canvases.isNotEmpty) canvases.first.clearStrokes();
+    } else if (_useRaster) {
+      final pics = children.whereType<_RasterPicture>().toList();
+      if (pics.isNotEmpty) pics.first.reset();
     } else {
       _state?.clear();
     }
@@ -76,13 +97,18 @@ class ColoringGame extends FlameGame {
   void _rebuild() {
     _finishing = false;
     for (final c in children
-        .where((c) => c is _Picture || c is _FreeCanvas)
+        .where((c) => c is _Picture || c is _FreeCanvas || c is _RasterPicture)
         .toList()) {
       c.removeFromParent();
     }
     if (mode.value == ColoringMode.freeDraw) {
       _state = null;
       add(_FreeCanvas(owner: this));
+    } else if (_useRaster) {
+      _state = null;
+      final asset =
+          RasterGallery.images[pictureIndex.value % RasterGallery.images.length];
+      add(_RasterPicture(owner: this, asset: asset));
     } else {
       _state = ColoringState(_picture.toModel(), mode: mode.value);
       add(_Picture(owner: this, picture: _picture));
@@ -315,5 +341,138 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
           ..strokeJoin = StrokeJoin.round,
       );
     }
+  }
+}
+
+/// Растровая раскраска: показывает контурную картинку (`assets/coloring/`) и
+/// заливает область по тапу (flood fill). Координаты тапа → пиксель; буфер
+/// перекрашивается и пересобирается в [ui.Image]. Завершения нет — свободное
+/// раскрашивание (хит-тест/качество заливки проверяются на устройстве).
+class _RasterPicture extends PositionComponent with TapCallbacks {
+  _RasterPicture({required this.owner, required this.asset});
+
+  final ColoringGame owner;
+  final String asset;
+
+  ui.Image? _display;
+  Uint8List? _px;
+  int _w = 0;
+  int _h = 0;
+  Rect _imgRect = Rect.zero;
+  bool _rebuilding = false;
+
+  @override
+  Future<void> onLoad() async {
+    size = owner.size;
+    await _loadOriginal();
+    _layout();
+  }
+
+  @override
+  void onGameResize(Vector2 newSize) {
+    super.onGameResize(newSize);
+    size = newSize;
+    _layout();
+  }
+
+  Future<void> _loadOriginal() async {
+    try {
+      final data = await rootBundle.load(asset);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final image = (await codec.getNextFrame()).image;
+      _w = image.width;
+      _h = image.height;
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
+      _px = bytes?.buffer.asUint8List();
+      _display = image;
+    } catch (_) {
+      _px = null;
+    }
+  }
+
+  void _layout() {
+    final s = owner.size;
+    final side = (s.x < s.y ? s.x : s.y) * 0.82;
+    final fit = Rect.fromCenter(
+      center: Offset(s.x / 2, s.y * 0.44),
+      width: side,
+      height: side,
+    );
+    if (_w == 0 || _h == 0) {
+      _imgRect = fit;
+      return;
+    }
+    final scale =
+        (fit.width / _w < fit.height / _h) ? fit.width / _w : fit.height / _h;
+    _imgRect = Rect.fromCenter(
+      center: fit.center,
+      width: _w * scale,
+      height: _h * scale,
+    );
+  }
+
+  @override
+  bool containsLocalPoint(Vector2 point) => _imgRect.contains(point.toOffset());
+
+  @override
+  void render(Canvas canvas) {
+    final img = _display;
+    if (img == null) return;
+    canvas.drawImageRect(
+      img,
+      Rect.fromLTWH(0, 0, _w.toDouble(), _h.toDouble()),
+      _imgRect,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+  }
+
+  @override
+  void onTapDown(TapDownEvent event) {
+    final px = _px;
+    if (px == null || _rebuilding) return;
+    final lp = event.localPosition.toOffset();
+    if (!_imgRect.contains(lp)) return;
+
+    final ix = (((lp.dx - _imgRect.left) / _imgRect.width) * _w).floor();
+    final iy = (((lp.dy - _imgRect.top) / _imgRect.height) * _h).floor();
+    final argb =
+        kColoringPalette[owner.selectedColor.value % kColoringPalette.length]
+            .toARGB32();
+
+    final n = floodFill(
+      px,
+      _w,
+      _h,
+      ix,
+      iy,
+      r: (argb >> 16) & 0xFF,
+      g: (argb >> 8) & 0xFF,
+      b: argb & 0xFF,
+      tolerance: 72,
+    );
+    if (n > 0) {
+      Sfx.play(SfxEvent.tap);
+      Haptics.tap();
+      _rebuildDisplay();
+    } else {
+      Sfx.play(SfxEvent.soft);
+    }
+  }
+
+  void _rebuildDisplay() {
+    final px = _px;
+    if (px == null) return;
+    _rebuilding = true;
+    ui.decodeImageFromPixels(px, _w, _h, ui.PixelFormat.rgba8888,
+        (ui.Image img) {
+      _display = img;
+      _rebuilding = false;
+    });
+  }
+
+  /// Сбросить к исходной картинке (кнопка «Заново»).
+  Future<void> reset() async {
+    await _loadOriginal();
+    _layout();
   }
 }

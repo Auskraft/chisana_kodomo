@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 
 import '../logic/coloring_logic.dart';
 
@@ -175,4 +176,32 @@ abstract final class ColoringGallery {
 
   /// Все картинки по порядку.
   static final List<PaintablePicture> all = <PaintablePicture>[house, flower];
+}
+
+/// Динамическая галерея растровых раскрасок: все картинки из `assets/coloring/`
+/// (PNG/JPG). Заполняется из манифеста ассетов один раз. Контурные рисунки
+/// (CC0/Magnific) кладёт владелец — появятся здесь автоматически, без правок кода.
+abstract final class RasterGallery {
+  static List<String> _images = const <String>[];
+  static bool _loaded = false;
+
+  static List<String> get images => _images;
+  static bool get hasImages => _images.isNotEmpty;
+
+  static Future<void> ensureLoaded() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      _images = manifest
+          .listAssets()
+          .where((String k) =>
+              k.startsWith('assets/coloring/') &&
+              (k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg')))
+          .toList()
+        ..sort();
+    } catch (_) {
+      _images = const <String>[];
+    }
+  }
 }

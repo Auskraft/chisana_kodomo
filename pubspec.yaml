@@ -80,6 +80,7 @@ flutter:
     - assets/sfx/
     - assets/notes/
     - assets/animals/
+    - assets/coloring/
     - assets/icon.png
 
   fonts:
