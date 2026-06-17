@@ -294,16 +294,12 @@ class _TargetCard extends PositionComponent {
 
   @override
   void render(Canvas canvas) {
-    final r = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.x, size.y),
-      Radius.circular(size.x * 0.22),
-    );
-    canvas.drawRRect(r, Paint()..color = colors.surface);
+    // Без подложки: фигура прямо на фоне, чтобы подпись не упиралась в карточку.
     drawShape(
       canvas,
       item.shape,
-      Offset(size.x / 2, size.y * 0.42),
-      size.x * 0.26,
+      Offset(size.x / 2, size.y * 0.4),
+      size.x * 0.3,
       Paint()..color = kShapeColors[item.colorIndex],
     );
     super.render(canvas);
