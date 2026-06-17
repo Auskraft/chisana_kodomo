@@ -112,7 +112,18 @@ class AnimalSession {
     );
   }
 
-  AnimalRound _generate() => generateRound(set, _rng);
+  int? _lastTarget;
+
+  /// Раунд без повтора цели подряд — соседние раунды не дублируются.
+  AnimalRound _generate() {
+    AnimalRound r;
+    var guard = 0;
+    do {
+      r = generateRound(set, _rng);
+    } while (r.targetIndex == _lastTarget && guard++ < 20);
+    _lastTarget = r.targetIndex;
+    return r;
+  }
 
   /// Выбор варианта. Состояние не меняется — переход решает хост.
   AnimalChoice choose(int optionIndex) => AnimalChoice(

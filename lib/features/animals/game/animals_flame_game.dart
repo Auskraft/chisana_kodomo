@@ -199,7 +199,6 @@ class _Board extends PositionComponent {
 
     final promptSize = (shortest * 0.3).clamp(110.0, 220.0).toDouble();
     add(_PromptCard(
-      colors: owner.colors,
       cardSize: promptSize,
       position: Vector2(s.x / 2, s.y * 0.24),
       onTap: owner.repeatPrompt,
@@ -223,7 +222,6 @@ class _Board extends PositionComponent {
       add(_AnimalTile(
         animal: Animals.all[round.options[i]],
         index: i,
-        colors: owner.colors,
         tile: tile,
         position: Vector2(cx, cy),
         onChosen: owner.onChoose,
@@ -235,13 +233,11 @@ class _Board extends PositionComponent {
 /// Карточка-вопрос: «❓🔊» — тап повторяет вопрос голосом.
 class _PromptCard extends PositionComponent with TapCallbacks {
   _PromptCard({
-    required this.colors,
     required this.cardSize,
     required Vector2 position,
     required this.onTap,
   }) : super(size: Vector2.all(cardSize), anchor: Anchor.center, position: position);
 
-  final AppColors colors;
   final double cardSize;
   final VoidCallback onTap;
   late final TextPaint _q;
@@ -255,13 +251,9 @@ class _PromptCard extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    final r = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.x, size.y),
-      Radius.circular(size.x * 0.22),
-    );
-    canvas.drawRRect(r, Paint()..color = colors.surface);
-    _q.render(canvas, '❓', Vector2(size.x / 2, size.y * 0.44), anchor: Anchor.center);
-    _spk.render(canvas, '🔊', Vector2(size.x / 2, size.y * 0.82), anchor: Anchor.center);
+    // Без подложки — «?» и динамик прямо на фоне; динамик опущен ниже.
+    _q.render(canvas, '❓', Vector2(size.x / 2, size.y * 0.38), anchor: Anchor.center);
+    _spk.render(canvas, '🔊', Vector2(size.x / 2, size.y * 0.92), anchor: Anchor.center);
   }
 
   @override
@@ -279,7 +271,6 @@ class _AnimalTile extends PositionComponent with TapCallbacks {
   _AnimalTile({
     required this.animal,
     required this.index,
-    required this.colors,
     required this.tile,
     required Vector2 position,
     required this.onChosen,
@@ -287,7 +278,6 @@ class _AnimalTile extends PositionComponent with TapCallbacks {
 
   final Animal animal;
   final int index;
-  final AppColors colors;
   final double tile;
   final bool Function(int index) onChosen;
   late final TextPaint _emoji;
@@ -299,11 +289,7 @@ class _AnimalTile extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    final r = RRect.fromRectAndRadius(
-      Rect.fromLTWH(0, 0, size.x, size.y),
-      Radius.circular(size.x * 0.24),
-    );
-    canvas.drawRRect(r, Paint()..color = colors.surface);
+    // Без подложки — эмодзи зверя прямо на фоне.
     _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
   }
 

@@ -62,6 +62,18 @@ void main() {
     });
   });
 
+  group('сессия', () {
+    test('цель не повторяется в соседних раундах', () {
+      final s = AnimalSession(AnimalSet.all[0], random: Random(3));
+      var prev = s.round.targetIndex;
+      for (var i = 0; i < 15; i++) {
+        s.nextRound();
+        expect(s.round.targetIndex, isNot(prev), reason: 'раунд $i повторил цель');
+        prev = s.round.targetIndex;
+      }
+    });
+  });
+
   group('имена', () {
     test('заглавная буква', () {
       expect(animalNameCap(const Animal('🐶', 'собачка', 'dog')), 'Собачка');
