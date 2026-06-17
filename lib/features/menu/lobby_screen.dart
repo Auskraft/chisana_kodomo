@@ -15,7 +15,8 @@ class LobbyScreen extends StatelessWidget {
 
   /// Игры: играбельные открываются по тапу, остальные — «скоро».
   static const List<_GameTeaser> _teasers = <_GameTeaser>[
-    _GameTeaser('counting', '🔢', 'Счёт', playable: true),
+    _GameTeaser('counting', '🔢', 'Счёт',
+        playable: true, image: 'assets/games/count_main.png'),
     _GameTeaser('pairs', '🃏', 'Парочки'),
     _GameTeaser('colors_shapes', '🎨', 'Цвета и формы'),
     _GameTeaser('animals', '🐶', 'Звуки животных'),
@@ -152,14 +153,23 @@ class _Mascot extends StatelessWidget {
   }
 }
 
-/// Тизер игры: id, эмодзи, подпись и флаг «играбельна» (иначе — «скоро»).
+/// Тизер игры: id, эмодзи/картинка, подпись и флаг «играбельна» (иначе «скоро»).
 class _GameTeaser {
-  const _GameTeaser(this.id, this.emoji, this.title, {this.playable = false});
+  const _GameTeaser(
+    this.id,
+    this.emoji,
+    this.title, {
+    this.playable = false,
+    this.image,
+  });
 
   final String id;
   final String emoji;
   final String title;
   final bool playable;
+
+  /// Кастомная картинка-иконка вместо эмодзи (опц.).
+  final String? image;
 }
 
 /// Карточка-тизер игры. Играбельная — тапается и ведёт в игру; остальные
@@ -204,8 +214,22 @@ class _TeaserCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: <Widget>[
-          Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
-          SizedBox(height: size * 0.06),
+          if (teaser.image != null)
+            SizedBox(
+              width: size * 0.62,
+              height: size * 0.62,
+              child: Image.asset(
+                teaser.image!,
+                fit: BoxFit.contain,
+                errorBuilder: (_, _, _) => Text(
+                  teaser.emoji,
+                  style: TextStyle(fontSize: size * 0.4),
+                ),
+              ),
+            )
+          else
+            Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
+          SizedBox(height: size * 0.04),
           Padding(
             padding: EdgeInsets.symmetric(horizontal: size * 0.06),
             child: Text(

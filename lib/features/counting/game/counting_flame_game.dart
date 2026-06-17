@@ -35,8 +35,9 @@ class CountingGame extends FlameGame {
   final AppColors colors;
   final int roundsPerSet;
 
-  /// Голосовой хук (хост подключает к `Voice.instance.say`).
-  final void Function(String text)? onSay;
+  /// Голосовой хук (хост подключает к `Voice.instance.say`). `flush: true` —
+  /// сказать сразу (счёт/ошибка); по умолчанию — в очередь, без перебивания.
+  final void Function(String text, {bool flush})? onSay;
 
   final Random _rng;
 
@@ -103,7 +104,7 @@ class CountingGame extends FlameGame {
     final res = _session.tap();
     Sfx.play(SfxEvent.tap);
     Haptics.tap();
-    onSay?.call(_numberWord(res.counted)); // «один… два…»
+    onSay?.call(_numberWord(res.counted), flush: true); // «один… два…»
     if (res.isComplete) _solveRound(numberAlreadySaid: true);
   }
 
@@ -118,7 +119,7 @@ class CountingGame extends FlameGame {
     }
     _mistakes++;
     Sfx.play(SfxEvent.soft);
-    onSay?.call('Попробуй ещё');
+    onSay?.call('Попробуй ещё', flush: true);
     return false;
   }
 
@@ -133,12 +134,17 @@ class CountingGame extends FlameGame {
       round: round,
       emoji: _emojiPool[_rng.nextInt(_emojiPool.length)],
     ));
-    onSay?.call(round.mode == CountMode.tapCount ? 'Посчитай!' : 'Сколько?');
+    // Подсказку — в очередь (не перебивает похвалу прошлого раунда); на старте
+    // набора (раунд 1) можно сразу.
+    onSay?.call(
+      round.mode == CountMode.tapCount ? 'Посчитай!' : 'Сколько?',
+      flush: roundNumber.value == 1,
+    );
   }
 
-  /// Раунд решён: «сок» + голос. Сначала звучит число (если его ещё не сказали
-  /// на тапе), затем — короткая похвала с паузой, чтобы не оборвать «…два».
-  /// Переход к следующему раунду — после celebration-паузы.
+  /// Раунд решён: «сок» + голос. Число (если ещё не сказали на тапе) — сразу;
+  /// похвала — в очередь, сыграет ПОСЛЕ числа, не перебивая. На финальном раунде
+  /// похвалу не дублируем (её скажет [_finishSet]). Переход — после паузы.
   void _solveRound({required bool numberAlreadySaid}) {
     _locked = true;
     Sfx.play(SfxEvent.correct);
@@ -146,14 +152,12 @@ class CountingGame extends FlameGame {
     _burst(Vector2(size.x / 2, size.y * 0.38));
 
     if (!numberAlreadySaid) {
-      onSay?.call(_numberWord(_session.round.count)); // режим выбора: назвать счёт
+      onSay?.call(_numberWord(_session.round.count), flush: true);
     }
-    add(TimerComponent(
-      period: 0.7,
-      removeOnFinish: true,
-      onTick: () => onSay?.call(Praise.pick(_rng)), // похвала после паузы
-    ));
-    add(TimerComponent(period: 1.3, removeOnFinish: true, onTick: _advance));
+    if (roundNumber.value < roundsPerSet) {
+      onSay?.call(Praise.pick(_rng)); // в очередь (flush: false)
+    }
+    add(TimerComponent(period: 1.6, removeOnFinish: true, onTick: _advance));
   }
 
   void _advance() {

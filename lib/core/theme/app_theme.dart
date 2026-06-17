@@ -10,6 +10,10 @@ import 'app_colors.dart';
 class AppTheme {
   const AppTheme._();
 
+  /// Брендовый шрифт (забандлен). Кириллица есть; для японского — системный
+  /// фолбэк. Применяется ко всему тексту приложения.
+  static const String _fontFamily = 'Unbounded';
+
   static ThemeData fromColors(AppColors c) {
     final scheme = ColorScheme(
       brightness: Brightness.light,
@@ -29,6 +33,7 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: scheme,
       scaffoldBackgroundColor: c.background,
+      fontFamily: _fontFamily,
       extensions: <ThemeExtension<dynamic>>[c],
       appBarTheme: AppBarTheme(
         backgroundColor: c.background,
@@ -37,6 +42,7 @@ class AppTheme {
         elevation: 0,
       ),
       textTheme: Typography.blackMountainView.apply(
+        fontFamily: _fontFamily,
         bodyColor: c.onBackground,
         displayColor: c.onBackground,
       ),

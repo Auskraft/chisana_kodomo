@@ -35,7 +35,8 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
     _game = CountingGame(
       set: widget.set,
       colors: context.appColors,
-      onSay: (String text) => Voice.instance.say(text),
+      onSay: (String text, {bool flush = false}) =>
+          Voice.instance.say(text, flush: flush),
     );
     _game.phase.addListener(_onPhase);
   }
