@@ -29,7 +29,7 @@ abstract final class Animals {
     Animal('🐸', 'лягушка', 'frog'),
     Animal('🐑', 'овечка', 'sheep'),
     Animal('🐴', 'лошадка', 'horse'),
-    Animal('🦆', 'уточка', 'duck'),
+    Animal('🐤', 'цыплёнок', 'chick'),
     Animal('🐰', 'зайка', 'rabbit'),
   ];
 }

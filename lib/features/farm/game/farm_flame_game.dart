@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../animals/animal_icons.dart';
 import '../../animals/logic/animals_logic.dart';
 
 /// Фаза «Фермы». Свободная игра-игрушка — без раундов/звёзд.
@@ -132,11 +133,17 @@ class _AnimalToy extends PositionComponent with TapCallbacks {
   @override
   Future<void> onLoad() async {
     _emoji = TextPaint(style: TextStyle(fontSize: size.x * 0.7));
+    await AnimalIcons.load(animal.soundKey);
   }
 
   @override
   void render(Canvas canvas) {
-    _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+    final icon = AnimalIcons.cached(animal.soundKey);
+    if (icon != null) {
+      AnimalIcons.paintContained(canvas, icon, size.x);
+    } else {
+      _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+    }
   }
 
   @override

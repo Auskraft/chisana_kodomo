@@ -9,9 +9,12 @@
 2) Сконвертируй в WAV (моно, 44100 Гц) и положи сюда под именами по ключам
    (см. Animal.soundKey в lib/features/animals/logic/animals_logic.dart):
      dog.wav  cat.wav  cow.wav  pig.wav  hen.wav
-     frog.wav sheep.wav horse.wav duck.wav rabbit.wav
+     frog.wav sheep.wav horse.wav chick.wav rabbit.wav
 3) Пересобери. Файла нет — приложение просто называет зверя голосом (тихий
    фолбэк, без ошибок).
 
+Иконки зверей (арт): <key>.png в этой же папке — УЖЕ добавлены и используются
+в «Ферме» и квизе «Звуки животных». Если png нет — рисуется эмодзи-запас.
+
 Атрибуции (даже для CC0 — хороший тон) веди в docs/ATTRIBUTIONS.md.
-Папка уже включена в pubspec (assets/animals/), так что новые wav подхватятся.
+Папка уже включена в pubspec (assets/animals/), так что новые wav/png подхватятся.

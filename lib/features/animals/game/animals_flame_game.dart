@@ -11,6 +11,7 @@ import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
+import '../animal_icons.dart';
 import '../logic/animals_logic.dart';
 
 /// Фаза экрана игры «Звуки животных».
@@ -289,12 +290,18 @@ class _AnimalTile extends PositionComponent with TapCallbacks {
   @override
   Future<void> onLoad() async {
     _emoji = TextPaint(style: TextStyle(fontSize: size.x * 0.56));
+    await AnimalIcons.load(animal.soundKey);
   }
 
   @override
   void render(Canvas canvas) {
-    // Без подложки — эмодзи зверя прямо на фоне.
-    _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+    // Арт-иконка зверя, если есть; иначе — эмодзи (без подложки, на фоне).
+    final icon = AnimalIcons.cached(animal.soundKey);
+    if (icon != null) {
+      AnimalIcons.paintContained(canvas, icon, size.x);
+    } else {
+      _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+    }
   }
 
   @override
