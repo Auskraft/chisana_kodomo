@@ -55,5 +55,20 @@ void main() {
       await s.recordSetStars('counting', 0, 9);
       expect(s.setStars('counting', 0), 3);
     });
+
+    test('избранные раскраски: переключение и персист', () async {
+      final s = GameStorage.instance;
+      const a = 'assets/coloring/animals/1/cat.png';
+      const b = 'assets/coloring/animals/2/giraffe.png';
+      expect(s.coloringFavorites, isEmpty);
+      expect(s.isColoringFavorite(a), isFalse);
+      expect(await s.toggleColoringFavorite(a), isTrue); // добавили
+      expect(s.isColoringFavorite(a), isTrue);
+      await s.toggleColoringFavorite(b);
+      expect(s.coloringFavorites, containsAll(<String>[a, b]));
+      expect(await s.toggleColoringFavorite(a), isFalse); // убрали
+      expect(s.isColoringFavorite(a), isFalse);
+      expect(s.coloringFavorites, <String>[b]);
+    });
   });
 }

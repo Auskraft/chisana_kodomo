@@ -84,7 +84,7 @@ class ColoringBottomBar extends StatelessWidget {
     required this.onUndo,
     required this.onRedo,
     required this.onClear,
-    required this.onNextPicture,
+    required this.onPicture,
   });
 
   final ColoringMode mode;
@@ -101,7 +101,9 @@ class ColoringBottomBar extends StatelessWidget {
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final VoidCallback onClear;
-  final VoidCallback onNextPicture;
+
+  /// Действие кнопки «Картинка»: открыть пикер (растровые) или следующая (вектор).
+  final VoidCallback onPicture;
 
   @override
   Widget build(BuildContext context) {
@@ -211,7 +213,7 @@ class ColoringBottomBar extends StatelessWidget {
                     icon: Icons.image_rounded,
                     label: 'Картинка',
                     colors: colors,
-                    onTap: onNextPicture,
+                    onTap: onPicture,
                   ),
               ],
             ),
@@ -536,6 +538,208 @@ class _RoundBtn extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(9),
           child: Icon(icon, color: colors.onSurface.withValues(alpha: 0.7), size: 22),
+        ),
+      ),
+    );
+  }
+}
+
+/// Открыть пикер картинок (карусель миниатюр) по кнопке «Картинка». Миниатюры
+/// идут по порядку уровня; тап по карточке — выбрать, сердечко — в избранное.
+/// [currentAsset] подсвечивается рамкой.
+Future<void> showColoringPicturePicker(
+  BuildContext context, {
+  required List<ColoringPick> picks,
+  required String? currentAsset,
+  required bool Function(String asset) isFavorite,
+  required Future<void> Function(String asset) onToggleFavorite,
+  required void Function(ColoringPick pick) onSelect,
+}) {
+  return showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => _PicturePickerSheet(
+      picks: picks,
+      currentAsset: currentAsset,
+      isFavorite: isFavorite,
+      onToggleFavorite: onToggleFavorite,
+      onSelect: (pick) {
+        Navigator.of(ctx).pop();
+        onSelect(pick);
+      },
+    ),
+  );
+}
+
+class _PicturePickerSheet extends StatefulWidget {
+  const _PicturePickerSheet({
+    required this.picks,
+    required this.currentAsset,
+    required this.isFavorite,
+    required this.onToggleFavorite,
+    required this.onSelect,
+  });
+
+  final List<ColoringPick> picks;
+  final String? currentAsset;
+  final bool Function(String asset) isFavorite;
+  final Future<void> Function(String asset) onToggleFavorite;
+  final void Function(ColoringPick pick) onSelect;
+
+  @override
+  State<_PicturePickerSheet> createState() => _PicturePickerSheetState();
+}
+
+class _PicturePickerSheetState extends State<_PicturePickerSheet> {
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final text = Theme.of(context).textTheme;
+    return SafeArea(
+      top: false,
+      child: Container(
+        margin: const EdgeInsets.fromLTRB(10, 0, 10, 12),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.18),
+              blurRadius: 20,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(
+              'Выбери картинку',
+              style: text.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: colors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 12),
+            SizedBox(
+              height: 150,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                itemCount: widget.picks.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (context, i) {
+                  final pick = widget.picks[i];
+                  return _PicturePickerCard(
+                    pick: pick,
+                    selected: pick.asset == widget.currentAsset,
+                    favorite: widget.isFavorite(pick.asset),
+                    colors: colors,
+                    onTap: () => widget.onSelect(pick),
+                    onToggleFavorite: () async {
+                      await widget.onToggleFavorite(pick.asset);
+                      if (mounted) setState(() {});
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Карточка-миниатюра в пикере: картинка на белом листе + бейдж уровня +
+/// сердечко избранного. Тап по карточке — выбрать, по сердечку — переключить.
+class _PicturePickerCard extends StatelessWidget {
+  const _PicturePickerCard({
+    required this.pick,
+    required this.selected,
+    required this.favorite,
+    required this.colors,
+    required this.onTap,
+    required this.onToggleFavorite,
+  });
+
+  final ColoringPick pick;
+  final bool selected;
+  final bool favorite;
+  final AppColors colors;
+  final VoidCallback onTap;
+  final VoidCallback onToggleFavorite;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: SizedBox(
+        width: 124,
+        child: Stack(
+          children: <Widget>[
+            Container(
+              width: 124,
+              height: 150,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: selected
+                      ? colors.primary
+                      : colors.onSurface.withValues(alpha: 0.12),
+                  width: selected ? 3 : 1.5,
+                ),
+                boxShadow: <BoxShadow>[
+                  BoxShadow(
+                    color: colors.onBackground.withValues(alpha: 0.12),
+                    blurRadius: 8,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+              ),
+              child: Image.asset(pick.asset, fit: BoxFit.contain),
+            ),
+            // Бейдж уровня.
+            Positioned(
+              left: 8,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                decoration: BoxDecoration(
+                  color: colors.primary.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  '${pick.level}',
+                  style: TextStyle(
+                    color: colors.onPrimary,
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ),
+            // Сердечко (избранное): полное при выборе, бледное иначе.
+            Positioned(
+              right: 4,
+              top: 4,
+              child: GestureDetector(
+                onTap: onToggleFavorite,
+                behavior: HitTestBehavior.opaque,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: Opacity(
+                    opacity: favorite ? 1.0 : 0.3,
+                    child: Image.asset('assets/ui/favorite.png',
+                        width: 26, height: 26),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );

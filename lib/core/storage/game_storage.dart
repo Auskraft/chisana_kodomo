@@ -74,6 +74,27 @@ class GameStorage {
   int get backgroundIndex => _prefs.getInt('bg_index') ?? 0;
   Future<void> setBackgroundIndex(int i) => _prefs.setInt('bg_index', i);
 
+  // ── Избранные раскраски (пути-ассеты `assets/coloring/...`) ─────────────────
+  // Заготовка под фичу «Избранное»: отмечаются сердечком в пикере картинок.
+  // Полноценный фильтр/раздел избранного — в бэклоге.
+
+  /// Список избранных раскрасок (пути-ассеты, в порядке добавления).
+  List<String> get coloringFavorites =>
+      _prefs.getStringList('coloring_favorites') ?? const <String>[];
+
+  /// Избрана ли раскраска [asset].
+  bool isColoringFavorite(String asset) => coloringFavorites.contains(asset);
+
+  /// Переключить «избранное» для [asset]. Возвращает новое состояние
+  /// (true — теперь в избранном).
+  Future<bool> toggleColoringFavorite(String asset) async {
+    final list = <String>[...coloringFavorites];
+    final removed = list.remove(asset);
+    if (!removed) list.add(asset);
+    await _prefs.setStringList('coloring_favorites', list);
+    return !removed;
+  }
+
   // ── Прогресс по играм: открытые наборы + звёзды за набор ────────────────────
   // Ключи живут по id игры (= папка/feature), как и в сборнике-эталоне.
 

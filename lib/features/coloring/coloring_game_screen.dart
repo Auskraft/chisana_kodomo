@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../core/components/overlay_kit.dart';
+import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/voice/voice.dart';
 import 'game/coloring_flame_game.dart';
@@ -73,6 +74,24 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
     if (result != null) _game.setPickedColor(result);
   }
 
+  /// Кнопка «Картинка»: в растровом режиме — пикер-карусель (выбор по уровню);
+  /// в векторном (Домик/Цветок) — просто следующая картинка.
+  void _openPicture() {
+    if (!_game.canPickRaster) {
+      _game.nextPicture();
+      return;
+    }
+    final storage = GameStorage.instance;
+    showColoringPicturePicker(
+      context,
+      picks: _game.picksForCurrentCategory(),
+      currentAsset: _game.currentAsset,
+      isFavorite: storage.isColoringFavorite,
+      onToggleFavorite: storage.toggleColoringFavorite,
+      onSelect: (pick) => _game.selectRasterPicture(pick.level, pick.asset),
+    );
+  }
+
   @override
   void dispose() {
     _game.completed.removeListener(_onCompleted);
@@ -124,7 +143,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
                 onUndo: _game.undo,
                 onRedo: _game.redo,
                 onClear: _game.clearArt,
-                onNextPicture: _game.nextPicture,
+                onPicture: _openPicture,
               ),
             ),
           ),

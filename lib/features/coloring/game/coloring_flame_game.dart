@@ -50,6 +50,24 @@ class ColoringGame extends FlameGame {
   /// Доступные уровни сложности в текущей теме (с картинками).
   List<int> get coloringLevels => RasterGallery.levelsFor(category.value);
 
+  /// Картинки текущей темы по порядку уровня — для пикера (карусели).
+  List<ColoringPick> picksForCurrentCategory() => <ColoringPick>[
+        for (final lvl in RasterGallery.levelsFor(category.value))
+          for (final asset in RasterGallery.imagesFor(category.value, lvl))
+            ColoringPick(asset: asset, level: lvl),
+      ];
+
+  /// Можно ли открыть пикер картинок (есть растровые картинки в режиме «Залить»).
+  bool get canPickRaster =>
+      mode.value == ColoringMode.fill && picksForCurrentCategory().isNotEmpty;
+
+  /// Текущий выбранный ассет (подсветка в пикере), либо null (векторный режим).
+  String? get currentAsset {
+    if (!_useRaster) return null;
+    final imgs = RasterGallery.imagesFor(category.value, level.value);
+    return imgs.isEmpty ? null : imgs[pictureIndex.value % imgs.length];
+  }
+
   ColoringState? _state;
   bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
   ColoringState? get state => _state;
@@ -124,6 +142,17 @@ class ColoringGame extends FlameGame {
     if (level.value == l) return;
     level.value = l;
     pictureIndex.value = 0;
+    completed.value = false;
+    _rebuild();
+  }
+
+  /// Выбрать конкретную картинку из пикера: ставит её уровень и индекс в уровне.
+  void selectRasterPicture(int lvl, String asset) {
+    final imgs = RasterGallery.imagesFor(category.value, lvl);
+    final idx = imgs.indexOf(asset);
+    if (idx < 0) return;
+    level.value = lvl;
+    pictureIndex.value = idx;
     completed.value = false;
     _rebuild();
   }

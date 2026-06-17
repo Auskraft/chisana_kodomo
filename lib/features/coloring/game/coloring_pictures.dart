@@ -226,6 +226,14 @@ ColoringCategoryMeta coloringCategoryMeta(String key) =>
   return (category: category, level: level);
 }
 
+/// Один пункт пикера картинок (карусели): ассет-раскраска + её уровень
+/// (для значка уровня и порядка). Тема — текущая выбранная в игре.
+class ColoringPick {
+  const ColoringPick({required this.asset, required this.level});
+  final String asset;
+  final int level;
+}
+
 /// Динамическая галерея растровых раскрасок: картинки из
 /// `assets/coloring/<тема>/<уровень>/` (PNG/JPG), сгруппированные по теме и
 /// уровню. Заполняется из манифеста ассетов один раз. Контурные рисунки
