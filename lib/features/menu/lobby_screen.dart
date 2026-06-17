@@ -6,6 +6,8 @@ import '../colors_shapes/colors_shapes_game_screen.dart';
 import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
+import '../pairs/logic/pairs_logic.dart';
+import '../pairs/pairs_game_screen.dart';
 import '../settings/settings_screen.dart';
 
 /// Кол-во фоновых сцен (`assets/backgrounds/1..N.png`). Переключаются в Настройках.
@@ -25,7 +27,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
   static const List<_Game> _games = <_Game>[
     _Game('counting', 'Счёт', '🔢',
         image: 'assets/games/count_main.png', playable: true),
-    _Game('pairs', 'Парочки', '🃏'),
+    _Game('pairs', 'Парочки', '🃏', playable: true),
     _Game('colors_shapes', 'Цвета и формы', '🎨',
         image: 'assets/games/form-main.png', playable: true),
     _Game('animals', 'Звуки животных', '🐶'),
@@ -55,6 +57,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'colors_shapes':
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => ColorsShapesGameScreen(set: CSSet.all.first),
+        ));
+      case 'pairs':
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => PairsGameScreen(set: PairsSet.all.first),
         ));
     }
   }
