@@ -18,6 +18,7 @@ class LobbyScreen extends StatelessWidget {
     _GameTeaser('🎨', 'Цвета и формы'),
     _GameTeaser('🐶', 'Звуки животных'),
     _GameTeaser('🎹', 'Музыка'),
+    _GameTeaser('🖍️', 'Раскраска'),
   ];
 
   @override
