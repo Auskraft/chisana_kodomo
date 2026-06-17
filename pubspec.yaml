@@ -76,6 +76,9 @@ flutter:
     - assets/games/
     - assets/voice/pack/
     - assets/backgrounds/
+    - assets/sfx/
+    - assets/notes/
+    - assets/animals/
     - assets/icon.png
 
   fonts:

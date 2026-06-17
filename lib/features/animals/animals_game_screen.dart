@@ -1,6 +1,7 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 
+import '../../core/audio/sound_pool.dart';
 import '../../core/components/overlay_kit.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
@@ -27,6 +28,9 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
   late final AnimalsGame _game;
   bool _created = false;
 
+  /// Пул для звуков зверей (`assets/animals/<key>.wav`; CC0-файлы — Фаза 5).
+  final SoundPool _sounds = SoundPool(size: 3);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -37,6 +41,7 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
       colors: context.appColors,
       onSay: (String text, {bool flush = false}) =>
           Voice.instance.say(text, flush: flush),
+      onAnimalSound: (String key) => _sounds.play('animals/$key.wav'),
     );
     _game.phase.addListener(_onPhase);
   }
@@ -73,6 +78,7 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
   @override
   void dispose() {
     _game.phase.removeListener(_onPhase);
+    _sounds.dispose();
     Voice.instance.stop();
     super.dispose();
   }

@@ -27,6 +27,7 @@ class AnimalsGame extends FlameGame {
     required this.colors,
     this.roundsPerSet = 5,
     this.onSay,
+    this.onAnimalSound,
     Random? random,
   }) : _rng = random ?? Random();
 
@@ -34,6 +35,11 @@ class AnimalsGame extends FlameGame {
   final AppColors colors;
   final int roundsPerSet;
   final void Function(String text, {bool flush})? onSay;
+
+  /// Хук на звук зверя по [Animal.soundKey] (CC0-файлы — Фаза 5). Может быть
+  /// null/тихим, пока файлов нет; озвучка имени голосом работает в любом случае.
+  final void Function(String soundKey)? onAnimalSound;
+
   final Random _rng;
 
   late AnimalSession _session;
@@ -113,8 +119,8 @@ class AnimalsGame extends FlameGame {
     Sfx.play(SfxEvent.correct);
     Haptics.success();
     _burst(Vector2(size.x / 2, size.y * 0.3));
-    // Эхо имени зверя — сразу (это и есть «звук» до Фазы 5).
-    // TODO(Фаза 5): проиграть Animal.soundKey вместо/вместе с именем.
+    // Звук зверя (если файл есть) + эхо имени голосом — имя работает всегда.
+    onAnimalSound?.call(_session.round.target.soundKey);
     onSay?.call('${animalNameCap(_session.round.target)}!', flush: true);
     if (roundNumber.value < roundsPerSet) {
       onSay?.call(Praise.pick(_rng));

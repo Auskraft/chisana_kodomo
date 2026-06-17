@@ -1,5 +1,8 @@
-/// Короткие звуковые события (детский набор). Имя — событие, не файл: бэкенд
-/// подключим в Фазе 5 (процедурные джинглы / CC0), сейчас контракт уже стабилен.
+import 'dart:async';
+
+import 'sound_pool.dart';
+
+/// Короткие звуковые события (детский набор). Имя — событие, не файл.
 enum SfxEvent {
   /// Касание объекта/кнопки.
   tap,
@@ -20,20 +23,32 @@ enum SfxEvent {
   start,
 }
 
-/// Фасад звуковых эффектов.
+/// Фасад звуковых эффектов: играет процедурные клипы `assets/sfx/<event>.wav`
+/// (сгенерированы `tool/gen_sfx.py`) через полифонический [SoundPool].
 ///
-/// **Заглушка до Фазы 5.** Сейчас [play] — no-op (бэкенд аудио ещё не подключён,
-/// контента нет). Контракт событий [SfxEvent] уже стабилен, поэтому игровой слой
-/// может звать [Sfx.play] хоть сейчас — звук «включится», когда появится бэкенд.
-/// Флаг [enabled] синхронизируется с настройкой звука в `GameStorage`.
+/// Контракт [SfxEvent] стабилен — игровой слой зовёт [play] как раньше. Флаг
+/// [enabled] синхронизируется с настройкой звука в `GameStorage`. Нет файла или
+/// аудио (в т.ч. в тестах) — тихий фолбэк.
 class Sfx {
   const Sfx._();
 
   static bool enabled = true;
 
-  /// Сыграть эффект. Пока тихо (Фаза 5 подключит воспроизведение).
+  static final SoundPool _pool = SoundPool(size: 5);
+
+  static const Map<SfxEvent, String> _files = <SfxEvent, String>{
+    SfxEvent.tap: 'sfx/tap.wav',
+    SfxEvent.correct: 'sfx/correct.wav',
+    SfxEvent.soft: 'sfx/soft.wav',
+    SfxEvent.star: 'sfx/star.wav',
+    SfxEvent.complete: 'sfx/complete.wav',
+    SfxEvent.start: 'sfx/start.wav',
+  };
+
+  /// Сыграть эффект [event] (если звук включён).
   static void play(SfxEvent event) {
     if (!enabled) return;
-    // TODO(Фаза 5): воспроизвести клип/процедурный звук для [event].
+    final file = _files[event];
+    if (file != null) unawaited(_pool.play(file));
   }
 }
