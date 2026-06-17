@@ -8,6 +8,7 @@ import '../colors_shapes/colors_shapes_game_screen.dart';
 import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
+import '../music/music_game_screen.dart';
 import '../pairs/logic/pairs_logic.dart';
 import '../pairs/pairs_game_screen.dart';
 import '../settings/settings_screen.dart';
@@ -33,7 +34,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _Game('colors_shapes', 'Цвета и формы', '🎨',
         image: 'assets/games/form-main.png', playable: true),
     _Game('animals', 'Звуки животных', '🐶', playable: true),
-    _Game('music', 'Музыка', '🎹', image: 'assets/games/music-main.png'),
+    _Game('music', 'Музыка', '🎹',
+        image: 'assets/games/music-main.png', playable: true),
     _Game('coloring', 'Раскраска', '🖍️'),
   ];
 
@@ -67,6 +69,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'animals':
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => AnimalsGameScreen(set: AnimalSet.all.first),
+        ));
+      case 'music':
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const MusicGameScreen(),
         ));
     }
   }
