@@ -49,4 +49,37 @@ abstract final class AnimalIcons {
       Paint()..filterQuality = FilterQuality.medium,
     );
   }
+
+  /// Нарисовать иконку как **скруглённую карточку с мягкой тенью** (заполняя
+  /// квадрат [side], cover). Для плиток-вариантов в квизе.
+  static void paintRoundedCard(Canvas canvas, Image image, double side) {
+    final rrect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(0, 0, side, side),
+      Radius.circular(side * 0.22),
+    );
+    // Мягкая тень.
+    canvas.drawRRect(
+      rrect.shift(const Offset(0, 3)),
+      Paint()
+        ..color = const Color(0x26000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.save();
+    canvas.clipRRect(rrect);
+    final iw = image.width.toDouble();
+    final ih = image.height.toDouble();
+    final scale = side / (iw < ih ? iw : ih); // cover
+    final dst = Rect.fromCenter(
+      center: Offset(side / 2, side / 2),
+      width: iw * scale,
+      height: ih * scale,
+    );
+    canvas.drawImageRect(
+      image,
+      Rect.fromLTWH(0, 0, iw, ih),
+      dst,
+      Paint()..filterQuality = FilterQuality.medium,
+    );
+    canvas.restore();
+  }
 }

@@ -295,10 +295,10 @@ class _AnimalTile extends PositionComponent with TapCallbacks {
 
   @override
   void render(Canvas canvas) {
-    // Арт-иконка зверя, если есть; иначе — эмодзи (без подложки, на фоне).
+    // Арт-иконка зверя скруглённой карточкой с тенью; иначе — эмодзи.
     final icon = AnimalIcons.cached(animal.soundKey);
     if (icon != null) {
-      AnimalIcons.paintContained(canvas, icon, size.x);
+      AnimalIcons.paintRoundedCard(canvas, icon, size.x);
     } else {
       _emoji.render(canvas, animal.emoji, Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
     }

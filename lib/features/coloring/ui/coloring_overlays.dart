@@ -87,8 +87,8 @@ class ColoringBottomBar extends StatelessWidget {
     return SafeArea(
       top: false,
       child: Container(
-        margin: const EdgeInsets.all(10),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        margin: const EdgeInsets.fromLTRB(10, 8, 10, 14),
+        padding: const EdgeInsets.fromLTRB(14, 16, 14, 20),
         decoration: BoxDecoration(
           color: colors.surface.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(26),
@@ -105,7 +105,7 @@ class ColoringBottomBar extends StatelessWidget {
           children: <Widget>[
             Wrap(
               spacing: 10,
-              runSpacing: 10,
+              runSpacing: 12,
               alignment: WrapAlignment.center,
               children: <Widget>[
                 for (var i = 0; i < kColoringPalette.length; i++)
