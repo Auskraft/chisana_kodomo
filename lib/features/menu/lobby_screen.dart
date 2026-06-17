@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
+import '../colors_shapes/colors_shapes_game_screen.dart';
+import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
 import '../settings/settings_screen.dart';
@@ -25,7 +27,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/count_main.png', playable: true),
     _Game('pairs', 'Парочки', '🃏'),
     _Game('colors_shapes', 'Цвета и формы', '🎨',
-        image: 'assets/games/form-main.png'),
+        image: 'assets/games/form-main.png', playable: true),
     _Game('animals', 'Звуки животных', '🐶'),
     _Game('music', 'Музыка', '🎹', image: 'assets/games/music-main.png'),
     _Game('coloring', 'Раскраска', '🖍️'),
@@ -45,12 +47,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
   }
 
   void _open(_Game g) {
-    if (g.id == 'counting') {
-      Navigator.of(context).push(
-        MaterialPageRoute<void>(
+    switch (g.id) {
+      case 'counting':
+        Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => CountingGameScreen(set: CountSet.all.first),
-        ),
-      );
+        ));
+      case 'colors_shapes':
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => ColorsShapesGameScreen(set: CSSet.all.first),
+        ));
     }
   }
 
