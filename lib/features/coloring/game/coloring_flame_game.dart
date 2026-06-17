@@ -33,6 +33,7 @@ class ColoringGame extends FlameGame {
   final ValueNotifier<bool> completed = ValueNotifier<bool>(false);
 
   ColoringState? _state;
+  bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
   ColoringState? get state => _state;
 
   PaintablePicture get _picture => ColoringGallery.all[pictureIndex.value];
@@ -63,6 +64,7 @@ class ColoringGame extends FlameGame {
   /// Сбросить рисунок (заливки или штрихи).
   void clearArt() {
     completed.value = false;
+    _finishing = false;
     if (mode.value == ColoringMode.freeDraw) {
       final canvases = children.whereType<_FreeCanvas>().toList();
       if (canvases.isNotEmpty) canvases.first.clearStrokes();
@@ -72,6 +74,7 @@ class ColoringGame extends FlameGame {
   }
 
   void _rebuild() {
+    _finishing = false;
     for (final c in children
         .where((c) => c is _Picture || c is _FreeCanvas)
         .toList()) {
@@ -97,11 +100,19 @@ class ColoringGame extends FlameGame {
     }
     Sfx.play(SfxEvent.tap);
     Haptics.tap();
-    if (res.complete && !completed.value) {
-      completed.value = true;
+    if (res.complete && !completed.value && !_finishing) {
+      _finishing = true;
       Sfx.play(SfxEvent.complete);
       Haptics.success();
       _burst(Vector2(size.x / 2, size.y * 0.42));
+      // Пауза — дать полюбоваться готовой картинкой, затем панель «Красиво!».
+      add(TimerComponent(
+        period: 1.6,
+        removeOnFinish: true,
+        onTick: () {
+          if (_finishing) completed.value = true;
+        },
+      ));
     }
   }
 
