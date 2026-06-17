@@ -4,6 +4,7 @@ import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../animals/animals_game_screen.dart';
 import '../animals/logic/animals_logic.dart';
+import '../coloring/coloring_game_screen.dart';
 import '../colors_shapes/colors_shapes_game_screen.dart';
 import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
@@ -36,7 +37,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _Game('animals', 'Звуки животных', '🐶', playable: true),
     _Game('music', 'Музыка', '🎹',
         image: 'assets/games/music-main.png', playable: true),
-    _Game('coloring', 'Раскраска', '🖍️'),
+    _Game('coloring', 'Раскраска', '🖍️', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
@@ -73,6 +74,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'music':
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const MusicGameScreen(),
+        ));
+      case 'coloring':
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => const ColoringGameScreen(),
         ));
     }
   }
