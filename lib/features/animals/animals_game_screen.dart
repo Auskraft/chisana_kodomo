@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/audio/sound_pool.dart';
 import '../../core/components/overlay_kit.dart';
+import '../../core/praise/praise.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/voice/voice.dart';
@@ -42,6 +43,7 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
       onSay: (String text, {bool flush = false}) =>
           Voice.instance.say(text, flush: flush),
       onAnimalSound: (String key) => _sounds.play('animals/$key.wav'),
+      setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
   }

@@ -28,6 +28,7 @@ class CountingGame extends FlameGame {
     required this.colors,
     this.roundsPerSet = 5,
     this.onSay,
+    this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
   }) : _rng = random ?? Random();
 
@@ -38,6 +39,9 @@ class CountingGame extends FlameGame {
   /// Голосовой хук (хост подключает к `Voice.instance.say`). `flush: true` —
   /// сказать сразу (счёт/ошибка); по умолчанию — в очередь, без перебивания.
   final void Function(String text, {bool flush})? onSay;
+
+  /// Финальная похвала за набор (согласована по полу — задаёт хост).
+  final String setDonePhrase;
 
   final Random _rng;
 
@@ -185,7 +189,7 @@ class CountingGame extends FlameGame {
     _clearRound();
     earnedStars.value = Praise.starsForMistakes(_mistakes);
     Sfx.play(SfxEvent.complete);
-    onSay?.call('Молодец! Ты справился!');
+    onSay?.call(setDonePhrase);
     phase.value = CountPhase.setDone;
   }
 

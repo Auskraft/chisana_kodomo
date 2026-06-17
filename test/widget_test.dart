@@ -33,10 +33,23 @@ void main() {
     expect(find.text('Счёт'), findsNothing);
   });
 
-  testWidgets('После согласия — лобби: бренд + витрина игр',
+  testWidgets('После согласия, до выбора — экран «Кто играет?»',
       (WidgetTester tester) async {
     _portrait(tester);
     await _initStorage(<String, Object>{'consent_accepted_v1': true});
+    await tester.pumpWidget(const ChisanaKodomoApp());
+
+    expect(find.text('Кто играет?'), findsOneWidget);
+    expect(find.text('Счёт'), findsNothing);
+  });
+
+  testWidgets('После согласия — лобби: бренд + витрина игр',
+      (WidgetTester tester) async {
+    _portrait(tester);
+    await _initStorage(<String, Object>{
+      'consent_accepted_v1': true,
+      'gender_asked': true,
+    });
     await tester.pumpWidget(const ChisanaKodomoApp());
 
     expect(find.textContaining('Chisana'), findsOneWidget);

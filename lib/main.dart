@@ -5,6 +5,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 import 'core/audio/sfx.dart';
 import 'core/feedback/haptics.dart';
 import 'core/legal/consent_screen.dart';
+import 'core/onboarding/gender_screen.dart';
 import 'core/storage/game_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'core/voice/voice.dart';
@@ -73,10 +74,16 @@ class _RootGate extends StatefulWidget {
 
 class _RootGateState extends State<_RootGate> {
   late bool _consent = GameStorage.instance.consentAccepted;
+  late bool _genderAsked = GameStorage.instance.genderAsked;
 
   @override
   Widget build(BuildContext context) {
-    if (_consent) return const LobbyScreen();
-    return ConsentScreen(onAccept: () => setState(() => _consent = true));
+    if (!_consent) {
+      return ConsentScreen(onAccept: () => setState(() => _consent = true));
+    }
+    if (!_genderAsked) {
+      return GenderScreen(onDone: () => setState(() => _genderAsked = true));
+    }
+    return const LobbyScreen();
   }
 }

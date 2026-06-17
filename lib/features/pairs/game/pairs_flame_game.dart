@@ -26,6 +26,7 @@ class PairsGame extends FlameGame {
     required this.set,
     required this.colors,
     this.onSay,
+    this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
   }) : _rng = random ?? Random();
 
@@ -34,6 +35,9 @@ class PairsGame extends FlameGame {
 
   /// Голосовой хук (хост подключает к `Voice.instance.say`).
   final void Function(String text, {bool flush})? onSay;
+
+  /// Финальная похвала за набор (согласована по полу — задаёт хост).
+  final String setDonePhrase;
 
   final Random _rng;
 
@@ -159,7 +163,7 @@ class PairsGame extends FlameGame {
     _clearBoard();
     earnedStars.value = PairsSet.starsForMismatches(_session.mismatches, set.pairs);
     Sfx.play(SfxEvent.complete);
-    onSay?.call('Молодец! Ты справился!');
+    onSay?.call(setDonePhrase);
     phase.value = PairsPhase.setDone;
   }
 

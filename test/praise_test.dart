@@ -18,4 +18,25 @@ void main() {
       expect(Praise.starsForMistakes(99), 1);
     });
   });
+
+  group('Gender / обращение', () {
+    test('fromId: boy/girl, иначе нейтрально', () {
+      expect(Gender.fromId('boy'), Gender.boy);
+      expect(Gender.fromId('girl'), Gender.girl);
+      expect(Gender.fromId(null), Gender.neutral);
+      expect(Gender.fromId('xxx'), Gender.neutral);
+    });
+
+    test('setDone согласован по роду', () {
+      expect(Praise.setDone(Gender.boy), contains('справился'));
+      expect(Praise.setDone(Gender.girl), contains('справилась'));
+      expect(Praise.setDone(Gender.neutral), isNot(contains('справил')));
+    });
+
+    test('фразы похвалы нейтральны (без «справил…»)', () {
+      for (final p in Praise.phrases) {
+        expect(p.contains('справил'), isFalse, reason: p);
+      }
+    });
+  });
 }

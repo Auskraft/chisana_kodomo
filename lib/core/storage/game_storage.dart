@@ -33,6 +33,17 @@ class GameStorage {
   bool get consentAccepted => _prefs.getBool(_consentKey) ?? false;
   Future<void> acceptConsent() => _prefs.setBool(_consentKey, true);
 
+  // ── Обращение к ребёнку (id: neutral/boy/girl; нейтрально по умолчанию) ──────
+  String get childGender => _prefs.getString('child_gender') ?? 'neutral';
+
+  /// Спрашивали ли пол на первом запуске (чтобы не спрашивать снова).
+  bool get genderAsked => _prefs.getBool('gender_asked') ?? false;
+
+  Future<void> setChildGender(String id) async {
+    await _prefs.setString('child_gender', id);
+    await _prefs.setBool('gender_asked', true);
+  }
+
   // ── Настройки (по умолчанию всё включено) ──────────────────────────────────
   bool get soundOn => _prefs.getBool('sound_on') ?? true;
   Future<void> setSoundOn(bool v) => _prefs.setBool('sound_on', v);

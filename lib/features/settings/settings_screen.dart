@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/audio/sfx.dart';
 import '../../core/feedback/haptics.dart';
 import '../../core/parent_gate/parent_gate.dart';
+import '../../core/praise/praise.dart';
 import '../../core/rating/parent_zone_screen.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
@@ -23,6 +24,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _voiceOn = _s.voiceOn;
   late bool _soundOn = _s.soundOn;
   late bool _hapticsOn = _s.hapticsOn;
+  late Gender _gender = Gender.fromId(_s.childGender);
 
   List<VoiceOption> _voices = const <VoiceOption>[];
   String? _selected = GameStorage.instance.voiceName;
@@ -78,6 +80,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  void _setGender(Gender g) {
+    _s.setChildGender(g.id);
+    Haptics.select();
+    setState(() => _gender = g);
+  }
+
+  String _genderLabel(Gender g) {
+    switch (g) {
+      case Gender.boy:
+        return 'Мальчик';
+      case Gender.girl:
+        return 'Девочка';
+      case Gender.neutral:
+        return 'Нейтрально (по умолчанию)';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
@@ -118,6 +137,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
               Haptics.enabled = v;
             },
           ),
+          const Divider(height: 24),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Обращение к ребёнку',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          for (final g in Gender.values)
+            ListTile(
+              onTap: () => _setGender(g),
+              leading: Icon(
+                _gender == g ? Icons.check_circle_rounded : Icons.circle_outlined,
+                color: _gender == g
+                    ? colors.primary
+                    : colors.onSurface.withValues(alpha: 0.35),
+              ),
+              title: Text(_genderLabel(g)),
+            ),
           const Divider(height: 24),
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),

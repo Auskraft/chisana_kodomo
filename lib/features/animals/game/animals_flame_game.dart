@@ -28,6 +28,7 @@ class AnimalsGame extends FlameGame {
     this.roundsPerSet = 5,
     this.onSay,
     this.onAnimalSound,
+    this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
   }) : _rng = random ?? Random();
 
@@ -39,6 +40,9 @@ class AnimalsGame extends FlameGame {
   /// Хук на звук зверя по [Animal.soundKey] (CC0-файлы — Фаза 5). Может быть
   /// null/тихим, пока файлов нет; озвучка имени голосом работает в любом случае.
   final void Function(String soundKey)? onAnimalSound;
+
+  /// Финальная похвала за набор (согласована по полу — задаёт хост).
+  final String setDonePhrase;
 
   final Random _rng;
 
@@ -142,7 +146,7 @@ class AnimalsGame extends FlameGame {
     _clearRound();
     earnedStars.value = Praise.starsForMistakes(_mistakes);
     Sfx.play(SfxEvent.complete);
-    onSay?.call('Молодец! Ты справился!');
+    onSay?.call(setDonePhrase);
     phase.value = AnimalsPhase.setDone;
   }
 

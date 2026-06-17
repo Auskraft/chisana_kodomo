@@ -81,6 +81,7 @@ class ColorsShapesGame extends FlameGame {
     required this.colors,
     this.roundsPerSet = 5,
     this.onSay,
+    this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
   }) : _rng = random ?? Random();
 
@@ -88,6 +89,7 @@ class ColorsShapesGame extends FlameGame {
   final AppColors colors;
   final int roundsPerSet;
   final void Function(String text, {bool flush})? onSay;
+  final String setDonePhrase;
   final Random _rng;
 
   late final CSSession _session;
@@ -179,7 +181,7 @@ class ColorsShapesGame extends FlameGame {
     _clearRound();
     earnedStars.value = Praise.starsForMistakes(_mistakes);
     Sfx.play(SfxEvent.complete);
-    onSay?.call('Молодец! Ты справился!');
+    onSay?.call(setDonePhrase);
     phase.value = CSPhase.setDone;
   }
 
