@@ -26,7 +26,7 @@ void main() {
       px[i + 1] = 0;
       px[i + 2] = 0;
     }
-    final n = floodFill(px, w, h, 0, 0, r: 255, g: 0, b: 0);
+    final n = floodFill(px, w, h, 0, 0, r: 255, g: 0, b: 0).length;
     expect(n, 6); // столбцы 0–1 × 3 строки
 
     // Левая часть стала красной.
@@ -43,23 +43,35 @@ void main() {
     expect(px[right + 2], 255);
   });
 
-  test('повторная заливка тем же цветом ничего не делает', () {
+  test('повторная заливка светлым тем же цветом ничего не делает', () {
     final px = _grid(2, 2, 255);
-    floodFill(px, 2, 2, 0, 0, r: 10, g: 20, b: 30);
-    final n = floodFill(px, 2, 2, 0, 0, r: 10, g: 20, b: 30);
+    floodFill(px, 2, 2, 0, 0, r: 200, g: 200, b: 200);
+    final n = floodFill(px, 2, 2, 0, 0, r: 200, g: 200, b: 200).length;
     expect(n, 0);
   });
 
-  test('старт вне границ — 0 пикселей', () {
-    final px = _grid(2, 2, 255);
-    expect(floodFill(px, 2, 2, -1, 0, r: 1, g: 2, b: 3), 0);
-    expect(floodFill(px, 2, 2, 5, 5, r: 1, g: 2, b: 3), 0);
+  test('тап по тёмному контуру не заливает', () {
+    final px = _grid(3, 3, 255);
+    // Центральный пиксель — чёрный «контур».
+    final c = (1 * 3 + 1) * 4;
+    px[c] = 0;
+    px[c + 1] = 0;
+    px[c + 2] = 0;
+    final n = floodFill(px, 3, 3, 1, 1, r: 255, g: 0, b: 0).length;
+    expect(n, 0); // старт на контуре → ничего
+    expect(px[c], 0); // контур цел
   });
 
-  test('сплошное поле заливается целиком', () {
+  test('старт вне границ — пусто', () {
+    final px = _grid(2, 2, 255);
+    expect(floodFill(px, 2, 2, -1, 0, r: 1, g: 2, b: 3), isEmpty);
+    expect(floodFill(px, 2, 2, 5, 5, r: 1, g: 2, b: 3), isEmpty);
+  });
+
+  test('сплошное светлое поле заливается целиком', () {
     const w = 4, h = 4;
     final px = _grid(w, h, 250);
-    final n = floodFill(px, w, h, 1, 1, r: 0, g: 128, b: 0);
+    final n = floodFill(px, w, h, 1, 1, r: 0, g: 128, b: 0).length;
     expect(n, w * h);
   });
 }

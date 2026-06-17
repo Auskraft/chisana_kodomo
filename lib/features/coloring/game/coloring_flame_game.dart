@@ -33,8 +33,14 @@ class ColoringGame extends FlameGame {
   final ValueNotifier<ColoringMode> mode =
       ValueNotifier<ColoringMode>(ColoringMode.fill);
   final ValueNotifier<int> selectedColor = ValueNotifier<int>(0);
+  final ValueNotifier<Color?> pickedColor = ValueNotifier<Color?>(null);
   final ValueNotifier<int> pictureIndex = ValueNotifier<int>(0);
   final ValueNotifier<bool> completed = ValueNotifier<bool>(false);
+
+  /// Активный цвет кисти: выбранный в пикере или из палитры.
+  Color get brushColor =>
+      pickedColor.value ??
+      kColoringPalette[selectedColor.value % kColoringPalette.length];
 
   ColoringState? _state;
   bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
@@ -68,7 +74,13 @@ class ColoringGame extends FlameGame {
     _rebuild();
   }
 
-  void setColor(int i) => selectedColor.value = i;
+  void setColor(int i) {
+    selectedColor.value = i;
+    pickedColor.value = null; // выбор из палитры сбрасывает пикер
+  }
+
+  /// Произвольный цвет из колор-пикера.
+  void setPickedColor(Color c) => pickedColor.value = c;
 
   void setPicture(int i) {
     final len = _sourceLength;
@@ -91,6 +103,19 @@ class ColoringGame extends FlameGame {
       if (pics.isNotEmpty) pics.first.reset();
     } else {
       _state?.clear();
+    }
+  }
+
+  /// Отменить последнее действие (заливку/штрих) в текущем режиме.
+  void undo() {
+    if (mode.value == ColoringMode.freeDraw) {
+      final cs = children.whereType<_FreeCanvas>().toList();
+      if (cs.isNotEmpty) cs.first.undoStroke();
+    } else if (_useRaster) {
+      final pics = children.whereType<_RasterPicture>().toList();
+      if (pics.isNotEmpty) pics.first.undo();
+    } else {
+      _state?.undo();
     }
   }
 
@@ -297,12 +322,16 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
     _current = null;
   }
 
+  void undoStroke() {
+    if (_strokes.isNotEmpty) _strokes.removeLast();
+    _current = null;
+  }
+
   @override
   void onDragStart(DragStartEvent event) {
     super.onDragStart(event);
-    final stroke = _Stroke(
-      kColoringPalette[owner.selectedColor.value % kColoringPalette.length],
-    )..points.add(event.localPosition.toOffset());
+    final stroke = _Stroke(owner.brushColor)
+      ..points.add(event.localPosition.toOffset());
     _strokes.add(stroke);
     _current = stroke;
     Haptics.tap();
@@ -360,6 +389,7 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
   int _h = 0;
   Rect _imgRect = Rect.zero;
   bool _rebuilding = false;
+  final List<_FillStep> _undo = <_FillStep>[];
 
   @override
   Future<void> onLoad() async {
@@ -447,11 +477,14 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
 
     final ix = (((lp.dx - _imgRect.left) / _imgRect.width) * _w).floor();
     final iy = (((lp.dy - _imgRect.top) / _imgRect.height) * _h).floor();
-    final argb =
-        kColoringPalette[owner.selectedColor.value % kColoringPalette.length]
-            .toARGB32();
+    if (ix < 0 || iy < 0 || ix >= _w || iy >= _h) return;
+    final startByte = (iy * _w + ix) * 4;
+    final pr = px[startByte];
+    final pg = px[startByte + 1];
+    final pb = px[startByte + 2];
 
-    final n = floodFill(
+    final argb = owner.brushColor.toARGB32();
+    final filled = floodFill(
       px,
       _w,
       _h,
@@ -462,13 +495,31 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
       b: argb & 0xFF,
       tolerance: 72,
     );
-    if (n > 0) {
+    if (filled.isNotEmpty) {
+      _undo.add(_FillStep(filled, pr, pg, pb));
+      if (_undo.length > 24) _undo.removeAt(0);
       Sfx.play(SfxEvent.tap);
       Haptics.tap();
       _rebuildDisplay();
     } else {
       Sfx.play(SfxEvent.soft);
     }
+  }
+
+  /// Отменить последнюю заливку.
+  void undo() {
+    final px = _px;
+    if (px == null || _undo.isEmpty) return;
+    final step = _undo.removeLast();
+    for (final p in step.indices) {
+      final i = p * 4;
+      px[i] = step.r;
+      px[i + 1] = step.g;
+      px[i + 2] = step.b;
+      px[i + 3] = 255;
+    }
+    Haptics.tap();
+    _rebuildDisplay();
   }
 
   void _rebuildDisplay() {
@@ -484,7 +535,17 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
 
   /// Сбросить к исходной картинке (кнопка «Заново»).
   Future<void> reset() async {
+    _undo.clear();
     await _loadOriginal();
     _layout();
   }
+}
+
+/// Шаг отмены растровой заливки: какие пиксели и их прежний цвет.
+class _FillStep {
+  _FillStep(this.indices, this.r, this.g, this.b);
+  final List<int> indices;
+  final int r;
+  final int g;
+  final int b;
 }

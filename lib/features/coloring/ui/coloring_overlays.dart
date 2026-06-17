@@ -70,14 +70,20 @@ class ColoringBottomBar extends StatelessWidget {
     super.key,
     required this.mode,
     required this.selectedColor,
+    required this.pickedColor,
     required this.onColor,
+    required this.onPick,
+    required this.onUndo,
     required this.onClear,
     required this.onNextPicture,
   });
 
   final ColoringMode mode;
   final int selectedColor;
+  final Color? pickedColor;
   final ValueChanged<int> onColor;
+  final VoidCallback onPick;
+  final VoidCallback onUndo;
   final VoidCallback onClear;
   final VoidCallback onNextPicture;
 
@@ -112,27 +118,34 @@ class ColoringBottomBar extends StatelessWidget {
                   _Swatch(
                     index: i,
                     color: kColoringPalette[i],
-                    selected: i == selectedColor,
+                    selected: pickedColor == null && i == selectedColor,
                     showNumber: mode == ColoringMode.byNumber,
                     colors: colors,
                     onTap: () => onColor(i),
                   ),
+                if (mode != ColoringMode.byNumber)
+                  _PickerSwatch(
+                    active: pickedColor != null,
+                    color: pickedColor,
+                    colors: colors,
+                    onTap: onPick,
+                  ),
               ],
             ),
-            const SizedBox(height: 10),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            const SizedBox(height: 6),
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 4,
               children: <Widget>[
+                _ActionBtn(icon: Icons.undo_rounded, label: 'Отменить', colors: colors, onTap: onUndo),
                 _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
-                if (mode != ColoringMode.freeDraw) ...<Widget>[
-                  const SizedBox(width: 12),
+                if (mode != ColoringMode.freeDraw)
                   _ActionBtn(
                     icon: Icons.image_rounded,
                     label: 'Картинка',
                     colors: colors,
                     onTap: onNextPicture,
                   ),
-                ],
               ],
             ),
           ],
@@ -235,6 +248,58 @@ class _Swatch extends StatelessWidget {
                 ),
               )
             : null,
+      ),
+    );
+  }
+}
+
+class _PickerSwatch extends StatelessWidget {
+  const _PickerSwatch({
+    required this.active,
+    required this.color,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final bool active;
+  final Color? color;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: color,
+          gradient: color == null
+              ? const SweepGradient(colors: <Color>[
+                  Color(0xFFE53935),
+                  Color(0xFFFFEB3B),
+                  Color(0xFF66BB6A),
+                  Color(0xFF42A5F5),
+                  Color(0xFFAB47BC),
+                  Color(0xFFE53935),
+                ])
+              : null,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: active ? colors.onSurface : Colors.white.withValues(alpha: 0.8),
+            width: active ? 4 : 2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.18),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        alignment: Alignment.center,
+        child: Icon(Icons.colorize_rounded, size: 18, color: Colors.white.withValues(alpha: 0.95)),
       ),
     );
   }

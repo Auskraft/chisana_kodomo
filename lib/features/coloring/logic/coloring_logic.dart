@@ -60,6 +60,7 @@ class ColoringState {
   final ColoringMode mode;
 
   final Map<int, int> _fill = <int, int>{}; // regionId → индекс цвета палитры
+  final List<MapEntry<int, int?>> _history = <MapEntry<int, int?>>[]; // для отмены
 
   /// Текущий цвет области (или null, если не закрашена).
   int? colorOf(int regionId) => _fill[regionId];
@@ -73,6 +74,7 @@ class ColoringState {
     if (mode == ColoringMode.byNumber && region.targetColor != colorIndex) {
       return const FillResult(applied: false, correct: false, complete: false);
     }
+    _history.add(MapEntry<int, int?>(regionId, _fill[regionId]));
     _fill[regionId] = colorIndex;
     return FillResult(applied: true, correct: true, complete: isComplete);
   }
@@ -101,5 +103,23 @@ class ColoringState {
   }
 
   /// Сбросить все заливки (кнопка «заново»).
-  void clear() => _fill.clear();
+  void clear() {
+    _fill.clear();
+    _history.clear();
+  }
+
+  /// Можно ли отменить последнюю заливку.
+  bool get canUndo => _history.isNotEmpty;
+
+  /// Отменить последнюю заливку.
+  void undo() {
+    if (_history.isEmpty) return;
+    final last = _history.removeLast();
+    final prev = last.value;
+    if (prev == null) {
+      _fill.remove(last.key);
+    } else {
+      _fill[last.key] = prev;
+    }
+  }
 }

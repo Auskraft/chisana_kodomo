@@ -1,5 +1,6 @@
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../core/components/overlay_kit.dart';
 import '../../core/theme/app_colors.dart';
@@ -41,6 +42,37 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
     Navigator.of(context).pop();
   }
 
+  /// Колор-пикер: выбрать произвольный цвет кисти.
+  Future<void> _openPicker() async {
+    var picked = _game.brushColor;
+    final result = await showDialog<Color>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Выбери цвет'),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: picked,
+            onColorChanged: (Color c) => picked = c,
+            enableAlpha: false,
+            labelTypes: const <ColorLabelType>[],
+            pickerAreaHeightPercent: 0.7,
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Отмена'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(picked),
+            child: const Text('Готово'),
+          ),
+        ],
+      ),
+    );
+    if (result != null) _game.setPickedColor(result);
+  }
+
   @override
   void dispose() {
     _game.completed.removeListener(_onCompleted);
@@ -69,17 +101,19 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
           // Нижняя панель — палитра и действия.
           Align(
             alignment: Alignment.bottomCenter,
-            child: ValueListenableBuilder<ColoringMode>(
-              valueListenable: _game.mode,
-              builder: (context, mode, _) => ValueListenableBuilder<int>(
-                valueListenable: _game.selectedColor,
-                builder: (context, sel, _) => ColoringBottomBar(
-                  mode: mode,
-                  selectedColor: sel,
-                  onColor: _game.setColor,
-                  onClear: _game.clearArt,
-                  onNextPicture: _game.nextPicture,
-                ),
+            child: ListenableBuilder(
+              listenable: Listenable.merge(
+                <Listenable>[_game.mode, _game.selectedColor, _game.pickedColor],
+              ),
+              builder: (context, _) => ColoringBottomBar(
+                mode: _game.mode.value,
+                selectedColor: _game.selectedColor.value,
+                pickedColor: _game.pickedColor.value,
+                onColor: _game.setColor,
+                onPick: _openPicker,
+                onUndo: _game.undo,
+                onClear: _game.clearArt,
+                onNextPicture: _game.nextPicture,
               ),
             ),
           ),
