@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
+import '../animals/animals_game_screen.dart';
+import '../animals/logic/animals_logic.dart';
 import '../colors_shapes/colors_shapes_game_screen.dart';
 import '../colors_shapes/logic/colors_shapes_logic.dart';
 import '../counting/counting_game_screen.dart';
@@ -30,7 +32,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _Game('pairs', 'Парочки', '🃏', playable: true),
     _Game('colors_shapes', 'Цвета и формы', '🎨',
         image: 'assets/games/form-main.png', playable: true),
-    _Game('animals', 'Звуки животных', '🐶'),
+    _Game('animals', 'Звуки животных', '🐶', playable: true),
     _Game('music', 'Музыка', '🎹', image: 'assets/games/music-main.png'),
     _Game('coloring', 'Раскраска', '🖍️'),
   ];
@@ -61,6 +63,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'pairs':
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => PairsGameScreen(set: PairsSet.all.first),
+        ));
+      case 'animals':
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => AnimalsGameScreen(set: AnimalSet.all.first),
         ));
     }
   }
