@@ -47,6 +47,14 @@ class GameStorage {
   String get themeId => _prefs.getString('theme_id') ?? 'daylight';
   Future<void> setThemeId(String id) => _prefs.setString('theme_id', id);
 
+  // ── Выбранный системный голос TTS (имя + локаль движка) ─────────────────────
+  String? get voiceName => _prefs.getString('voice_name');
+  String? get voiceLocale => _prefs.getString('voice_locale');
+  Future<void> setVoiceChoice(String name, String locale) async {
+    await _prefs.setString('voice_name', name);
+    await _prefs.setString('voice_locale', locale);
+  }
+
   // ── Прогресс по играм: открытые наборы + звёзды за набор ────────────────────
   // Ключи живут по id игры (= папка/feature), как и в сборнике-эталоне.
 

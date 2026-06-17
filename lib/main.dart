@@ -22,7 +22,10 @@ Future<void> main() async {
   Voice.instance.enabled = storage.voiceOn;
 
   await Future.wait(<Future<void>>[
-    Voice.instance.init(), // читает настройки голоса, no-op без TTS
+    Voice.instance.init(
+      voiceName: storage.voiceName,
+      voiceLocale: storage.voiceLocale,
+    ),
     _enableHighRefreshRate(),
   ]);
 

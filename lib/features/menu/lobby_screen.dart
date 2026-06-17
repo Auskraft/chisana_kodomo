@@ -199,7 +199,21 @@ class _TeaserCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(size * 0.22);
-    final card = Container(
+    final title = Padding(
+      padding: EdgeInsets.symmetric(horizontal: size * 0.06),
+      child: Text(
+        teaser.title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: colors.onSurface.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
+
+    final Widget card = DecoratedBox(
       decoration: BoxDecoration(
         color: colors.surface,
         borderRadius: radius,
@@ -211,39 +225,39 @@ class _TeaserCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          if (teaser.image != null)
-            SizedBox(
-              width: size * 0.62,
-              height: size * 0.62,
-              child: Image.asset(
-                teaser.image!,
-                fit: BoxFit.contain,
-                errorBuilder: (_, _, _) => Text(
-                  teaser.emoji,
-                  style: TextStyle(fontSize: size * 0.4),
-                ),
-              ),
-            )
-          else
-            Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
-          SizedBox(height: size * 0.04),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: size * 0.06),
-            child: Text(
-              teaser.title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w700,
+      child: ClipRRect(
+        borderRadius: radius,
+        child: teaser.image != null
+            // Картинка заполняет карточку целиком (без белых полей), подпись —
+            // полоской под ней.
+            ? Column(
+                children: <Widget>[
+                  Expanded(
+                    child: Image.asset(
+                      teaser.image!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      errorBuilder: (_, _, _) => Center(
+                        child: Text(teaser.emoji,
+                            style: TextStyle(fontSize: size * 0.4)),
+                      ),
+                    ),
                   ),
-            ),
-          ),
-        ],
+                  Padding(
+                    padding:
+                        EdgeInsets.only(top: size * 0.05, bottom: size * 0.06),
+                    child: title,
+                  ),
+                ],
+              )
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
+                  SizedBox(height: size * 0.06),
+                  title,
+                ],
+              ),
       ),
     );
 

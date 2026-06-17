@@ -44,6 +44,7 @@ class CountingGame extends FlameGame {
   late final CountingSession _session;
   int _mistakes = 0;
   bool _locked = false; // короткая блокировка ввода после успеха
+  String? _lastEmoji; // чтобы соседние раунды не повторяли эмодзи
 
   /// Текущая фаза (ready → playing → setDone).
   final ValueNotifier<CountPhase> phase = ValueNotifier<CountPhase>(
@@ -125,6 +126,16 @@ class CountingGame extends FlameGame {
 
   // ── Поток раундов ───────────────────────────────────────────────────────────
 
+  /// Эмодзи раунда — отличный от прошлого (чтобы наборы не повторялись подряд).
+  String _pickEmoji() {
+    String e;
+    do {
+      e = _emojiPool[_rng.nextInt(_emojiPool.length)];
+    } while (e == _lastEmoji && _emojiPool.length > 1);
+    _lastEmoji = e;
+    return e;
+  }
+
   void _buildRound() {
     _locked = false;
     _clearRound();
@@ -132,7 +143,7 @@ class CountingGame extends FlameGame {
     add(_RoundComponent(
       owner: this,
       round: round,
-      emoji: _emojiPool[_rng.nextInt(_emojiPool.length)],
+      emoji: _pickEmoji(),
     ));
     // Подсказку — в очередь (не перебивает похвалу прошлого раунда); на старте
     // набора (раунд 1) можно сразу.
@@ -278,6 +289,7 @@ class _RoundComponent extends PositionComponent {
         add(_TapEmoji(
           side: side,
           emoji: emoji,
+          colors: owner.colors,
           position: pos,
           onCount: owner.onObjectCounted,
         ));
@@ -311,11 +323,13 @@ class _TapEmoji extends PositionComponent with TapCallbacks {
   _TapEmoji({
     required double side,
     required this.emoji,
+    required this.colors,
     required this.onCount,
     super.position,
   }) : super(size: Vector2.all(side), anchor: Anchor.center);
 
   final String emoji;
+  final AppColors colors;
   final VoidCallback onCount;
   bool _counted = false;
 
@@ -336,6 +350,26 @@ class _TapEmoji extends PositionComponent with TapCallbacks {
     add(ScaleEffect.to(
       Vector2.all(1.22),
       EffectController(duration: 0.1, alternate: true),
+    ));
+    // Посчитанный объект гасим (вуаль) и ставим галочку — видно, что нажат
+    // и нельзя нажать повторно.
+    add(CircleComponent(
+      radius: size.x * 0.5,
+      anchor: Anchor.center,
+      position: size / 2,
+      paint: Paint()..color = colors.background.withValues(alpha: 0.62),
+    ));
+    add(TextComponent(
+      text: '✓',
+      anchor: Anchor.center,
+      position: size / 2,
+      textRenderer: TextPaint(
+        style: TextStyle(
+          fontSize: size.x * 0.5,
+          color: colors.success,
+          fontWeight: FontWeight.w900,
+        ),
+      ),
     ));
     onCount();
   }
