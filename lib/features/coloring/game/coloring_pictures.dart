@@ -178,48 +178,108 @@ abstract final class ColoringGallery {
   static final List<PaintablePicture> all = <PaintablePicture>[house, flower];
 }
 
-/// Динамическая галерея растровых раскрасок: все картинки из `assets/coloring/`
-/// (PNG/JPG). Заполняется из манифеста ассетов один раз. Контурные рисунки
-/// (CC0/Magnific) кладёт владелец — появятся здесь автоматически, без правок кода.
+// ── Категории раскрасок (тема × уровень сложности) ──────────────────────────────
+
+/// Метаданные категории для селектора: подпись (RU) и эмодзи-иконка.
+class ColoringCategoryMeta {
+  const ColoringCategoryMeta(this.label, this.emoji);
+  final String label;
+  final String emoji;
+}
+
+/// Известные темы: подпись + эмодзи. Папка — `assets/coloring/<ключ>/<уровень>/`.
+/// Незнакомый ключ-папка тоже работает (подпись = ключ, иконка 🎨).
+const Map<String, ColoringCategoryMeta> kColoringCategoryMeta =
+    <String, ColoringCategoryMeta>{
+  'animals': ColoringCategoryMeta('Животные', '🐶'),
+  'cars': ColoringCategoryMeta('Транспорт', '🚗'),
+  'nature': ColoringCategoryMeta('Природа', '🌼'),
+  'food': ColoringCategoryMeta('Еда', '🍎'),
+};
+
+/// Порядок тем в селекторе: известные — в этом порядке, прочие — после.
+const List<String> kColoringCategoryOrder = <String>[
+  'animals', 'cars', 'nature', 'food',
+];
+
+/// Метаданные темы по ключу (с фолбэком для незнакомых папок).
+ColoringCategoryMeta coloringCategoryMeta(String key) =>
+    kColoringCategoryMeta[key] ?? ColoringCategoryMeta(key, '🎨');
+
+/// Разобрать путь ассета раскраски `assets/coloring/<кат>/<уровень>/<файл>`.
+/// Возвращает (категория, уровень) либо null, если путь не подходит (не картинка,
+/// нет сегмента темы/уровня). Чистая функция — тестируется без бандла.
+({String category, int level})? parseColoringAsset(String path) {
+  const prefix = 'assets/coloring/';
+  if (!path.startsWith(prefix)) return null;
+  final lower = path.toLowerCase();
+  if (!(lower.endsWith('.png') ||
+      lower.endsWith('.jpg') ||
+      lower.endsWith('.jpeg'))) {
+    return null;
+  }
+  final parts = path.substring(prefix.length).split('/');
+  if (parts.length < 3) return null; // нужно <кат>/<уровень>/<файл>
+  final category = parts[0];
+  final level = int.tryParse(parts[1]);
+  if (category.isEmpty || level == null) return null;
+  return (category: category, level: level);
+}
+
+/// Динамическая галерея растровых раскрасок: картинки из
+/// `assets/coloring/<тема>/<уровень>/` (PNG/JPG), сгруппированные по теме и
+/// уровню. Заполняется из манифеста ассетов один раз. Контурные рисунки
+/// (CC0/Magnific) кладёт владелец — появляются здесь автоматически, без правок кода.
 abstract final class RasterGallery {
-  static Map<int, List<String>> _byLevel = const <int, List<String>>{};
+  static Map<String, Map<int, List<String>>> _byCat =
+      const <String, Map<int, List<String>>>{};
   static bool _loaded = false;
 
   /// Есть ли вообще растровые раскраски.
-  static bool get hasImages => _byLevel.isNotEmpty;
+  static bool get hasImages => _byCat.isNotEmpty;
 
-  /// Доступные уровни сложности (по возрастанию) — те, где есть картинки.
-  static List<int> get levels => _byLevel.keys.toList()..sort();
+  /// Темы с картинками — известные в заданном порядке, прочие после (по алфавиту).
+  static List<String> get categories {
+    final present = _byCat.keys.toSet();
+    final ordered = <String>[
+      for (final k in kColoringCategoryOrder)
+        if (present.contains(k)) k,
+    ];
+    final extras =
+        present.where((k) => !kColoringCategoryOrder.contains(k)).toList()
+          ..sort();
+    return <String>[...ordered, ...extras];
+  }
 
-  /// Картинки уровня [level] (папка `assets/coloring/<level>/`).
-  static List<String> imagesForLevel(int level) =>
-      _byLevel[level] ?? const <String>[];
+  /// Уровни темы [category] с картинками (по возрастанию).
+  static List<int> levelsFor(String category) =>
+      (_byCat[category]?.keys.toList() ?? <int>[])..sort();
+
+  /// Картинки темы [category] и уровня [level].
+  static List<String> imagesFor(String category, int level) =>
+      _byCat[category]?[level] ?? const <String>[];
 
   static Future<void> ensureLoaded() async {
     if (_loaded) return;
     _loaded = true;
     try {
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      final map = <int, List<String>>{};
+      final map = <String, Map<int, List<String>>>{};
       for (final k in manifest.listAssets()) {
-        if (!k.startsWith('assets/coloring/')) continue;
-        if (!(k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg'))) {
-          continue;
+        final parsed = parseColoringAsset(k);
+        if (parsed == null) continue;
+        ((map[parsed.category] ??= <int, List<String>>{})[parsed.level] ??=
+            <String>[])
+            .add(k);
+      }
+      for (final byLevel in map.values) {
+        for (final list in byLevel.values) {
+          list.sort();
         }
-        // Путь вида assets/coloring/<уровень>/<файл> — берём номер уровня.
-        final rest = k.substring('assets/coloring/'.length);
-        final slash = rest.indexOf('/');
-        if (slash <= 0) continue; // файл в корне (без уровня) — пропускаем
-        final lvl = int.tryParse(rest.substring(0, slash));
-        if (lvl == null) continue;
-        (map[lvl] ??= <String>[]).add(k);
       }
-      for (final list in map.values) {
-        list.sort();
-      }
-      _byLevel = map;
+      _byCat = map;
     } catch (_) {
-      _byLevel = const <int, List<String>>{};
+      _byCat = const <String, Map<int, List<String>>>{};
     }
   }
 }

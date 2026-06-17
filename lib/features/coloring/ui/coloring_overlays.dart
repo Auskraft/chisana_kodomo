@@ -71,10 +71,13 @@ class ColoringBottomBar extends StatelessWidget {
     required this.mode,
     required this.selectedColor,
     required this.pickedColor,
+    required this.category,
+    required this.categories,
     required this.level,
     required this.availableLevels,
     required this.onColor,
     required this.onPick,
+    required this.onCategory,
     required this.onLevel,
     required this.onUndo,
     required this.onRedo,
@@ -85,10 +88,13 @@ class ColoringBottomBar extends StatelessWidget {
   final ColoringMode mode;
   final int selectedColor;
   final Color? pickedColor;
+  final String category;
+  final List<String> categories;
   final int level;
   final List<int> availableLevels;
   final ValueChanged<int> onColor;
   final VoidCallback onPick;
+  final ValueChanged<String> onCategory;
   final ValueChanged<int> onLevel;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
@@ -117,33 +123,54 @@ class ColoringBottomBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (mode == ColoringMode.fill && availableLevels.isNotEmpty) ...<Widget>[
-              Wrap(
-                alignment: WrapAlignment.center,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
-                children: <Widget>[
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Text(
-                      'Уровень',
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                            color: colors.onSurface.withValues(alpha: 0.6),
-                            fontWeight: FontWeight.w700,
-                          ),
+            if (mode == ColoringMode.fill) ...<Widget>[
+              // Лента выбора темы (показываем, если тем с картинками ≥ 2).
+              if (categories.length >= 2) ...<Widget>[
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    for (final c in categories)
+                      _CategoryChip(
+                        categoryKey: c,
+                        selected: c == category,
+                        colors: colors,
+                        onTap: () => onCategory(c),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+              ],
+              // Уровень сложности внутри темы (показываем, если уровней ≥ 2).
+              if (availableLevels.length >= 2) ...<Widget>[
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  children: <Widget>[
+                    Padding(
+                      padding: const EdgeInsets.only(right: 4),
+                      child: Text(
+                        'Уровень',
+                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                              color: colors.onSurface.withValues(alpha: 0.6),
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
                     ),
-                  ),
-                  for (var l = 1; l <= 5; l++)
-                    _LevelChip(
-                      n: l,
-                      selected: l == level,
-                      enabled: availableLevels.contains(l),
-                      colors: colors,
-                      onTap: () => onLevel(l),
-                    ),
-                ],
-              ),
-              const SizedBox(height: 10),
+                    for (var l = 1; l <= 5; l++)
+                      _LevelChip(
+                        n: l,
+                        selected: l == level,
+                        enabled: availableLevels.contains(l),
+                        colors: colors,
+                        onTap: () => onLevel(l),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+              ],
             ],
             Wrap(
               spacing: 10,
@@ -383,6 +410,56 @@ class _LevelChip extends StatelessWidget {
               color: selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.8),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Чип выбора темы раскрасок: эмодзи + название (из [coloringCategoryMeta]).
+class _CategoryChip extends StatelessWidget {
+  const _CategoryChip({
+    required this.categoryKey,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final String categoryKey;
+  final bool selected;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = coloringCategoryMeta(categoryKey);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? colors.primary : colors.onSurface.withValues(alpha: 0.12),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(meta.emoji, style: const TextStyle(fontSize: 18)),
+            const SizedBox(width: 6),
+            Text(
+              meta.label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: selected
+                        ? colors.onPrimary
+                        : colors.onSurface.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ],
         ),
       ),
     );

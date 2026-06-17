@@ -35,6 +35,7 @@ class ColoringGame extends FlameGame {
   final ValueNotifier<int> selectedColor = ValueNotifier<int>(0);
   final ValueNotifier<Color?> pickedColor = ValueNotifier<Color?>(null);
   final ValueNotifier<int> pictureIndex = ValueNotifier<int>(0);
+  final ValueNotifier<String> category = ValueNotifier<String>(''); // тема раскрасок
   final ValueNotifier<int> level = ValueNotifier<int>(1); // уровень сложности
   final ValueNotifier<bool> completed = ValueNotifier<bool>(false);
 
@@ -43,8 +44,11 @@ class ColoringGame extends FlameGame {
       pickedColor.value ??
       kColoringPalette[selectedColor.value % kColoringPalette.length];
 
-  /// Доступные уровни сложности раскрасок (с картинками).
-  List<int> get coloringLevels => RasterGallery.levels;
+  /// Доступные темы раскрасок (с картинками).
+  List<String> get coloringCategories => RasterGallery.categories;
+
+  /// Доступные уровни сложности в текущей теме (с картинками).
+  List<int> get coloringLevels => RasterGallery.levelsFor(category.value);
 
   ColoringState? _state;
   bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
@@ -54,10 +58,10 @@ class ColoringGame extends FlameGame {
   /// иначе — векторные фигуры (Домик/Цветок). «По номерам» — всегда векторные.
   bool get _useRaster =>
       mode.value == ColoringMode.fill &&
-      RasterGallery.imagesForLevel(level.value).isNotEmpty;
+      RasterGallery.imagesFor(category.value, level.value).isNotEmpty;
 
   int get _sourceLength => _useRaster
-      ? RasterGallery.imagesForLevel(level.value).length
+      ? RasterGallery.imagesFor(category.value, level.value).length
       : ColoringGallery.all.length;
 
   PaintablePicture get _picture =>
@@ -69,7 +73,11 @@ class ColoringGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await RasterGallery.ensureLoaded();
-    if (RasterGallery.hasImages) level.value = RasterGallery.levels.first;
+    if (RasterGallery.hasImages) {
+      category.value = RasterGallery.categories.first;
+      final levels = RasterGallery.levelsFor(category.value);
+      if (levels.isNotEmpty) level.value = levels.first;
+    }
     _rebuild();
   }
 
@@ -98,7 +106,20 @@ class ColoringGame extends FlameGame {
 
   void nextPicture() => setPicture(pictureIndex.value + 1);
 
-  /// Выбрать уровень сложности раскрасок (папка `assets/coloring/<level>/`).
+  /// Выбрать тему раскрасок (`assets/coloring/<тема>/`). Сбрасывает уровень на
+  /// первый доступный в новой теме.
+  void setCategory(String c) {
+    if (category.value == c) return;
+    category.value = c;
+    final levels = RasterGallery.levelsFor(c);
+    level.value = levels.isEmpty ? 1 : levels.first;
+    pictureIndex.value = 0;
+    completed.value = false;
+    _rebuild();
+  }
+
+  /// Выбрать уровень сложности раскрасок в текущей теме
+  /// (`assets/coloring/<тема>/<level>/`).
   void setLevel(int l) {
     if (level.value == l) return;
     level.value = l;
@@ -160,7 +181,7 @@ class ColoringGame extends FlameGame {
       add(_FreeCanvas(owner: this));
     } else if (_useRaster) {
       _state = null;
-      final imgs = RasterGallery.imagesForLevel(level.value);
+      final imgs = RasterGallery.imagesFor(category.value, level.value);
       add(_RasterPicture(owner: this, asset: imgs[pictureIndex.value % imgs.length]));
     } else {
       _state = ColoringState(_picture.toModel(), mode: mode.value);
