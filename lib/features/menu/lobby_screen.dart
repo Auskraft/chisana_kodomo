@@ -12,7 +12,10 @@ import '../counting/logic/counting_logic.dart';
 import '../music/music_game_screen.dart';
 import '../pairs/logic/pairs_logic.dart';
 import '../pairs/pairs_game_screen.dart';
+import '../rewards/logic/rewards_logic.dart';
+import '../rewards/rewards_screen.dart';
 import '../settings/settings_screen.dart';
+import 'set_picker_screen.dart';
 
 /// Кол-во фоновых сцен (`assets/backgrounds/1..N.png`). Переключаются в Настройках.
 const int kBackgroundCount = 9;
@@ -41,6 +44,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
+  late int _stars = _computeStars();
+
+  int _computeStars() {
+    final s = GameStorage.instance;
+    return RewardsCatalog.games
+        .fold<int>(0, (int a, StarGame g) => a + s.totalStars(g.id, g.setCount));
+  }
 
   Future<void> _openSettings() async {
     await Navigator.of(context).push(
@@ -53,33 +63,50 @@ class _LobbyScreenState extends State<LobbyScreen> {
     }
   }
 
-  void _open(_Game g) {
+  Future<void> _openRewards() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const RewardsScreen()),
+    );
+    if (mounted) setState(() => _stars = _computeStars());
+  }
+
+  /// Открыть игру. Игры со звёздами идут через выбор набора; игрушки — напрямую.
+  Future<void> _openGame(_Game g) async {
     switch (g.id) {
       case 'counting':
-        Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => CountingGameScreen(set: CountSet.all.first),
-        ));
-      case 'colors_shapes':
-        Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => ColorsShapesGameScreen(set: CSSet.all.first),
-        ));
+        await _openSets(g, CountSet.all.length,
+            (int i) => CountingGameScreen(set: CountSet.all[i]));
       case 'pairs':
-        Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => PairsGameScreen(set: PairsSet.all.first),
-        ));
+        await _openSets(g, PairsSet.all.length,
+            (int i) => PairsGameScreen(set: PairsSet.all[i]));
+      case 'colors_shapes':
+        await _openSets(g, CSSet.all.length,
+            (int i) => ColorsShapesGameScreen(set: CSSet.all[i]));
       case 'animals':
-        Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => AnimalsGameScreen(set: AnimalSet.all.first),
-        ));
+        await _openSets(g, AnimalSet.all.length,
+            (int i) => AnimalsGameScreen(set: AnimalSet.all[i]));
       case 'music':
-        Navigator.of(context).push(MaterialPageRoute<void>(
+        await Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const MusicGameScreen(),
         ));
       case 'coloring':
-        Navigator.of(context).push(MaterialPageRoute<void>(
+        await Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const ColoringGameScreen(),
         ));
     }
+    if (mounted) setState(() => _stars = _computeStars());
+  }
+
+  Future<void> _openSets(_Game g, int setCount, Widget Function(int) build) {
+    return Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => SetPickerScreen(
+        gameId: g.id,
+        title: g.title,
+        emoji: g.emoji,
+        setCount: setCount,
+        buildGame: build,
+      ),
+    ));
   }
 
   @override
@@ -126,13 +153,20 @@ class _LobbyScreenState extends State<LobbyScreen> {
                   children: <Widget>[
                     Padding(
                       padding: EdgeInsets.fromLTRB(pad, 4, pad, 0),
-                      child: Align(
-                        alignment: Alignment.centerRight,
-                        child: _RoundIconButton(
-                          icon: Icons.settings_rounded,
-                          colors: colors,
-                          onTap: _openSettings,
-                        ),
+                      child: Row(
+                        children: <Widget>[
+                          _StarsPill(
+                            stars: _stars,
+                            colors: colors,
+                            onTap: _openRewards,
+                          ),
+                          const Spacer(),
+                          _RoundIconButton(
+                            icon: Icons.settings_rounded,
+                            colors: colors,
+                            onTap: _openSettings,
+                          ),
+                        ],
                       ),
                     ),
                     Text(
@@ -166,7 +200,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                               game: g,
                               size: tile,
                               colors: colors,
-                              onTap: () => _open(g),
+                              onTap: () => _openGame(g),
                             ),
                         ],
                       ),
@@ -284,6 +318,45 @@ class _GameCard extends StatelessWidget {
       borderRadius: radius,
       clipBehavior: Clip.antiAlias,
       child: InkWell(onTap: onTap, child: card),
+    );
+  }
+}
+
+/// Пилюля со звёздами (поверх фона) — открывает экран наград.
+class _StarsPill extends StatelessWidget {
+  const _StarsPill({required this.stars, required this.colors, required this.onTap});
+
+  final int stars;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: colors.surface.withValues(alpha: 0.9),
+      borderRadius: BorderRadius.circular(20),
+      clipBehavior: Clip.antiAlias,
+      elevation: 1,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Icon(Icons.star_rounded, color: colors.accent, size: 22),
+              const SizedBox(width: 5),
+              Text(
+                '$stars',
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.w900,
+                      color: colors.onSurface,
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
