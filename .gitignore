@@ -43,3 +43,6 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Сэмплы голоса для прослушивания (генерятся локально, в сборку не идут)
+/tool/voice_samples/
