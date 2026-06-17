@@ -1,6 +1,7 @@
 import 'dart:io' show Platform;
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 /// Небольшой полифонический проигрыватель ассет-звуков (round-robin пул
 /// [AudioPlayer]) для коротких частых эффектов: SFX-события, ноты ксилофона,
@@ -15,6 +16,7 @@ class SoundPool {
   static final bool _inTest = Platform.environment.containsKey('FLUTTER_TEST');
 
   final List<AudioPlayer> _players = <AudioPlayer>[];
+  final Map<String, bool> _present = <String, bool>{};
   int _next = 0;
   bool _ready = false;
 
@@ -42,6 +44,22 @@ class SoundPool {
       await p.stop();
       await p.play(AssetSource(asset));
     } catch (_) {}
+  }
+
+  /// Есть ли ассет в бандле (с кэшем). Путь — как в [play] (относительно `assets/`).
+  Future<bool> has(String asset) async {
+    if (_inTest) return false;
+    final cached = _present[asset];
+    if (cached != null) return cached;
+    var ok = false;
+    try {
+      await rootBundle.load('assets/$asset');
+      ok = true;
+    } catch (_) {
+      ok = false;
+    }
+    _present[asset] = ok;
+    return ok;
   }
 
   Future<void> dispose() async {

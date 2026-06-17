@@ -5,34 +5,32 @@ import 'dart:math';
 /// Звук — содержимое Фазы 5 (CC0-файлы `assets/animals/<soundKey>.wav`); до
 /// тех пор обратная связь даётся голосом (произносим имя) — игра уже работает.
 class Animal {
-  const Animal(this.emoji, this.name, this.says, this.soundKey);
+  const Animal(this.emoji, this.name, this.soundKey);
 
-  /// Эмодзи зверя (рендерится на плитке).
+  /// Эмодзи зверя (запасная иконка, если нет арт-картинки).
   final String emoji;
 
-  /// Имя в именительном падеже, ласковое: «собачка». Для фразы «Где собачка?».
+  /// Имя в именительном падеже, ласковое: «собачка». Для «Где собачка?» и как
+  /// озвучка-заглушка в «Ферме», пока нет реального звука.
   final String name;
 
-  /// Звукоподражание для «Фермы»: «Гав-гав!», «Му-у!» (произносит голос).
-  final String says;
-
-  /// Ключ звукового файла (Фаза 5).
+  /// Ключ звука зверя: `assets/animals/<soundKey>.wav` (CC0; и иконки `<key>.png`).
   final String soundKey;
 }
 
 /// Зверушки игры. Порядок стабилен — индексы используются в наборах/раундах.
 abstract final class Animals {
   static const List<Animal> all = <Animal>[
-    Animal('🐶', 'собачка', 'Гав-гав!', 'dog'),
-    Animal('🐱', 'кошечка', 'Мяу!', 'cat'),
-    Animal('🐮', 'коровка', 'Му-у!', 'cow'),
-    Animal('🐷', 'свинка', 'Хрю-хрю!', 'pig'),
-    Animal('🐔', 'курочка', 'Ко-ко-ко!', 'hen'),
-    Animal('🐸', 'лягушка', 'Ква-ква!', 'frog'),
-    Animal('🐑', 'овечка', 'Бе-е!', 'sheep'),
-    Animal('🐴', 'лошадка', 'И-го-го!', 'horse'),
-    Animal('🦆', 'уточка', 'Кря-кря!', 'duck'),
-    Animal('🐰', 'зайка', 'Прыг-прыг!', 'rabbit'),
+    Animal('🐶', 'собачка', 'dog'),
+    Animal('🐱', 'кошечка', 'cat'),
+    Animal('🐮', 'коровка', 'cow'),
+    Animal('🐷', 'свинка', 'pig'),
+    Animal('🐔', 'курочка', 'hen'),
+    Animal('🐸', 'лягушка', 'frog'),
+    Animal('🐑', 'овечка', 'sheep'),
+    Animal('🐴', 'лошадка', 'horse'),
+    Animal('🦆', 'уточка', 'duck'),
+    Animal('🐰', 'зайка', 'rabbit'),
   ];
 }
 

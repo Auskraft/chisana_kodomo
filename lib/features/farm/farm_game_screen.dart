@@ -5,6 +5,7 @@ import '../../core/audio/sound_pool.dart';
 import '../../core/components/overlay_kit.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/voice/voice.dart';
+import '../animals/logic/animals_logic.dart';
 import 'game/farm_flame_game.dart';
 import 'ui/farm_overlays.dart';
 
@@ -31,10 +32,19 @@ class _FarmGameScreenState extends State<FarmGameScreen> {
     _created = true;
     _game = FarmGame(
       colors: context.appColors,
-      onSay: (String text, {bool flush = false}) =>
-          Voice.instance.say(text, flush: flush),
-      onAnimalSound: (String key) => _sounds.play('animals/$key.wav'),
+      onAnimal: _playAnimal,
     );
+  }
+
+  /// Реальный звук зверя (CC0 `assets/animals/<key>.wav`), а пока файла нет —
+  /// имя зверя голосом («Собачка!»), без мультяшного «хрю-хрю».
+  Future<void> _playAnimal(Animal a) async {
+    final asset = 'animals/${a.soundKey}.wav';
+    if (await _sounds.has(asset)) {
+      await _sounds.play(asset);
+    } else {
+      Voice.instance.say('${animalNameCap(a)}!', flush: true);
+    }
   }
 
   void _exit() {

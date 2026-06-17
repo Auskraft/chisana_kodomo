@@ -18,15 +18,13 @@ enum FarmPhase { ready, playing }
 /// голос произносит звукоподражание (`Animal.says`, работает офлайн через TTS)
 /// + звук-файл (`assets/animals/<key>.wav`, когда есть). **Без проигрышей.**
 class FarmGame extends FlameGame {
-  FarmGame({required this.colors, this.onSay, this.onAnimalSound});
+  FarmGame({required this.colors, this.onAnimal});
 
   final AppColors colors;
 
-  /// Голос (хост → `Voice.instance.say`).
-  final void Function(String text, {bool flush})? onSay;
-
-  /// Звук зверя по [Animal.soundKey] (CC0-файлы — Фаза 5; может быть тихим).
-  final void Function(String soundKey)? onAnimalSound;
+  /// Тап по зверю — хост сам решает звук: реальный CC0-файл
+  /// `assets/animals/<soundKey>.wav`, а пока его нет — имя зверя голосом.
+  final void Function(Animal animal)? onAnimal;
 
   final ValueNotifier<FarmPhase> phase = ValueNotifier<FarmPhase>(FarmPhase.ready);
   final ValueNotifier<bool> isPaused = ValueNotifier<bool>(false);
@@ -60,8 +58,7 @@ class FarmGame extends FlameGame {
     if (!_active) return;
     Sfx.play(SfxEvent.tap);
     Haptics.tap();
-    onAnimalSound?.call(a.soundKey);
-    onSay?.call(a.says, flush: true);
+    onAnimal?.call(a);
   }
 
   void _build() {
