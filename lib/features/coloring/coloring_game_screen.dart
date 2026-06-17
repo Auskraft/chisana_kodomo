@@ -112,6 +112,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
                 onColor: _game.setColor,
                 onPick: _openPicker,
                 onUndo: _game.undo,
+                onRedo: _game.redo,
                 onClear: _game.clearArt,
                 onNextPicture: _game.nextPicture,
               ),

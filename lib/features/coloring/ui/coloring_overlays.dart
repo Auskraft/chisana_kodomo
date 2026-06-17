@@ -74,6 +74,7 @@ class ColoringBottomBar extends StatelessWidget {
     required this.onColor,
     required this.onPick,
     required this.onUndo,
+    required this.onRedo,
     required this.onClear,
     required this.onNextPicture,
   });
@@ -84,6 +85,7 @@ class ColoringBottomBar extends StatelessWidget {
   final ValueChanged<int> onColor;
   final VoidCallback onPick;
   final VoidCallback onUndo;
+  final VoidCallback onRedo;
   final VoidCallback onClear;
   final VoidCallback onNextPicture;
 
@@ -138,6 +140,7 @@ class ColoringBottomBar extends StatelessWidget {
               spacing: 4,
               children: <Widget>[
                 _ActionBtn(icon: Icons.undo_rounded, label: 'Отменить', colors: colors, onTap: onUndo),
+                _ActionBtn(icon: Icons.redo_rounded, label: 'Вернуть', colors: colors, onTap: onRedo),
                 _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
                 if (mode != ColoringMode.freeDraw)
                   _ActionBtn(

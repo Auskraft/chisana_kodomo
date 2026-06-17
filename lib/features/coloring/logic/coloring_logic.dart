@@ -60,7 +60,8 @@ class ColoringState {
   final ColoringMode mode;
 
   final Map<int, int> _fill = <int, int>{}; // regionId → индекс цвета палитры
-  final List<MapEntry<int, int?>> _history = <MapEntry<int, int?>>[]; // для отмены
+  final List<MapEntry<int, int?>> _history = <MapEntry<int, int?>>[]; // отмена
+  final List<MapEntry<int, int?>> _redo = <MapEntry<int, int?>>[]; // возврат
 
   /// Текущий цвет области (или null, если не закрашена).
   int? colorOf(int regionId) => _fill[regionId];
@@ -75,6 +76,7 @@ class ColoringState {
       return const FillResult(applied: false, correct: false, complete: false);
     }
     _history.add(MapEntry<int, int?>(regionId, _fill[regionId]));
+    _redo.clear();
     _fill[regionId] = colorIndex;
     return FillResult(applied: true, correct: true, complete: isComplete);
   }
@@ -106,20 +108,34 @@ class ColoringState {
   void clear() {
     _fill.clear();
     _history.clear();
+    _redo.clear();
   }
 
-  /// Можно ли отменить последнюю заливку.
   bool get canUndo => _history.isNotEmpty;
+  bool get canRedo => _redo.isNotEmpty;
+
+  /// Поставить области цвет [colorIndex] (или снять, если null), вернуть прежний.
+  int? _restore(int regionId, int? colorIndex) {
+    final cur = _fill[regionId];
+    if (colorIndex == null) {
+      _fill.remove(regionId);
+    } else {
+      _fill[regionId] = colorIndex;
+    }
+    return cur;
+  }
 
   /// Отменить последнюю заливку.
   void undo() {
     if (_history.isEmpty) return;
-    final last = _history.removeLast();
-    final prev = last.value;
-    if (prev == null) {
-      _fill.remove(last.key);
-    } else {
-      _fill[last.key] = prev;
-    }
+    final e = _history.removeLast();
+    _redo.add(MapEntry<int, int?>(e.key, _restore(e.key, e.value)));
+  }
+
+  /// Вернуть отменённую заливку.
+  void redo() {
+    if (_redo.isEmpty) return;
+    final e = _redo.removeLast();
+    _history.add(MapEntry<int, int?>(e.key, _restore(e.key, e.value)));
   }
 }

@@ -119,6 +119,19 @@ class ColoringGame extends FlameGame {
     }
   }
 
+  /// Вернуть отменённое действие в текущем режиме.
+  void redo() {
+    if (mode.value == ColoringMode.freeDraw) {
+      final cs = children.whereType<_FreeCanvas>().toList();
+      if (cs.isNotEmpty) cs.first.redoStroke();
+    } else if (_useRaster) {
+      final pics = children.whereType<_RasterPicture>().toList();
+      if (pics.isNotEmpty) pics.first.redo();
+    } else {
+      _state?.redo();
+    }
+  }
+
   void _rebuild() {
     _finishing = false;
     for (final c in children
@@ -304,6 +317,7 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
 
   final ColoringGame owner;
   final List<_Stroke> _strokes = <_Stroke>[];
+  final List<_Stroke> _redoStrokes = <_Stroke>[];
   _Stroke? _current;
 
   @override
@@ -319,11 +333,17 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
 
   void clearStrokes() {
     _strokes.clear();
+    _redoStrokes.clear();
     _current = null;
   }
 
   void undoStroke() {
-    if (_strokes.isNotEmpty) _strokes.removeLast();
+    if (_strokes.isNotEmpty) _redoStrokes.add(_strokes.removeLast());
+    _current = null;
+  }
+
+  void redoStroke() {
+    if (_redoStrokes.isNotEmpty) _strokes.add(_redoStrokes.removeLast());
     _current = null;
   }
 
@@ -333,6 +353,7 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
     final stroke = _Stroke(owner.brushColor)
       ..points.add(event.localPosition.toOffset());
     _strokes.add(stroke);
+    _redoStrokes.clear();
     _current = stroke;
     Haptics.tap();
   }
@@ -390,6 +411,7 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
   Rect _imgRect = Rect.zero;
   bool _rebuilding = false;
   final List<_FillStep> _undo = <_FillStep>[];
+  final List<_FillStep> _redo = <_FillStep>[];
 
   @override
   Future<void> onLoad() async {
@@ -484,20 +506,14 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
     final pb = px[startByte + 2];
 
     final argb = owner.brushColor.toARGB32();
-    final filled = floodFill(
-      px,
-      _w,
-      _h,
-      ix,
-      iy,
-      r: (argb >> 16) & 0xFF,
-      g: (argb >> 8) & 0xFF,
-      b: argb & 0xFF,
-      tolerance: 72,
-    );
+    final nr = (argb >> 16) & 0xFF;
+    final ng = (argb >> 8) & 0xFF;
+    final nb = argb & 0xFF;
+    final filled = floodFill(px, _w, _h, ix, iy, r: nr, g: ng, b: nb, tolerance: 72);
     if (filled.isNotEmpty) {
-      _undo.add(_FillStep(filled, pr, pg, pb));
+      _undo.add(_FillStep(filled, pr, pg, pb, nr, ng, nb));
       if (_undo.length > 24) _undo.removeAt(0);
+      _redo.clear();
       Sfx.play(SfxEvent.tap);
       Haptics.tap();
       _rebuildDisplay();
@@ -506,18 +522,34 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
     }
   }
 
-  /// Отменить последнюю заливку.
-  void undo() {
+  void _paint(List<int> indices, int r, int g, int b) {
     final px = _px;
-    if (px == null || _undo.isEmpty) return;
-    final step = _undo.removeLast();
-    for (final p in step.indices) {
+    if (px == null) return;
+    for (final p in indices) {
       final i = p * 4;
-      px[i] = step.r;
-      px[i + 1] = step.g;
-      px[i + 2] = step.b;
+      px[i] = r;
+      px[i + 1] = g;
+      px[i + 2] = b;
       px[i + 3] = 255;
     }
+  }
+
+  /// Отменить последнюю заливку.
+  void undo() {
+    if (_px == null || _undo.isEmpty) return;
+    final step = _undo.removeLast();
+    _paint(step.indices, step.pr, step.pg, step.pb);
+    _redo.add(step);
+    Haptics.tap();
+    _rebuildDisplay();
+  }
+
+  /// Вернуть отменённую заливку.
+  void redo() {
+    if (_px == null || _redo.isEmpty) return;
+    final step = _redo.removeLast();
+    _paint(step.indices, step.nr, step.ng, step.nb);
+    _undo.add(step);
     Haptics.tap();
     _rebuildDisplay();
   }
@@ -536,16 +568,16 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
   /// Сбросить к исходной картинке (кнопка «Заново»).
   Future<void> reset() async {
     _undo.clear();
+    _redo.clear();
     await _loadOriginal();
     _layout();
   }
 }
 
-/// Шаг отмены растровой заливки: какие пиксели и их прежний цвет.
+/// Шаг истории растровой заливки: пиксели + прежний и новый цвет (отмена/возврат).
 class _FillStep {
-  _FillStep(this.indices, this.r, this.g, this.b);
+  _FillStep(this.indices, this.pr, this.pg, this.pb, this.nr, this.ng, this.nb);
   final List<int> indices;
-  final int r;
-  final int g;
-  final int b;
+  final int pr, pg, pb; // прежний цвет
+  final int nr, ng, nb; // новый цвет
 }
