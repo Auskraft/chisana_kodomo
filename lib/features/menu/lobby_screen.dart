@@ -11,6 +11,8 @@ import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
 import '../farm/farm_game_screen.dart';
 import '../music/music_game_screen.dart';
+import '../odd_one_out/logic/odd_one_out_logic.dart';
+import '../odd_one_out/odd_one_out_game_screen.dart';
 import '../pairs/logic/pairs_logic.dart';
 import '../pairs/pairs_game_screen.dart';
 import '../rewards/logic/rewards_logic.dart';
@@ -47,6 +49,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/coloring.png', playable: true),
     _Game('farm', 'Ферма', '🐮',
         image: 'assets/games/farm.png', playable: true),
+    _Game('odd_one_out', 'Что лишнее?', '🧩',
+        image: 'assets/games/odd_one_out.png', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
@@ -105,6 +109,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
         await Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => const FarmGameScreen(),
         ));
+      case 'odd_one_out':
+        await _openSets(g, OddSet.all.length,
+            (int i) => OddOneOutGameScreen(set: OddSet.all[i]));
     }
     if (mounted) setState(() => _stars = _computeStars());
   }

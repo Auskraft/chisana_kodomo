@@ -1,6 +1,7 @@
 import '../../animals/logic/animals_logic.dart';
 import '../../colors_shapes/logic/colors_shapes_logic.dart';
 import '../../counting/logic/counting_logic.dart';
+import '../../odd_one_out/logic/odd_one_out_logic.dart';
 import '../../pairs/logic/pairs_logic.dart';
 
 /// Игра, в которой копятся звёзды (наборы со звёздами). Игры-«игрушки» (Музыка,
@@ -32,6 +33,7 @@ abstract final class RewardsCatalog {
     StarGame(id: 'pairs', title: 'Парочки', emoji: '🃏', setCount: PairsSet.all.length),
     StarGame(id: 'colors_shapes', title: 'Цвета и формы', emoji: '🎨', setCount: CSSet.all.length),
     StarGame(id: 'animals', title: 'Звуки животных', emoji: '🐶', setCount: AnimalSet.all.length),
+    StarGame(id: 'odd_one_out', title: 'Что лишнее?', emoji: '🧩', setCount: OddSet.all.length),
   ];
 
   /// Максимум звёзд по всем играм.
@@ -61,6 +63,8 @@ abstract final class Stickers {
     Sticker('🏆', 36),
     Sticker('👑', 45),
     Sticker('🦄', 51),
+    Sticker('🌈', 57),
+    Sticker('🏅', 63),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.
