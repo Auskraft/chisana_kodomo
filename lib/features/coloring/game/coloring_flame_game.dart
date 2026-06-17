@@ -418,12 +418,24 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
   void render(Canvas canvas) {
     final img = _display;
     if (img == null) return;
+    // Белый «лист» под картинкой: line-art с прозрачным фоном выглядит как бумага.
+    final paper = RRect.fromRectAndRadius(_imgRect, const Radius.circular(18));
+    canvas.drawRRect(
+      paper.shift(const Offset(0, 4)),
+      Paint()
+        ..color = const Color(0x1A000000)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+    );
+    canvas.drawRRect(paper, Paint()..color = const Color(0xFFFFFFFF));
+    canvas.save();
+    canvas.clipRRect(paper);
     canvas.drawImageRect(
       img,
       Rect.fromLTWH(0, 0, _w.toDouble(), _h.toDouble()),
       _imgRect,
       Paint()..filterQuality = FilterQuality.medium,
     );
+    canvas.restore();
   }
 
   @override
