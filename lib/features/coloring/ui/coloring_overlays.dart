@@ -45,7 +45,9 @@ class ColoringTopBar extends StatelessWidget {
                   children: <Widget>[
                     for (final m in ColoringMode.values)
                       Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
+                        // Воздух сверху/снизу: иначе горизонтальный скролл
+                        // обрезает тень чипа снизу (выглядит как срез).
+                        padding: const EdgeInsets.fromLTRB(3, 4, 3, 10),
                         child: _ModeChip(
                           label: _modeLabel(m),
                           selected: m == mode,
