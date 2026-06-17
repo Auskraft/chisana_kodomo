@@ -6,8 +6,10 @@ import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
 import '../settings/settings_screen.dart';
 
-/// Главный экран: переключаемый иллюстрированный фон (9 сцен, свайп + точки) и
-/// витрина игр поверх него. Бренд тёплый/мягкий (по дизайн-референсу).
+/// Кол-во фоновых сцен (`assets/backgrounds/1..N.png`). Переключаются в Настройках.
+const int kBackgroundCount = 9;
+
+/// Главный экран: иллюстрированный фон (выбирается в Настройках) + витрина игр.
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
 
@@ -16,7 +18,6 @@ class LobbyScreen extends StatefulWidget {
 }
 
 class _LobbyScreenState extends State<LobbyScreen> {
-  static const int _bgCount = 9;
   static const String _tagline = 'Играем, учимся, растём!';
 
   static const List<_Game> _games = <_Game>[
@@ -30,23 +31,18 @@ class _LobbyScreenState extends State<LobbyScreen> {
     _Game('coloring', 'Раскраска', '🖍️'),
   ];
 
-  late int _index = GameStorage.instance.backgroundIndex.clamp(0, _bgCount - 1);
-  late final PageController _pager = PageController(initialPage: _index);
+  late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
 
-  @override
-  void dispose() {
-    _pager.dispose();
-    super.dispose();
+  Future<void> _openSettings() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
+    );
+    // Вернулись из настроек — фон мог поменяться.
+    if (mounted) {
+      setState(() => _bg =
+          GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1));
+    }
   }
-
-  void _onPage(int i) {
-    setState(() => _index = i);
-    GameStorage.instance.setBackgroundIndex(i);
-  }
-
-  void _openSettings() => Navigator.of(context).push(
-        MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-      );
 
   void _open(_Game g) {
     if (g.id == 'counting') {
@@ -67,16 +63,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          // Фон-карусель (свайп) — 9 сцен.
-          PageView.builder(
-            controller: _pager,
-            itemCount: _bgCount,
-            onPageChanged: _onPage,
-            itemBuilder: (context, i) => Image.asset(
-              'assets/backgrounds/${i + 1}.png',
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
-            ),
+          // Выбранный фон.
+          Image.asset(
+            'assets/backgrounds/${_bg + 1}.png',
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
           ),
           // Лёгкий скрим сверху — читаемость заголовка на любом фоне.
           IgnorePointer(
@@ -93,7 +84,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
               ),
             ),
           ),
-          // UI поверх фона. Пустые зоны прозрачны — свайп доходит до фона.
           SafeArea(
             child: LayoutBuilder(
               builder: (context, c) {
@@ -137,7 +127,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     ),
                     const Spacer(),
                     Padding(
-                      padding: EdgeInsets.symmetric(horizontal: pad),
+                      padding: EdgeInsets.fromLTRB(pad, 0, pad, gap * 1.5),
                       child: Wrap(
                         spacing: gap,
                         runSpacing: gap,
@@ -153,18 +143,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
                         ],
                       ),
                     ),
-                    SizedBox(height: gap * 1.2),
-                    _Dots(
-                      count: _bgCount,
-                      index: _index,
-                      colors: colors,
-                      onTap: (i) => _pager.animateToPage(
-                        i,
-                        duration: const Duration(milliseconds: 350),
-                        curve: Curves.easeOut,
-                      ),
-                    ),
-                    SizedBox(height: gap),
                   ],
                 );
               },
@@ -187,7 +165,9 @@ class _Game {
   final bool playable;
 }
 
-/// Карточка игры (мягкая кремовая, иконка-иллюстрация/эмодзи + подпись).
+/// Карточка игры. С иконкой-иллюстрацией картинка **заполняет** карточку (её фон
+/// = фон карточки, без «коробки»), подпись — полоской снизу. С эмодзи —
+/// кремовая карточка с эмодзи по центру.
 class _GameCard extends StatelessWidget {
   const _GameCard({
     required this.game,
@@ -203,51 +183,68 @@ class _GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(size * 0.26);
-    final Widget icon = game.image != null
-        ? Image.asset(
-            game.image!,
-            width: size * 0.56,
-            height: size * 0.56,
-            fit: BoxFit.contain,
-            errorBuilder: (_, _, _) =>
-                Text(game.emoji, style: TextStyle(fontSize: size * 0.34)),
-          )
-        : Text(game.emoji, style: TextStyle(fontSize: size * 0.34));
+    final radius = BorderRadius.circular(size * 0.24);
+    final label = Padding(
+      padding: EdgeInsets.symmetric(horizontal: size * 0.08),
+      child: Text(
+        game.title,
+        textAlign: TextAlign.center,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: Theme.of(context).textTheme.labelMedium?.copyWith(
+              color: colors.onSurface.withValues(alpha: 0.85),
+              fontWeight: FontWeight.w700,
+            ),
+      ),
+    );
 
-    final card = Container(
+    final Widget inner = game.image != null
+        ? Stack(
+            fit: StackFit.expand,
+            children: <Widget>[
+              Image.asset(
+                game.image!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => Center(
+                  child: Text(game.emoji, style: TextStyle(fontSize: size * 0.34)),
+                ),
+              ),
+              Align(
+                alignment: Alignment.bottomCenter,
+                child: Container(
+                  width: double.infinity,
+                  color: colors.surface.withValues(alpha: 0.9),
+                  padding: EdgeInsets.symmetric(vertical: size * 0.05),
+                  child: label,
+                ),
+              ),
+            ],
+          )
+        : Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: <Widget>[
+              Text(game.emoji, style: TextStyle(fontSize: size * 0.34)),
+              SizedBox(height: size * 0.05),
+              label,
+            ],
+          );
+
+    final card = SizedBox(
       width: size,
       height: size,
-      decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.92),
-        borderRadius: radius,
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colors.onBackground.withValues(alpha: 0.12),
-            blurRadius: size * 0.1,
-            offset: Offset(0, size * 0.05),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          icon,
-          SizedBox(height: size * 0.05),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: size * 0.08),
-            child: Text(
-              game.title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.85),
-                    fontWeight: FontWeight.w700,
-                  ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.92),
+          borderRadius: radius,
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.12),
+              blurRadius: size * 0.1,
+              offset: Offset(0, size * 0.05),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: ClipRRect(borderRadius: radius, child: inner),
       ),
     );
 
@@ -289,49 +286,6 @@ class _RoundIconButton extends StatelessWidget {
           child: Icon(icon, color: colors.onSurface.withValues(alpha: 0.7), size: 22),
         ),
       ),
-    );
-  }
-}
-
-/// Индикатор/переключатель фона (точки).
-class _Dots extends StatelessWidget {
-  const _Dots({
-    required this.count,
-    required this.index,
-    required this.colors,
-    required this.onTap,
-  });
-
-  final int count;
-  final int index;
-  final AppColors colors;
-  final ValueChanged<int> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: <Widget>[
-        for (var i = 0; i < count; i++)
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: () => onTap(i),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 6),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                width: i == index ? 10 : 7,
-                height: i == index ? 10 : 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: i == index
-                      ? colors.primary
-                      : colors.onBackground.withValues(alpha: 0.3),
-                ),
-              ),
-            ),
-          ),
-      ],
     );
   }
 }

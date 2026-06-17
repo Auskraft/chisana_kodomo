@@ -25,7 +25,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   List<VoiceOption> _voices = const <VoiceOption>[];
   String? _selected = GameStorage.instance.voiceName;
   bool _usePack = GameStorage.instance.voiceUsePack;
+  int _bgIndex = GameStorage.instance.backgroundIndex;
   bool _loading = true;
+
+  static const int _bgCount = 9;
 
   @override
   void initState() {
@@ -102,6 +105,52 @@ class _SettingsScreenState extends State<SettingsScreen> {
               _s.setHapticsOn(v);
               Haptics.enabled = v;
             },
+          ),
+          const Divider(height: 24),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Text(
+              'Фон главного экрана',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+          ),
+          SizedBox(
+            height: 104,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: _bgCount,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (context, i) {
+                final selected = i == _bgIndex;
+                return GestureDetector(
+                  onTap: () {
+                    GameStorage.instance.setBackgroundIndex(i);
+                    Haptics.select();
+                    setState(() => _bgIndex = i);
+                  },
+                  child: Container(
+                    width: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(
+                        color: selected ? colors.primary : Colors.transparent,
+                        width: 3,
+                      ),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(11),
+                      child: Image.asset(
+                        'assets/backgrounds/${i + 1}.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, _, _) =>
+                            ColoredBox(color: colors.surface),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
           const Divider(height: 24),
           Padding(
