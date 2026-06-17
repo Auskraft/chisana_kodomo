@@ -182,26 +182,44 @@ abstract final class ColoringGallery {
 /// (PNG/JPG). Заполняется из манифеста ассетов один раз. Контурные рисунки
 /// (CC0/Magnific) кладёт владелец — появятся здесь автоматически, без правок кода.
 abstract final class RasterGallery {
-  static List<String> _images = const <String>[];
+  static Map<int, List<String>> _byLevel = const <int, List<String>>{};
   static bool _loaded = false;
 
-  static List<String> get images => _images;
-  static bool get hasImages => _images.isNotEmpty;
+  /// Есть ли вообще растровые раскраски.
+  static bool get hasImages => _byLevel.isNotEmpty;
+
+  /// Доступные уровни сложности (по возрастанию) — те, где есть картинки.
+  static List<int> get levels => _byLevel.keys.toList()..sort();
+
+  /// Картинки уровня [level] (папка `assets/coloring/<level>/`).
+  static List<String> imagesForLevel(int level) =>
+      _byLevel[level] ?? const <String>[];
 
   static Future<void> ensureLoaded() async {
     if (_loaded) return;
     _loaded = true;
     try {
       final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
-      _images = manifest
-          .listAssets()
-          .where((String k) =>
-              k.startsWith('assets/coloring/') &&
-              (k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg')))
-          .toList()
-        ..sort();
+      final map = <int, List<String>>{};
+      for (final k in manifest.listAssets()) {
+        if (!k.startsWith('assets/coloring/')) continue;
+        if (!(k.endsWith('.png') || k.endsWith('.jpg') || k.endsWith('.jpeg'))) {
+          continue;
+        }
+        // Путь вида assets/coloring/<уровень>/<файл> — берём номер уровня.
+        final rest = k.substring('assets/coloring/'.length);
+        final slash = rest.indexOf('/');
+        if (slash <= 0) continue; // файл в корне (без уровня) — пропускаем
+        final lvl = int.tryParse(rest.substring(0, slash));
+        if (lvl == null) continue;
+        (map[lvl] ??= <String>[]).add(k);
+      }
+      for (final list in map.values) {
+        list.sort();
+      }
+      _byLevel = map;
     } catch (_) {
-      _images = const <String>[];
+      _byLevel = const <int, List<String>>{};
     }
   }
 }

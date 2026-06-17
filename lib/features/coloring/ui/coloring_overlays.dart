@@ -71,8 +71,11 @@ class ColoringBottomBar extends StatelessWidget {
     required this.mode,
     required this.selectedColor,
     required this.pickedColor,
+    required this.level,
+    required this.availableLevels,
     required this.onColor,
     required this.onPick,
+    required this.onLevel,
     required this.onUndo,
     required this.onRedo,
     required this.onClear,
@@ -82,8 +85,11 @@ class ColoringBottomBar extends StatelessWidget {
   final ColoringMode mode;
   final int selectedColor;
   final Color? pickedColor;
+  final int level;
+  final List<int> availableLevels;
   final ValueChanged<int> onColor;
   final VoidCallback onPick;
+  final ValueChanged<int> onLevel;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
   final VoidCallback onClear;
@@ -111,6 +117,34 @@ class ColoringBottomBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
+            if (mode == ColoringMode.fill && availableLevels.isNotEmpty) ...<Widget>[
+              Wrap(
+                alignment: WrapAlignment.center,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 6,
+                children: <Widget>[
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Text(
+                      'Уровень',
+                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                            color: colors.onSurface.withValues(alpha: 0.6),
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ),
+                  for (var l = 1; l <= 5; l++)
+                    _LevelChip(
+                      n: l,
+                      selected: l == level,
+                      enabled: availableLevels.contains(l),
+                      colors: colors,
+                      onTap: () => onLevel(l),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 10),
+            ],
             Wrap(
               spacing: 10,
               runSpacing: 12,
@@ -137,10 +171,11 @@ class ColoringBottomBar extends StatelessWidget {
             const SizedBox(height: 6),
             Wrap(
               alignment: WrapAlignment.center,
-              spacing: 4,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 6,
               children: <Widget>[
-                _ActionBtn(icon: Icons.undo_rounded, label: 'Отменить', colors: colors, onTap: onUndo),
-                _ActionBtn(icon: Icons.redo_rounded, label: 'Вернуть', colors: colors, onTap: onRedo),
+                _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
+                _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
                 _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
                 if (mode != ColoringMode.freeDraw)
                   _ActionBtn(
@@ -303,6 +338,71 @@ class _PickerSwatch extends StatelessWidget {
         ),
         alignment: Alignment.center,
         child: Icon(Icons.colorize_rounded, size: 18, color: Colors.white.withValues(alpha: 0.95)),
+      ),
+    );
+  }
+}
+
+class _LevelChip extends StatelessWidget {
+  const _LevelChip({
+    required this.n,
+    required this.selected,
+    required this.enabled,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final int n;
+  final bool selected;
+  final bool enabled;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: GestureDetector(
+        onTap: enabled ? onTap : null,
+        child: Container(
+          width: 34,
+          height: 34,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? colors.primary : colors.surface,
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: selected ? colors.primary : colors.onSurface.withValues(alpha: 0.15),
+              width: 2,
+            ),
+          ),
+          child: Text(
+            '$n',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              color: selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.8),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Круглая нав-кнопка из картинки (назад/вперёд) — без Material-подложки.
+class _NavIconBtn extends StatelessWidget {
+  const _NavIconBtn({required this.asset, required this.onTap});
+
+  final String asset;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.all(2),
+        child: Image.asset(asset, width: 44, height: 44),
       ),
     );
   }

@@ -102,15 +102,21 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
           Align(
             alignment: Alignment.bottomCenter,
             child: ListenableBuilder(
-              listenable: Listenable.merge(
-                <Listenable>[_game.mode, _game.selectedColor, _game.pickedColor],
-              ),
+              listenable: Listenable.merge(<Listenable>[
+                _game.mode,
+                _game.selectedColor,
+                _game.pickedColor,
+                _game.level,
+              ]),
               builder: (context, _) => ColoringBottomBar(
                 mode: _game.mode.value,
                 selectedColor: _game.selectedColor.value,
                 pickedColor: _game.pickedColor.value,
+                level: _game.level.value,
+                availableLevels: _game.coloringLevels,
                 onColor: _game.setColor,
                 onPick: _openPicker,
+                onLevel: _game.setLevel,
                 onUndo: _game.undo,
                 onRedo: _game.redo,
                 onClear: _game.clearArt,

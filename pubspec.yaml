@@ -82,6 +82,9 @@ flutter:
     - assets/notes/
     - assets/animals/
     - assets/coloring/
+    - assets/coloring/1/
+    - assets/coloring/2/
+    - assets/ui/
     - assets/icon.png
 
   fonts:

@@ -35,12 +35,16 @@ class ColoringGame extends FlameGame {
   final ValueNotifier<int> selectedColor = ValueNotifier<int>(0);
   final ValueNotifier<Color?> pickedColor = ValueNotifier<Color?>(null);
   final ValueNotifier<int> pictureIndex = ValueNotifier<int>(0);
+  final ValueNotifier<int> level = ValueNotifier<int>(1); // уровень сложности
   final ValueNotifier<bool> completed = ValueNotifier<bool>(false);
 
   /// Активный цвет кисти: выбранный в пикере или из палитры.
   Color get brushColor =>
       pickedColor.value ??
       kColoringPalette[selectedColor.value % kColoringPalette.length];
+
+  /// Доступные уровни сложности раскрасок (с картинками).
+  List<int> get coloringLevels => RasterGallery.levels;
 
   ColoringState? _state;
   bool _finishing = false; // идёт пауза «полюбоваться» до показа панели
@@ -49,10 +53,12 @@ class ColoringGame extends FlameGame {
   /// «Залить» использует растровые картинки `assets/coloring/`, если они есть;
   /// иначе — векторные фигуры (Домик/Цветок). «По номерам» — всегда векторные.
   bool get _useRaster =>
-      mode.value == ColoringMode.fill && RasterGallery.hasImages;
+      mode.value == ColoringMode.fill &&
+      RasterGallery.imagesForLevel(level.value).isNotEmpty;
 
-  int get _sourceLength =>
-      _useRaster ? RasterGallery.images.length : ColoringGallery.all.length;
+  int get _sourceLength => _useRaster
+      ? RasterGallery.imagesForLevel(level.value).length
+      : ColoringGallery.all.length;
 
   PaintablePicture get _picture =>
       ColoringGallery.all[pictureIndex.value % ColoringGallery.all.length];
@@ -63,6 +69,7 @@ class ColoringGame extends FlameGame {
   @override
   Future<void> onLoad() async {
     await RasterGallery.ensureLoaded();
+    if (RasterGallery.hasImages) level.value = RasterGallery.levels.first;
     _rebuild();
   }
 
@@ -90,6 +97,15 @@ class ColoringGame extends FlameGame {
   }
 
   void nextPicture() => setPicture(pictureIndex.value + 1);
+
+  /// Выбрать уровень сложности раскрасок (папка `assets/coloring/<level>/`).
+  void setLevel(int l) {
+    if (level.value == l) return;
+    level.value = l;
+    pictureIndex.value = 0;
+    completed.value = false;
+    _rebuild();
+  }
 
   /// Сбросить рисунок (заливки или штрихи).
   void clearArt() {
@@ -144,9 +160,8 @@ class ColoringGame extends FlameGame {
       add(_FreeCanvas(owner: this));
     } else if (_useRaster) {
       _state = null;
-      final asset =
-          RasterGallery.images[pictureIndex.value % RasterGallery.images.length];
-      add(_RasterPicture(owner: this, asset: asset));
+      final imgs = RasterGallery.imagesForLevel(level.value);
+      add(_RasterPicture(owner: this, asset: imgs[pictureIndex.value % imgs.length]));
     } else {
       _state = ColoringState(_picture.toModel(), mode: mode.value);
       add(_Picture(owner: this, picture: _picture));

@@ -179,10 +179,13 @@ class _LobbyScreenState extends State<LobbyScreen> {
                             onTap: _openRewards,
                           ),
                           const Spacer(),
-                          _RoundIconButton(
-                            icon: Icons.settings_rounded,
-                            colors: colors,
+                          GestureDetector(
                             onTap: _openSettings,
+                            child: Image.asset(
+                              'assets/ui/settings.png',
+                              width: 48,
+                              height: 48,
+                            ),
                           ),
                         ],
                       ),
@@ -379,32 +382,3 @@ class _StarsPill extends StatelessWidget {
   }
 }
 
-/// Круглая кнопка (шестерёнка) поверх фона.
-class _RoundIconButton extends StatelessWidget {
-  const _RoundIconButton({
-    required this.icon,
-    required this.colors,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final AppColors colors;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: colors.surface.withValues(alpha: 0.9),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(9),
-          child: Icon(icon, color: colors.onSurface.withValues(alpha: 0.7), size: 22),
-        ),
-      ),
-    );
-  }
-}
