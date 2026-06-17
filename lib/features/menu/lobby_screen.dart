@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../counting/counting_game_screen.dart';
+import '../counting/logic/counting_logic.dart';
 
 /// Лобби-заглушка приложения «Chisana kodomo».
 ///
@@ -11,14 +13,14 @@ import '../../core/theme/app_colors.dart';
 class LobbyScreen extends StatelessWidget {
   const LobbyScreen({super.key});
 
-  /// Планируемые мини-игры (тизер). Пока неактивны — «скоро».
+  /// Игры: играбельные открываются по тапу, остальные — «скоро».
   static const List<_GameTeaser> _teasers = <_GameTeaser>[
-    _GameTeaser('🔢', 'Счёт'),
-    _GameTeaser('🃏', 'Парочки'),
-    _GameTeaser('🎨', 'Цвета и формы'),
-    _GameTeaser('🐶', 'Звуки животных'),
-    _GameTeaser('🎹', 'Музыка'),
-    _GameTeaser('🖍️', 'Раскраска'),
+    _GameTeaser('counting', '🔢', 'Счёт', playable: true),
+    _GameTeaser('pairs', '🃏', 'Парочки'),
+    _GameTeaser('colors_shapes', '🎨', 'Цвета и формы'),
+    _GameTeaser('animals', '🐶', 'Звуки животных'),
+    _GameTeaser('music', '🎹', 'Музыка'),
+    _GameTeaser('coloring', '🖍️', 'Раскраска'),
   ];
 
   @override
@@ -103,7 +105,7 @@ class LobbyScreen extends StatelessWidget {
                     ),
                     SizedBox(height: vGap),
                     Text(
-                      'Скоро здесь появятся игры! 🌟',
+                      'Выбирай и играй! 🌟',
                       textAlign: TextAlign.center,
                       style: text.titleSmall?.copyWith(
                         color: colors.onBackground.withValues(alpha: 0.8),
@@ -150,15 +152,18 @@ class _Mascot extends StatelessWidget {
   }
 }
 
-/// Тизер одной будущей игры: эмодзи + подпись.
+/// Тизер игры: id, эмодзи, подпись и флаг «играбельна» (иначе — «скоро»).
 class _GameTeaser {
-  const _GameTeaser(this.emoji, this.title);
+  const _GameTeaser(this.id, this.emoji, this.title, {this.playable = false});
 
+  final String id;
   final String emoji;
   final String title;
+  final bool playable;
 }
 
-/// Неактивная карточка-тизер игры. Размер задаётся снаружи (доля от экрана).
+/// Карточка-тизер игры. Играбельная — тапается и ведёт в игру; остальные
+/// притушены («скоро»). Размер задаётся снаружи (доля от экрана).
 class _TeaserCard extends StatelessWidget {
   const _TeaserCard({
     required this.teaser,
@@ -170,43 +175,70 @@ class _TeaserCard extends StatelessWidget {
   final double size;
   final AppColors colors;
 
+  void _open(BuildContext context) {
+    switch (teaser.id) {
+      case 'counting':
+        Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            builder: (_) => CountingGameScreen(set: CountSet.all.first),
+          ),
+        );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(size * 0.22);
+    final card = Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: radius,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.08),
+            blurRadius: size * 0.12,
+            offset: Offset(0, size * 0.06),
+          ),
+        ],
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: <Widget>[
+          Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
+          SizedBox(height: size * 0.06),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: size * 0.06),
+            child: Text(
+              teaser.title,
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    color: colors.onSurface.withValues(alpha: 0.85),
+                    fontWeight: FontWeight.w700,
+                  ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (!teaser.playable) {
+      return SizedBox(
+        width: size,
+        height: size,
+        child: Opacity(opacity: 0.5, child: card),
+      );
+    }
+
     return SizedBox(
       width: size,
       height: size,
-      child: Container(
-        decoration: BoxDecoration(
-          color: colors.surface,
-          borderRadius: BorderRadius.circular(size * 0.22),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colors.onBackground.withValues(alpha: 0.08),
-              blurRadius: size * 0.12,
-              offset: Offset(0, size * 0.06),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
-            SizedBox(height: size * 0.06),
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: size * 0.06),
-              child: Text(
-                teaser.title,
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colors.onSurface.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.w600,
-                    ),
-              ),
-            ),
-          ],
-        ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(onTap: () => _open(context), child: card),
       ),
     );
   }
