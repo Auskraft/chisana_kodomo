@@ -24,8 +24,8 @@ class Voice {
     try {
       final t = FlutterTts();
       await t.setLanguage('ru-RU');
-      await t.setSpeechRate(0.42); // помедленнее, по-детски
-      await t.setPitch(1.1);
+      await t.setSpeechRate(0.45); // чуть медленнее, по-детски
+      await t.setPitch(1.25); // повыше — дружелюбнее, меньше «робота»
       await t.setVolume(1.0);
       _tts = t;
     } catch (_) {

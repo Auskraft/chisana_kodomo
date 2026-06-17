@@ -103,8 +103,8 @@ class CountingGame extends FlameGame {
     final res = _session.tap();
     Sfx.play(SfxEvent.tap);
     Haptics.tap();
-    onSay?.call(_numberWord(res.counted));
-    if (res.isComplete) _solveRound();
+    onSay?.call(_numberWord(res.counted)); // «один… два…»
+    if (res.isComplete) _solveRound(numberAlreadySaid: true);
   }
 
   /// Выбор цифры (режим chooseNumeral). Возвращает `true`, если верно; при
@@ -113,7 +113,7 @@ class CountingGame extends FlameGame {
     if (!_active || _locked) return true;
     final res = _session.choose(value);
     if (res.isCorrect) {
-      _solveRound();
+      _solveRound(numberAlreadySaid: false);
       return true;
     }
     _mistakes++;
@@ -136,13 +136,24 @@ class CountingGame extends FlameGame {
     onSay?.call(round.mode == CountMode.tapCount ? 'Посчитай!' : 'Сколько?');
   }
 
-  void _solveRound() {
+  /// Раунд решён: «сок» + голос. Сначала звучит число (если его ещё не сказали
+  /// на тапе), затем — короткая похвала с паузой, чтобы не оборвать «…два».
+  /// Переход к следующему раунду — после celebration-паузы.
+  void _solveRound({required bool numberAlreadySaid}) {
     _locked = true;
     Sfx.play(SfxEvent.correct);
     Haptics.success();
     _burst(Vector2(size.x / 2, size.y * 0.38));
-    onSay?.call('${Praise.pick(_rng)} ${_numberWord(_session.round.count)}.');
-    add(TimerComponent(period: 0.95, removeOnFinish: true, onTick: _advance));
+
+    if (!numberAlreadySaid) {
+      onSay?.call(_numberWord(_session.round.count)); // режим выбора: назвать счёт
+    }
+    add(TimerComponent(
+      period: 0.7,
+      removeOnFinish: true,
+      onTick: () => onSay?.call(Praise.pick(_rng)), // похвала после паузы
+    ));
+    add(TimerComponent(period: 1.3, removeOnFinish: true, onTick: _advance));
   }
 
   void _advance() {
