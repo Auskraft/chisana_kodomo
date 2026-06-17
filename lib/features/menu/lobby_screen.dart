@@ -33,14 +33,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
 
   static const List<_Game> _games = <_Game>[
     _Game('counting', 'Счёт', '🔢',
-        image: 'assets/games/count_main.png', playable: true),
-    _Game('pairs', 'Парочки', '🃏', playable: true),
+        image: 'assets/games/counting.png', playable: true),
+    _Game('pairs', 'Парочки', '🃏',
+        image: 'assets/games/pairs.png', playable: true),
     _Game('colors_shapes', 'Цвета и формы', '🎨',
-        image: 'assets/games/form-main.png', playable: true),
-    _Game('animals', 'Звуки животных', '🐶', playable: true),
+        image: 'assets/games/colors_shapes.png', playable: true),
+    _Game('animals', 'Звуки животных', '🐶',
+        image: 'assets/games/animals.png', playable: true),
     _Game('music', 'Музыка', '🎹',
-        image: 'assets/games/music-main.png', playable: true),
-    _Game('coloring', 'Раскраска', '🖍️', playable: true),
+        image: 'assets/games/music.png', playable: true),
+    _Game('coloring', 'Раскраска', '🖍️',
+        image: 'assets/games/coloring.png', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
