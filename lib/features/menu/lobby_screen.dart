@@ -253,7 +253,7 @@ class _GameCard extends StatelessWidget {
       child: Text(
         game.title,
         textAlign: TextAlign.center,
-        maxLines: 1,
+        maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
               color: colors.onSurface.withValues(alpha: 0.85),
