@@ -4,6 +4,7 @@ import 'package:flutter_displaymode/flutter_displaymode.dart';
 
 import 'core/audio/sfx.dart';
 import 'core/feedback/haptics.dart';
+import 'core/legal/consent_screen.dart';
 import 'core/storage/game_storage.dart';
 import 'core/theme/app_theme.dart';
 import 'core/voice/voice.dart';
@@ -56,7 +57,26 @@ class ChisanaKodomoApp extends StatelessWidget {
       title: 'Chisana kodomo',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.daylight,
-      home: const LobbyScreen(),
+      home: const _RootGate(),
     );
+  }
+}
+
+/// При первом запуске показывает экран согласия (офлайн, без сбора данных),
+/// затем — лобби. Согласие хранится в `GameStorage`.
+class _RootGate extends StatefulWidget {
+  const _RootGate();
+
+  @override
+  State<_RootGate> createState() => _RootGateState();
+}
+
+class _RootGateState extends State<_RootGate> {
+  late bool _consent = GameStorage.instance.consentAccepted;
+
+  @override
+  Widget build(BuildContext context) {
+    if (_consent) return const LobbyScreen();
+    return ConsentScreen(onAccept: () => setState(() => _consent = true));
   }
 }

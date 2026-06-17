@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../core/audio/sfx.dart';
 import '../../core/feedback/haptics.dart';
+import '../../core/parent_gate/parent_gate.dart';
+import '../../core/rating/parent_zone_screen.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/voice/voice.dart';
@@ -64,6 +66,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
     Haptics.select();
     setState(() => _usePack = true);
     await Voice.instance.say('Привет! Давай посчитаем!', flush: true);
+  }
+
+  /// «Для родителей» — за родительским гейтом (внешние действия, политика).
+  Future<void> _openParentZone() async {
+    final ok = await showParentGate(context);
+    if (ok && mounted) {
+      await Navigator.of(context).push(
+        MaterialPageRoute<void>(builder: (_) => const ParentZoneScreen()),
+      );
+    }
   }
 
   @override
@@ -216,6 +228,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 subtitle: Text(v.locale),
                 trailing: const Icon(Icons.volume_up_rounded),
               ),
+          const Divider(height: 24),
+          ListTile(
+            leading: const Icon(Icons.family_restroom_rounded),
+            title: const Text('Для родителей'),
+            subtitle: const Text('Связь, оценка, политика, сброс прогресса'),
+            trailing: const Icon(Icons.lock_outline_rounded),
+            onTap: _openParentZone,
+          ),
         ],
       ),
     );

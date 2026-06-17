@@ -39,6 +39,7 @@ dependencies:
   shared_preferences: ^2.5.5
   flutter_displaymode: ^0.7.0
   audioplayers: ^6.7.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:

@@ -98,4 +98,16 @@ class GameStorage {
     }
     return total;
   }
+
+  /// Сбросить весь игровой прогресс (звёзды + открытые наборы). Настройки, тему
+  /// и согласие НЕ трогает.
+  Future<void> resetProgress() async {
+    final keys = _prefs
+        .getKeys()
+        .where((String k) => k.startsWith('sets_') || k.startsWith('stars_'))
+        .toList();
+    for (final k in keys) {
+      await _prefs.remove(k);
+    }
+  }
 }

@@ -56,10 +56,12 @@ class _LobbyScreenState extends State<LobbyScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
     );
-    // Вернулись из настроек — фон мог поменяться.
+    // Вернулись из настроек — фон мог поменяться, прогресс мог сброситься.
     if (mounted) {
-      setState(() => _bg =
-          GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1));
+      setState(() {
+        _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
+        _stars = _computeStars();
+      });
     }
   }
 
