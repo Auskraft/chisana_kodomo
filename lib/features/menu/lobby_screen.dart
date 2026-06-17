@@ -5,8 +5,9 @@ import '../../core/theme/app_colors.dart';
 /// Лобби-заглушка приложения «Chisana kodomo».
 ///
 /// Базовый скелет: тёплый дружелюбный экран с маскотом и «витриной-тизером»
-/// будущих игр. Сами игры и навигация появятся на следующих этапах — пока это
-/// пустой запуск-заглушка, на которой проверяется бренд/палитра.
+/// будущих игр. Вёрстка **адаптивная** (размеры — доли от экрана, без
+/// абсолютных значений), цвета берутся из активной темы через `context.appColors`,
+/// поэтому экран корректно выглядит на разных телефонах и в любой из тем.
 class LobbyScreen extends StatelessWidget {
   const LobbyScreen({super.key});
 
@@ -21,104 +22,129 @@ class LobbyScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const colors = AppColors.daylight;
-    final media = MediaQuery.of(context);
+    final colors = context.appColors;
+    final text = Theme.of(context).textTheme;
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
+        decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: <Color>[Color(0xFFFFF6EC), Color(0xFFFFE3C7)],
+            colors: <Color>[
+              colors.background,
+              Color.lerp(colors.background, colors.primary, 0.12)!,
+            ],
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(
-              24,
-              media.padding.top > 0 ? 12 : 24,
-              24,
-              24,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: <Widget>[
-                const SizedBox(height: 8),
-                // Маскот-заглушка (эмодзи; настоящий арт — на этапе стора).
-                Container(
-                  width: 132,
-                  height: 132,
-                  decoration: BoxDecoration(
-                    color: colors.surface,
-                    shape: BoxShape.circle,
-                    boxShadow: <BoxShadow>[
-                      BoxShadow(
-                        color: colors.primary.withValues(alpha: 0.25),
-                        blurRadius: 24,
-                        offset: const Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text('🐻', style: TextStyle(fontSize: 76)),
-                ),
-                const SizedBox(height: 20),
-                Text(
-                  'Chisana kodomo',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final w = constraints.maxWidth;
+              final shortest = constraints.biggest.shortestSide;
+
+              // Все размеры — доли от экрана с разумными границами (clamp),
+              // чтобы хорошо смотрелось и на узких, и на крупных телефонах.
+              final pad = (w * 0.06).clamp(12.0, 40.0).toDouble();
+              final gap = (shortest * 0.035).clamp(8.0, 22.0).toDouble();
+              final vGap = (shortest * 0.025).clamp(6.0, 22.0).toDouble();
+              final mascot = (shortest * 0.34).clamp(96.0, 220.0).toDouble();
+              final cols = w >= 600 ? 5 : 3;
+              final innerW = w - pad * 2;
+              final tile = (innerW - gap * (cols - 1)) / cols;
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(pad, vGap, pad, pad),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: <Widget>[
+                    _Mascot(diameter: mascot, colors: colors),
+                    SizedBox(height: vGap),
+                    Text(
+                      'Chisana kodomo',
+                      textAlign: TextAlign.center,
+                      style: text.headlineMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: colors.onBackground,
                       ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'ちいさなこども',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    ),
+                    Text(
+                      'ちいさなこども',
+                      textAlign: TextAlign.center,
+                      style: text.titleMedium?.copyWith(
                         color: colors.primary,
                         fontWeight: FontWeight.w600,
                       ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Развивающие игры для малышей',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    ),
+                    SizedBox(height: vGap * 0.4),
+                    Text(
+                      'Развивающие игры для малышей',
+                      textAlign: TextAlign.center,
+                      style: text.bodyMedium?.copyWith(
                         color: colors.onBackground.withValues(alpha: 0.7),
                       ),
-                ),
-                const SizedBox(height: 28),
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        alignment: WrapAlignment.center,
-                        spacing: 14,
-                        runSpacing: 14,
-                        children: <Widget>[
-                          for (final _GameTeaser t in _teasers)
-                            _TeaserCard(teaser: t, colors: colors),
-                        ],
+                    ),
+                    SizedBox(height: vGap * 1.5),
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: Wrap(
+                            alignment: WrapAlignment.center,
+                            spacing: gap,
+                            runSpacing: gap,
+                            children: <Widget>[
+                              for (final _GameTeaser t in _teasers)
+                                _TeaserCard(teaser: t, size: tile, colors: colors),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Скоро здесь появятся игры! 🌟',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    SizedBox(height: vGap),
+                    Text(
+                      'Скоро здесь появятся игры! 🌟',
+                      textAlign: TextAlign.center,
+                      style: text.titleSmall?.copyWith(
                         color: colors.onBackground.withValues(alpha: 0.8),
                         fontWeight: FontWeight.w600,
                       ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Маскот-заглушка (эмодзи; настоящий арт — на этапе стора).
+class _Mascot extends StatelessWidget {
+  const _Mascot({required this.diameter, required this.colors});
+
+  final double diameter;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: diameter,
+      height: diameter,
+      decoration: BoxDecoration(
+        color: colors.surface,
+        shape: BoxShape.circle,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.primary.withValues(alpha: 0.25),
+            blurRadius: diameter * 0.18,
+            offset: Offset(0, diameter * 0.08),
+          ),
+        ],
+      ),
+      alignment: Alignment.center,
+      child: Text('🐻', style: TextStyle(fontSize: diameter * 0.56)),
     );
   }
 }
@@ -131,48 +157,55 @@ class _GameTeaser {
   final String title;
 }
 
-/// Неактивная карточка-тизер игры.
+/// Неактивная карточка-тизер игры. Размер задаётся снаружи (доля от экрана).
 class _TeaserCard extends StatelessWidget {
-  const _TeaserCard({required this.teaser, required this.colors});
+  const _TeaserCard({
+    required this.teaser,
+    required this.size,
+    required this.colors,
+  });
 
   final _GameTeaser teaser;
+  final double size;
   final AppColors colors;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 104,
-      height: 104,
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: <BoxShadow>[
-          BoxShadow(
-            color: colors.onBackground.withValues(alpha: 0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: <Widget>[
-          Text(teaser.emoji, style: const TextStyle(fontSize: 40)),
-          const SizedBox(height: 6),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 6),
-            child: Text(
-              teaser.title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w600,
-                  ),
+    return SizedBox(
+      width: size,
+      height: size,
+      child: Container(
+        decoration: BoxDecoration(
+          color: colors.surface,
+          borderRadius: BorderRadius.circular(size * 0.22),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.08),
+              blurRadius: size * 0.12,
+              offset: Offset(0, size * 0.06),
             ),
-          ),
-        ],
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Text(teaser.emoji, style: TextStyle(fontSize: size * 0.4)),
+            SizedBox(height: size * 0.06),
+            Padding(
+              padding: EdgeInsets.symmetric(horizontal: size * 0.06),
+              child: Text(
+                teaser.title,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                      color: colors.onSurface.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w600,
+                    ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
