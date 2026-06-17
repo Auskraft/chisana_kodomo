@@ -51,12 +51,16 @@ class AnimalSet {
   /// Сколько зверей из [Animals.all] задействовано (растёт по наборам).
   final int poolSize;
 
-  /// Плавная кривая: больше вариантов и больше зверей в пуле.
+  /// Плавная длинная кривая: больше вариантов и больше зверей в пуле (пул не
+  /// превышает число зверей в [Animals.all] = 10).
   static const List<AnimalSet> all = <AnimalSet>[
     AnimalSet(index: 0, optionCount: 2, poolSize: 4),
-    AnimalSet(index: 1, optionCount: 3, poolSize: 6),
-    AnimalSet(index: 2, optionCount: 4, poolSize: 8),
-    AnimalSet(index: 3, optionCount: 4, poolSize: 10),
+    AnimalSet(index: 1, optionCount: 3, poolSize: 5),
+    AnimalSet(index: 2, optionCount: 3, poolSize: 6),
+    AnimalSet(index: 3, optionCount: 4, poolSize: 7),
+    AnimalSet(index: 4, optionCount: 4, poolSize: 8),
+    AnimalSet(index: 5, optionCount: 4, poolSize: 9),
+    AnimalSet(index: 6, optionCount: 4, poolSize: 10),
   ];
 }
 

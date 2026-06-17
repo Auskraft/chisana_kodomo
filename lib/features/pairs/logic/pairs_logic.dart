@@ -25,12 +25,15 @@ class PairsSet {
   /// Всего карточек на поле.
   int get cardCount => pairs * 2;
 
-  /// Плавная кривая: 2 → 3 → 4 → 6 пар.
+  /// Плавная длинная кривая: 2 → 3 → 4 → 5 → 6 → 8 пар (сетка остаётся
+  /// портретно-удобной). Карточек на поле = pairs × 2.
   static const List<PairsSet> all = <PairsSet>[
     PairsSet(index: 0, pairs: 2, columns: 2), // 2×2
     PairsSet(index: 1, pairs: 3, columns: 2), // 2×3
     PairsSet(index: 2, pairs: 4, columns: 2), // 2×4
-    PairsSet(index: 3, pairs: 6, columns: 3), // 3×4
+    PairsSet(index: 3, pairs: 5, columns: 2), // 2×5
+    PairsSet(index: 4, pairs: 6, columns: 3), // 3×4
+    PairsSet(index: 5, pairs: 8, columns: 4), // 4×4
   ];
 
   /// Звёзды за набор по числу несовпадений. Память: промахи — норма, поэтому

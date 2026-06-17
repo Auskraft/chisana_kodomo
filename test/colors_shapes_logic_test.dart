@@ -97,8 +97,8 @@ void main() {
     test('род согласован: звезда — женский, остальные — мужской', () {
       expect(csItemName(const CSItem(0, ShapeKind.circle)), 'красный круг');
       expect(csItemName(const CSItem(1, ShapeKind.star)), 'жёлтая звезда');
-      expect(kColorNameM, hasLength(6));
-      expect(kColorNameF, hasLength(6));
+      expect(kColorNameM, hasLength(8));
+      expect(kColorNameF, hasLength(8));
     });
   });
 }

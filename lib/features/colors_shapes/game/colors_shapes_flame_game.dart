@@ -21,6 +21,8 @@ const List<Color> kShapeColors = <Color>[
   Color(0xFF66BB6A), // зелёный
   Color(0xFFFF8A5B), // оранжевый
   Color(0xFF9C6ADE), // фиолетовый
+  Color(0xFFF06292), // розовый
+  Color(0xFF8D6E63), // коричневый
 ];
 
 /// Нарисовать фигуру [kind] цветом [paint] с центром [center] и «радиусом».
@@ -67,6 +69,23 @@ void drawShape(
       }
       path.close();
       canvas.drawPath(path, paint);
+    case ShapeKind.diamond:
+      final path = Path()
+        ..moveTo(center.dx, center.dy - radius)
+        ..lineTo(center.dx + radius * 0.85, center.dy)
+        ..lineTo(center.dx, center.dy + radius)
+        ..lineTo(center.dx - radius * 0.85, center.dy)
+        ..close();
+      canvas.drawPath(path, paint);
+    case ShapeKind.oval:
+      canvas.drawOval(
+        Rect.fromCenter(
+          center: center,
+          width: radius * 2,
+          height: radius * 1.4,
+        ),
+        paint,
+      );
   }
 }
 

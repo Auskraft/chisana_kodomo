@@ -9,8 +9,9 @@ class OddCategory {
   final List<String> items;
 }
 
-/// Группы предметов для «Что лишнее». Каждая — минимум 8 эмодзи (хватает на
-/// большинство до 4 предметов).
+/// Группы предметов для «Что лишнее». Каждая — 8 эмодзи (хватает на большинство
+/// до 8 предметов). Категории заметно различаются между собой, чтобы «лишний»
+/// был однозначным даже для малыша.
 abstract final class OddItems {
   static const List<OddCategory> categories = <OddCategory>[
     OddCategory('фрукты', <String>['🍎', '🍌', '🍓', '🍇', '🍊', '🍉', '🍐', '🍒']),
@@ -18,6 +19,10 @@ abstract final class OddItems {
     OddCategory('машинки', <String>['🚗', '🚌', '🚓', '🚒', '🚜', '🚕', '🚙', '🛵']),
     OddCategory('сладости', <String>['🍰', '🍪', '🍭', '🍬', '🍩', '🧁', '🍫', '🍦']),
     OddCategory('одежда', <String>['👕', '👗', '👚', '🧦', '🧣', '🧤', '👖', '👒']),
+    OddCategory('игрушки', <String>['🧸', '🪁', '🎲', '🪀', '🎯', '🪅', '🎀', '🪄']),
+    OddCategory('музыка', <String>['🥁', '🎺', '🎸', '🎻', '🎹', '🎷', '🎤', '🎼']),
+    OddCategory('спорт', <String>['⚽', '🏀', '🏈', '⚾', '🎾', '🏐', '🏉', '🎱']),
+    OddCategory('космос', <String>['🚀', '🪐', '🌙', '🌟', '🌠', '🔭', '🛸', '🌌']),
   ];
 }
 
@@ -34,8 +39,10 @@ class OddSet {
   static const List<OddSet> all = <OddSet>[
     OddSet(index: 0, optionCount: 3),
     OddSet(index: 1, optionCount: 4),
-    OddSet(index: 2, optionCount: 4),
-    OddSet(index: 3, optionCount: 5),
+    OddSet(index: 2, optionCount: 5),
+    OddSet(index: 3, optionCount: 6),
+    OddSet(index: 4, optionCount: 7),
+    OddSet(index: 5, optionCount: 8),
   ];
 }
 

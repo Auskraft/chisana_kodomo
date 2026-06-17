@@ -58,7 +58,8 @@ class PairsGame extends FlameGame {
   final ValueNotifier<int> earnedStars = ValueNotifier<int>(0);
 
   static const List<String> _emojiPool = <String>[
-    '🍎', '🐶', '⭐', '🐰', '🌸', '🐟', '🚗', '🎈', '🍓', '🐤',
+    '🍎', '🐶', '⭐', '🐰', '🌸', '🐟', '🚗', '🎈',
+    '🍓', '🐤', '🦋', '🍋', '🐝', '🐢', '🍉', '🎁',
   ];
 
   bool get _active => phase.value == PairsPhase.playing && !isPaused.value;

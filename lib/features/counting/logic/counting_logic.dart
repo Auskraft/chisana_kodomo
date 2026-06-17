@@ -45,32 +45,20 @@ class CountSet {
   /// (включая правильную). Для [CountMode.tapCount] не используется (0).
   final int optionCount;
 
-  /// Все наборы по порядку. Плавная кривая: учим считать тапом (1–3, затем
-  /// 1–5), потом узнавать цифру (выбор из 2, из 3), и наконец до 10.
+  /// Все наборы по порядку. Плавная длинная кривая: учим считать тапом (1–3,
+  /// затем 1–5), потом узнавать цифру (выбор из 2 → из 3 → из 4) с постепенно
+  /// растущим диапазоном — и наконец до 10.
   static const List<CountSet> all = <CountSet>[
     CountSet(index: 0, mode: CountMode.tapCount, minCount: 1, maxCount: 3),
     CountSet(index: 1, mode: CountMode.tapCount, minCount: 1, maxCount: 5),
-    CountSet(
-      index: 2,
-      mode: CountMode.chooseNumeral,
-      minCount: 1,
-      maxCount: 5,
-      optionCount: 2,
-    ),
-    CountSet(
-      index: 3,
-      mode: CountMode.chooseNumeral,
-      minCount: 2,
-      maxCount: 5,
-      optionCount: 3,
-    ),
-    CountSet(
-      index: 4,
-      mode: CountMode.chooseNumeral,
-      minCount: 3,
-      maxCount: 10,
-      optionCount: 3,
-    ),
+    CountSet(index: 2, mode: CountMode.chooseNumeral, minCount: 1, maxCount: 5, optionCount: 2),
+    CountSet(index: 3, mode: CountMode.chooseNumeral, minCount: 1, maxCount: 5, optionCount: 3),
+    CountSet(index: 4, mode: CountMode.chooseNumeral, minCount: 2, maxCount: 6, optionCount: 3),
+    CountSet(index: 5, mode: CountMode.chooseNumeral, minCount: 2, maxCount: 7, optionCount: 3),
+    CountSet(index: 6, mode: CountMode.chooseNumeral, minCount: 3, maxCount: 8, optionCount: 3),
+    CountSet(index: 7, mode: CountMode.chooseNumeral, minCount: 3, maxCount: 9, optionCount: 4),
+    CountSet(index: 8, mode: CountMode.chooseNumeral, minCount: 4, maxCount: 10, optionCount: 4),
+    CountSet(index: 9, mode: CountMode.chooseNumeral, minCount: 5, maxCount: 10, optionCount: 4),
   ];
 }
 

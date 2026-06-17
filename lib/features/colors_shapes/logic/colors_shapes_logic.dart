@@ -1,7 +1,7 @@
 import 'dart:math';
 
 /// Вид фигуры.
-enum ShapeKind { circle, square, triangle, star }
+enum ShapeKind { circle, square, triangle, star, diamond, oval }
 
 /// По какому признаку ищем совпадение в раунде.
 enum MatchMode { color, shape, both }
@@ -33,12 +33,19 @@ class CSSet {
   /// Сколько цветов палитры задействовано (растёт по наборам).
   final int colorCount;
 
-  /// Плавная кривая: сперва по цвету, потом по форме, затем по обоим (сложнее).
+  /// Плавная длинная кривая: сперва по цвету, потом по форме, затем по обоим
+  /// (сложнее), с ростом числа цветов и вариантов.
   static const List<CSSet> all = <CSSet>[
     CSSet(index: 0, mode: MatchMode.color, optionCount: 3, colorCount: 4),
-    CSSet(index: 1, mode: MatchMode.shape, optionCount: 3, colorCount: 4),
-    CSSet(index: 2, mode: MatchMode.both, optionCount: 3, colorCount: 5),
-    CSSet(index: 3, mode: MatchMode.both, optionCount: 4, colorCount: 6),
+    CSSet(index: 1, mode: MatchMode.color, optionCount: 4, colorCount: 5),
+    CSSet(index: 2, mode: MatchMode.shape, optionCount: 3, colorCount: 4),
+    CSSet(index: 3, mode: MatchMode.shape, optionCount: 4, colorCount: 5),
+    CSSet(index: 4, mode: MatchMode.shape, optionCount: 5, colorCount: 6),
+    CSSet(index: 5, mode: MatchMode.both, optionCount: 3, colorCount: 5),
+    CSSet(index: 6, mode: MatchMode.both, optionCount: 4, colorCount: 6),
+    CSSet(index: 7, mode: MatchMode.both, optionCount: 4, colorCount: 7),
+    CSSet(index: 8, mode: MatchMode.both, optionCount: 5, colorCount: 7),
+    CSSet(index: 9, mode: MatchMode.both, optionCount: 5, colorCount: 8),
   ];
 }
 
@@ -150,14 +157,16 @@ class CSSession {
 
 // ── Имена для голоса (чистые строки; цвета — в render-слое) ────────────────────
 
-/// Названия цветов (мужской род — для круга/квадрата/треугольника).
+/// Названия цветов (мужской род — для круга/квадрата/треугольника/ромба/овала).
 const List<String> kColorNameM = <String>[
   'красный', 'жёлтый', 'синий', 'зелёный', 'оранжевый', 'фиолетовый',
+  'розовый', 'коричневый',
 ];
 
 /// Названия цветов (женский род — для звезды).
 const List<String> kColorNameF = <String>[
   'красная', 'жёлтая', 'синяя', 'зелёная', 'оранжевая', 'фиолетовая',
+  'розовая', 'коричневая',
 ];
 
 extension ShapeKindX on ShapeKind {
@@ -172,6 +181,10 @@ extension ShapeKindX on ShapeKind {
         return 'треугольник';
       case ShapeKind.star:
         return 'звезда';
+      case ShapeKind.diamond:
+        return 'ромб';
+      case ShapeKind.oval:
+        return 'овал';
     }
   }
 
