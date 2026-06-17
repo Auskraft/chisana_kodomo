@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
 import '../counting/counting_game_screen.dart';
 import '../counting/logic/counting_logic.dart';
+import '../settings/settings_screen.dart';
 
 /// Лобби-заглушка приложения «Chisana kodomo».
 ///
@@ -62,6 +63,21 @@ class LobbyScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        tooltip: 'Настройки',
+                        icon: Icon(
+                          Icons.settings_rounded,
+                          color: colors.onBackground.withValues(alpha: 0.55),
+                        ),
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (_) => const SettingsScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
                     _Mascot(diameter: mascot, colors: colors),
                     SizedBox(height: vGap),
                     Text(
