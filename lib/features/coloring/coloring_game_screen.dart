@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
@@ -10,6 +12,11 @@ import '../../core/voice/voice.dart';
 import 'game/coloring_flame_game.dart';
 import 'logic/coloring_logic.dart';
 import 'ui/coloring_overlays.dart';
+
+/// Окно ожидания второго пальца перед покраской: если второй палец ложится в
+/// этот срок — это зум (без случайной заливки/мазка), иначе красим. Подобрано так,
+/// чтобы одиночный тап оставался отзывчивым (быстрый тап красит сразу по отпусканию).
+const Duration _kPaintHoldOff = Duration(milliseconds: 100);
 
 /// Экран-хост «Раскраска»: Flame-холст + контролы (режим/палитра/действия) и
 /// похвала по завершению. Творческая студия — без наборов/звёзд/прогресса.
@@ -28,6 +35,9 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   bool _painting = false;
   bool _zooming = false;
   double _zoomStartDist = 0;
+  // Отложенный (ещё не применённый) одиночный тап — ждём, не пойдёт ли зум.
+  Offset? _pendingDownPos;
+  Timer? _paintDelay;
 
   @override
   void didChangeDependencies() {
@@ -60,19 +70,40 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   }
 
   // ── Ввод холста: 1 палец рисует/заливает, 2 пальца — зум/панорама ────────────
+  // Покраску НЕ применяем сразу по касанию: ждём окно [_kPaintHoldOff]. Лёг второй
+  // палец за это время → зум, краски нет (иначе при зуме срабатывала заливка/мазок).
   void _onPointerDown(PointerDownEvent e) {
     _pointers[e.pointer] = e.localPosition;
     if (_game.mode.value != ColoringMode.fill || !_game.canPaintRaster) return;
     if (_pointers.length >= 2) {
+      _cancelPendingPaint(); // второй палец — отменяем отложенный тап
       if (_painting) {
         _painting = false;
-        _game.canvasCancel(); // лёг второй палец — мазок отменяем, идём в зум
+        _game.canvasCancel(); // начатый мазок отменяем, идём в зум
       }
       _beginZoom();
     } else if (_pointers.length == 1) {
-      _painting = true;
-      _game.canvasDown(e.localPosition);
+      _pendingDownPos = e.localPosition;
+      _paintDelay?.cancel();
+      _paintDelay = Timer(_kPaintHoldOff, _startPendingPaint);
     }
+  }
+
+  /// Окно истекло, второй палец не лёг — начинаем покраску с точки касания.
+  void _startPendingPaint() {
+    _paintDelay = null;
+    final pos = _pendingDownPos;
+    _pendingDownPos = null;
+    if (pos == null || _zooming || _pointers.length != 1) return;
+    _painting = true;
+    _game.canvasDown(pos);
+  }
+
+  /// Сбросить отложенный (ещё не применённый) тап.
+  void _cancelPendingPaint() {
+    _paintDelay?.cancel();
+    _paintDelay = null;
+    _pendingDownPos = null;
   }
 
   void _beginZoom() {
@@ -99,18 +130,29 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   void _onPointerUp(PointerUpEvent e) {
     _pointers.remove(e.pointer);
     if (_zooming && _pointers.length < 2) _zooming = false;
-    if (_painting && _pointers.isEmpty) {
-      _painting = false;
-      _game.canvasUp();
+    if (_pointers.isEmpty) {
+      if (_pendingDownPos != null) {
+        // Палец поднят до истечения окна — одиночный тап: красим сейчас.
+        final pos = _pendingDownPos!;
+        _cancelPendingPaint();
+        _game.canvasDown(pos);
+        _game.canvasUp();
+      } else if (_painting) {
+        _painting = false;
+        _game.canvasUp();
+      }
     }
   }
 
   void _onPointerCancel(PointerCancelEvent e) {
     _pointers.remove(e.pointer);
     if (_zooming && _pointers.length < 2) _zooming = false;
-    if (_painting && _pointers.isEmpty) {
-      _painting = false;
-      _game.canvasUp();
+    if (_pointers.isEmpty) {
+      _cancelPendingPaint(); // отменённый жест — отложенный тап отбрасываем
+      if (_painting) {
+        _painting = false;
+        _game.canvasUp();
+      }
     }
   }
 
@@ -167,6 +209,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
 
   @override
   void dispose() {
+    _paintDelay?.cancel();
     _game.completed.removeListener(_onCompleted);
     Voice.instance.stop();
     super.dispose();
