@@ -8,6 +8,7 @@ import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/sfx.dart';
+import '../../../core/components/ui_sprites.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
@@ -246,10 +247,17 @@ class _SoundButton extends PositionComponent with TapCallbacks {
   @override
   Future<void> onLoad() async {
     _spk = TextPaint(style: TextStyle(fontSize: cardSize * 0.46));
+    await UiSprites.load('sound');
   }
 
   @override
   void render(Canvas canvas) {
+    final icon = UiSprites.cached('sound');
+    if (icon != null) {
+      UiSprites.paintInRect(canvas, icon, Rect.fromLTWH(0, 0, size.x, size.y));
+      return;
+    }
+    // Запас (нет файла): белая карточка + эмодзи-динамик.
     final rrect = RRect.fromRectAndRadius(
       Rect.fromLTWH(0, 0, size.x, size.y),
       Radius.circular(size.x * 0.28),

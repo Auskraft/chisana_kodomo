@@ -8,6 +8,7 @@ import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/audio/sfx.dart';
+import '../../../core/components/ui_sprites.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
@@ -252,13 +253,25 @@ class _PromptCard extends PositionComponent with TapCallbacks {
   Future<void> onLoad() async {
     _q = TextPaint(style: TextStyle(fontSize: cardSize * 0.5));
     _spk = TextPaint(style: TextStyle(fontSize: cardSize * 0.26));
+    await UiSprites.load('sound');
   }
 
   @override
   void render(Canvas canvas) {
     // Без подложки — «?» и динамик прямо на фоне; динамик опущен ниже.
     _q.render(canvas, '❓', Vector2(size.x / 2, size.y * 0.38), anchor: Anchor.center);
-    _spk.render(canvas, '🔊', Vector2(size.x / 2, size.y * 0.92), anchor: Anchor.center);
+    final icon = UiSprites.cached('sound');
+    if (icon != null) {
+      final side = size.x * 0.34;
+      UiSprites.paintInRect(
+        canvas,
+        icon,
+        Rect.fromCenter(
+            center: Offset(size.x / 2, size.y * 0.92), width: side, height: side),
+      );
+    } else {
+      _spk.render(canvas, '🔊', Vector2(size.x / 2, size.y * 0.92), anchor: Anchor.center);
+    }
   }
 
   @override

@@ -42,7 +42,7 @@ class MusicHud extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            _HomeButton(onTap: onHome, colors: colors),
+            _HomeButton(onTap: onHome),
           ],
         ),
       ),
@@ -50,27 +50,17 @@ class MusicHud extends StatelessWidget {
   }
 }
 
-/// Кнопка «домой» (выход в лобби) — стиль как у круглых кнопок HUD.
+/// Кнопка «домой» (выход в лобби) — клеевидная иконка `assets/ui/home.png`.
 class _HomeButton extends StatelessWidget {
-  const _HomeButton({required this.onTap, required this.colors});
+  const _HomeButton({required this.onTap});
 
   final VoidCallback onTap;
-  final AppColors colors;
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: colors.surface,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(Icons.home_rounded, color: colors.onSurface, size: 24),
-        ),
-      ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Image.asset('assets/ui/home.png', width: 48, height: 48),
     );
   }
 }

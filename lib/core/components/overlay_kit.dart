@@ -198,19 +198,9 @@ class PauseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.appColors;
-    return Material(
-      color: colors.surface,
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      elevation: 2,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Icon(Icons.pause_rounded, color: colors.onSurface, size: 24),
-        ),
-      ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Image.asset('assets/ui/pause.png', width: 44, height: 44),
     );
   }
 }

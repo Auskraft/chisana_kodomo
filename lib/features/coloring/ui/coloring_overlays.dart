@@ -15,16 +15,16 @@ String _modeLabel(ColoringMode m) {
   }
 }
 
-/// Иконка режима для таб-бара (подпись ушла в Semantics — визуально без текста).
-/// Выбраны так, чтобы не путаться с иконками инструментов (ведро/карандаш/кисть).
-IconData _modeIcon(ColoringMode m) {
+/// Арт-иконка режима для таб-бара (подпись — в Semantics, визуально без текста).
+/// Клеевидные PNG в общем стиле нав-иконок (`assets/ui/`).
+String _modeAsset(ColoringMode m) {
   switch (m) {
     case ColoringMode.fill:
-      return Icons.palette_rounded;
+      return 'assets/ui/mode_paint.png';
     case ColoringMode.byNumber:
-      return Icons.format_list_numbered_rounded;
+      return 'assets/ui/mode_numbers.png';
     case ColoringMode.freeDraw:
-      return Icons.gesture_rounded;
+      return 'assets/ui/mode_draw.png';
   }
 }
 
@@ -67,7 +67,7 @@ class ColoringTopBar extends StatelessWidget {
         padding: const EdgeInsets.all(10),
         child: Row(
           children: <Widget>[
-            _RoundBtn(icon: Icons.home_rounded, colors: colors, onTap: onHome),
+            _NavIconBtn(asset: 'assets/ui/home.png', onTap: onHome),
             // Центр: таб-бар режимов (выбор тематики переехал в пикер картинок).
             Expanded(
               child: Row(
@@ -77,11 +77,7 @@ class ColoringTopBar extends StatelessWidget {
                 ],
               ),
             ),
-            _RoundBtn(
-              icon: Icons.lock_outline_rounded,
-              colors: colors,
-              onTap: onLock,
-            ),
+            _NavIconBtn(asset: 'assets/ui/lock.png', onTap: onLock),
           ],
         ),
       ),
@@ -396,20 +392,10 @@ class ColoringBottomBar extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
                       if (showClear)
-                        _RoundActionBtn(
-                          icon: Icons.refresh_rounded,
-                          tint: colors.primary,
-                          colors: colors,
-                          onTap: onClear,
-                        ),
+                        _NavIconBtn(asset: 'assets/ui/restart.png', onTap: onClear),
                       if (showClear && showPicture) const SizedBox(width: 8),
                       if (showPicture)
-                        _RoundActionBtn(
-                          icon: Icons.image_rounded,
-                          tint: colors.secondary,
-                          colors: colors,
-                          onTap: onPicture,
-                        ),
+                        _NavIconBtn(asset: 'assets/ui/pictures.png', onTap: onPicture),
                     ],
                   ),
                 ],
@@ -484,8 +470,6 @@ class _ModeTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final fg =
-        selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.6);
     return Semantics(
       label: _modeLabel(mode),
       button: true,
@@ -499,10 +483,16 @@ class _ModeTab extends StatelessWidget {
           height: 44,
           alignment: Alignment.center,
           decoration: BoxDecoration(
-            color: selected ? colors.primary : Colors.transparent,
+            color: selected
+                ? colors.primary.withValues(alpha: 0.18)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Icon(_modeIcon(mode), size: 24, color: fg),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 160),
+            opacity: selected ? 1.0 : 0.45,
+            child: Image.asset(_modeAsset(mode), width: 34, height: 34),
+          ),
         ),
       ),
     );
@@ -803,72 +793,8 @@ class _NavIconBtn extends StatelessWidget {
   }
 }
 
-/// Круглая кнопка-действие (Заново/Картинка): белый кружок с цветной иконкой.
-/// Тон [tint] — из темы (`colors.primary`/`colors.secondary`), без хардкода.
-/// Размер 44 совпадает с кастомными PNG-стрелками рядом.
-class _RoundActionBtn extends StatelessWidget {
-  const _RoundActionBtn({
-    required this.icon,
-    required this.tint,
-    required this.colors,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final Color tint;
-  final AppColors colors;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 44,
-        height: 44,
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: colors.surface,
-          shape: BoxShape.circle,
-          border: Border.all(color: tint.withValues(alpha: 0.35), width: 1.5),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colors.onBackground.withValues(alpha: 0.10),
-              blurRadius: 5,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Icon(icon, size: 22, color: tint),
-      ),
-    );
-  }
-}
-
-class _RoundBtn extends StatelessWidget {
-  const _RoundBtn({required this.icon, required this.colors, required this.onTap});
-
-  final IconData icon;
-  final AppColors colors;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: colors.surface.withValues(alpha: 0.92),
-      shape: const CircleBorder(),
-      clipBehavior: Clip.antiAlias,
-      elevation: 1,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(9),
-          child: Icon(icon, color: colors.onSurface.withValues(alpha: 0.7), size: 22),
-        ),
-      ),
-    );
-  }
-}
+// (Круглые кнопки `_RoundBtn`/`_RoundActionBtn` заменены на `_NavIconBtn` с
+// самодостаточными клеевидными PNG-иконками `assets/ui/`.)
 
 /// Открыть пикер картинок по кнопке «Картинка»: bottom sheet с сеткой миниатюр,
 /// сгруппированных по сложности (заголовки «Сложность №N»). Тап по карточке —
