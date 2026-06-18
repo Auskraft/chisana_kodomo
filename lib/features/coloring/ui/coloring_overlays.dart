@@ -924,17 +924,23 @@ class _PicturePickerSheet extends StatefulWidget {
 class _PicturePickerSheetState extends State<_PicturePickerSheet> {
   // Выбранный таб тематики: null = «Все» (по умолчанию), иначе ключ темы.
   String? _tab;
+  // Фильтр «только избранное»: показывает любимые из всех тем (взаимоисключающий
+  // с табами тем).
+  bool _favOnly = false;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final text = Theme.of(context).textTheme;
     final showTabs = widget.categories.length >= 2;
+    final hasFav = widget.picks.any((p) => widget.isFavorite(p.asset));
 
-    // Фильтр по табу тематики, затем группировка по уровню сложности.
-    final shown = _tab == null
-        ? widget.picks
-        : widget.picks.where((p) => p.category == _tab).toList();
+    // Фильтр (избранное / тема / все), затем группировка по уровню сложности.
+    final shown = _favOnly
+        ? widget.picks.where((p) => widget.isFavorite(p.asset)).toList()
+        : _tab == null
+            ? widget.picks
+            : widget.picks.where((p) => p.category == _tab).toList();
     final byLevel = <int, List<ColoringPick>>{};
     for (final p in shown) {
       (byLevel[p.level] ??= <ColoringPick>[]).add(p);
@@ -988,7 +994,7 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
                           color: colors.onSurface,
                         ),
                       ),
-                      if (showTabs) ...<Widget>[
+                      if (showTabs || hasFav || _favOnly) ...<Widget>[
                         const SizedBox(height: 10),
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
@@ -996,17 +1002,32 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
                             children: <Widget>[
                               _PickerThemeTab(
                                 label: 'Все',
-                                selected: _tab == null,
+                                selected: !_favOnly && _tab == null,
                                 colors: colors,
-                                onTap: () => setState(() => _tab = null),
+                                onTap: () => setState(() {
+                                  _favOnly = false;
+                                  _tab = null;
+                                }),
                               ),
-                              for (final c in widget.categories)
+                              // ❤ — только избранное (из всех тем).
+                              if (hasFav || _favOnly)
                                 _PickerThemeTab(
-                                  emoji: coloringCategoryMeta(c).emoji,
-                                  selected: _tab == c,
+                                  iconAsset: 'assets/ui/favorite.png',
+                                  selected: _favOnly,
                                   colors: colors,
-                                  onTap: () => setState(() => _tab = c),
+                                  onTap: () => setState(() => _favOnly = true),
                                 ),
+                              if (showTabs)
+                                for (final c in widget.categories)
+                                  _PickerThemeTab(
+                                    emoji: coloringCategoryMeta(c).emoji,
+                                    selected: !_favOnly && _tab == c,
+                                    colors: colors,
+                                    onTap: () => setState(() {
+                                      _favOnly = false;
+                                      _tab = c;
+                                    }),
+                                  ),
                             ],
                           ),
                         ),
@@ -1021,6 +1042,29 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
                     controller: scrollController,
                     padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
                     children: <Widget>[
+                      // Пусто (обычно — пустой таб «избранное»): подсказка.
+                      if (levels.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 36),
+                          child: Column(
+                            children: <Widget>[
+                              Opacity(
+                                opacity: 0.4,
+                                child: Image.asset('assets/ui/favorite.png',
+                                    width: 48, height: 48),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Пока нет любимых раскрасок.\nНажми сердечко на картинке, чтобы добавить.',
+                                textAlign: TextAlign.center,
+                                style: text.titleSmall?.copyWith(
+                                  color: colors.onSurface.withValues(alpha: 0.6),
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       for (final level in levels) ...<Widget>[
                         _LevelHeader(
                           level: level,
@@ -1072,6 +1116,7 @@ class _PickerThemeTab extends StatelessWidget {
   const _PickerThemeTab({
     this.label,
     this.emoji,
+    this.iconAsset,
     required this.selected,
     required this.colors,
     required this.onTap,
@@ -1079,6 +1124,7 @@ class _PickerThemeTab extends StatelessWidget {
 
   final String? label;
   final String? emoji;
+  final String? iconAsset;
   final bool selected;
   final AppColors colors;
   final VoidCallback onTap;
@@ -1097,21 +1143,29 @@ class _PickerThemeTab extends StatelessWidget {
             SizedBox(
               height: 30,
               child: Center(
-                child: emoji != null
+                child: iconAsset != null
                     ? Opacity(
                         opacity: selected ? 1.0 : 0.45,
-                        child:
-                            Text(emoji!, style: const TextStyle(fontSize: 24)),
+                        child: Image.asset(iconAsset!, width: 24, height: 24),
                       )
-                    : Text(
-                        label ?? '',
-                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                              color: selected
-                                  ? colors.primary
-                                  : colors.onSurface.withValues(alpha: 0.5),
-                              fontWeight: FontWeight.w800,
-                            ),
-                      ),
+                    : emoji != null
+                        ? Opacity(
+                            opacity: selected ? 1.0 : 0.45,
+                            child: Text(emoji!,
+                                style: const TextStyle(fontSize: 24)),
+                          )
+                        : Text(
+                            label ?? '',
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelLarge
+                                ?.copyWith(
+                                  color: selected
+                                      ? colors.primary
+                                      : colors.onSurface.withValues(alpha: 0.5),
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
               ),
             ),
             const SizedBox(height: 5),
