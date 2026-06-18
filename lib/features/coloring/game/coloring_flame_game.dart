@@ -54,11 +54,19 @@ class ColoringGame extends FlameGame {
   /// Доступные уровни сложности в текущей теме (с картинками).
   List<int> get coloringLevels => RasterGallery.levelsFor(category.value);
 
-  /// Картинки текущей темы по порядку уровня — для пикера (карусели).
+  /// Картинки текущей темы по порядку уровня (для проверки «есть что выбрать»).
   List<ColoringPick> picksForCurrentCategory() => <ColoringPick>[
         for (final lvl in RasterGallery.levelsFor(category.value))
           for (final asset in RasterGallery.imagesFor(category.value, lvl))
-            ColoringPick(asset: asset, level: lvl),
+            ColoringPick(asset: asset, level: lvl, category: category.value),
+      ];
+
+  /// Картинки ВСЕХ тем — для пикера с табами тематик («Все» + по темам).
+  List<ColoringPick> allPicks() => <ColoringPick>[
+        for (final cat in RasterGallery.categories)
+          for (final lvl in RasterGallery.levelsFor(cat))
+            for (final asset in RasterGallery.imagesFor(cat, lvl))
+              ColoringPick(asset: asset, level: lvl, category: cat),
       ];
 
   /// Можно ли открыть пикер картинок (есть растровые картинки в режиме «Залить»).
@@ -153,11 +161,14 @@ class ColoringGame extends FlameGame {
     _rebuild();
   }
 
-  /// Выбрать конкретную картинку из пикера: ставит её уровень и индекс в уровне.
-  void selectRasterPicture(int lvl, String asset) {
-    final imgs = RasterGallery.imagesFor(category.value, lvl);
+  /// Выбрать картинку из пикера, возможно из другой темы [cat]: ставит
+  /// тему/уровень/индекс и перестраивает ОДИН раз (иначе Flame отложит add/remove
+  /// и выйдет дубль). Смена темы тут же отражается в капсуле «Тема» (шапка).
+  void selectRasterPicture(String cat, int lvl, String asset) {
+    final imgs = RasterGallery.imagesFor(cat, lvl);
     final idx = imgs.indexOf(asset);
     if (idx < 0) return;
+    category.value = cat;
     level.value = lvl;
     pictureIndex.value = idx;
     completed.value = false;

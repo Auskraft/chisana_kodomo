@@ -984,6 +984,8 @@ class _RoundBtn extends StatelessWidget {
 Future<void> showColoringPicturePicker(
   BuildContext context, {
   required List<ColoringPick> picks,
+  required List<String> categories,
+  required String currentCategory,
   required String? currentAsset,
   required bool Function(String asset) isFavorite,
   required Future<void> Function(String asset) onToggleFavorite,
@@ -995,6 +997,8 @@ Future<void> showColoringPicturePicker(
     backgroundColor: Colors.transparent,
     builder: (ctx) => _PicturePickerSheet(
       picks: picks,
+      categories: categories,
+      currentCategory: currentCategory,
       currentAsset: currentAsset,
       isFavorite: isFavorite,
       onToggleFavorite: onToggleFavorite,
@@ -1009,6 +1013,8 @@ Future<void> showColoringPicturePicker(
 class _PicturePickerSheet extends StatefulWidget {
   const _PicturePickerSheet({
     required this.picks,
+    required this.categories,
+    required this.currentCategory,
     required this.currentAsset,
     required this.isFavorite,
     required this.onToggleFavorite,
@@ -1016,6 +1022,8 @@ class _PicturePickerSheet extends StatefulWidget {
   });
 
   final List<ColoringPick> picks;
+  final List<String> categories;
+  final String currentCategory;
   final String? currentAsset;
   final bool Function(String asset) isFavorite;
   final Future<void> Function(String asset) onToggleFavorite;
@@ -1026,14 +1034,28 @@ class _PicturePickerSheet extends StatefulWidget {
 }
 
 class _PicturePickerSheetState extends State<_PicturePickerSheet> {
+  // Выбранный таб тематики: null = «Все», иначе ключ темы.
+  String? _tab;
+
+  @override
+  void initState() {
+    super.initState();
+    // По умолчанию — текущая тема (если тем ≥2), иначе «Все».
+    _tab = widget.categories.length >= 2 ? widget.currentCategory : null;
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final text = Theme.of(context).textTheme;
+    final showTabs = widget.categories.length >= 2;
 
-    // Группировка картинок по уровню сложности; уровни — по возрастанию.
+    // Фильтр по табу тематики, затем группировка по уровню сложности.
+    final shown = _tab == null
+        ? widget.picks
+        : widget.picks.where((p) => p.category == _tab).toList();
     final byLevel = <int, List<ColoringPick>>{};
-    for (final p in widget.picks) {
+    for (final p in shown) {
       (byLevel[p.level] ??= <ColoringPick>[]).add(p);
     }
     final levels = byLevel.keys.toList()..sort();
@@ -1059,67 +1081,160 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
           ),
           child: SafeArea(
             top: false,
-            child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(16, 10, 16, 20),
+            child: Column(
               children: <Widget>[
-                // Ручка-«хваталка» сверху.
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 5,
-                    decoration: BoxDecoration(
-                      color: colors.onSurface.withValues(alpha: 0.18),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  'Выбери картинку',
-                  textAlign: TextAlign.center,
-                  style: text.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w800,
-                    color: colors.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                for (final level in levels) ...<Widget>[
-                  _LevelHeader(
-                    level: level,
-                    count: byLevel[level]!.length,
-                    colors: colors,
-                  ),
-                  const SizedBox(height: 10),
-                  GridView.extent(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    maxCrossAxisExtent: 118,
-                    mainAxisSpacing: 10,
-                    crossAxisSpacing: 10,
-                    childAspectRatio: 0.86,
+                // ── Закреплённая шапка: хваталка, заголовок, табы тематик ──────
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  child: Column(
                     children: <Widget>[
-                      for (final pick in byLevel[level]!)
-                        _PicturePickerCard(
-                          pick: pick,
-                          selected: pick.asset == widget.currentAsset,
-                          favorite: widget.isFavorite(pick.asset),
-                          colors: colors,
-                          onTap: () => widget.onSelect(pick),
-                          onToggleFavorite: () async {
-                            await widget.onToggleFavorite(pick.asset);
-                            if (mounted) setState(() {});
-                          },
+                      Center(
+                        child: Container(
+                          width: 44,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: colors.onSurface.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(3),
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Выбери картинку',
+                        textAlign: TextAlign.center,
+                        style: text.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      if (showTabs) ...<Widget>[
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          height: 40,
+                          child: ListView(
+                            scrollDirection: Axis.horizontal,
+                            children: <Widget>[
+                              _PickerThemeTab(
+                                label: 'Все',
+                                selected: _tab == null,
+                                colors: colors,
+                                onTap: () => setState(() => _tab = null),
+                              ),
+                              const SizedBox(width: 8),
+                              for (final c in widget.categories) ...<Widget>[
+                                _PickerThemeTab(
+                                  emoji: coloringCategoryMeta(c).emoji,
+                                  selected: _tab == c,
+                                  colors: colors,
+                                  onTap: () => setState(() => _tab = c),
+                                ),
+                                const SizedBox(width: 8),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                      const SizedBox(height: 8),
                     ],
                   ),
-                  const SizedBox(height: 18),
-                ],
+                ),
+                // ── Сетка превью по уровням сложности (скролл) ────────────────
+                Expanded(
+                  child: ListView(
+                    controller: scrollController,
+                    padding: const EdgeInsets.fromLTRB(16, 4, 16, 20),
+                    children: <Widget>[
+                      for (final level in levels) ...<Widget>[
+                        _LevelHeader(
+                          level: level,
+                          count: byLevel[level]!.length,
+                          colors: colors,
+                        ),
+                        const SizedBox(height: 10),
+                        GridView.extent(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          maxCrossAxisExtent: 118,
+                          mainAxisSpacing: 10,
+                          crossAxisSpacing: 10,
+                          childAspectRatio: 0.86,
+                          children: <Widget>[
+                            for (final pick in byLevel[level]!)
+                              _PicturePickerCard(
+                                pick: pick,
+                                selected: pick.asset == widget.currentAsset,
+                                favorite: widget.isFavorite(pick.asset),
+                                colors: colors,
+                                onTap: () => widget.onSelect(pick),
+                                onToggleFavorite: () async {
+                                  await widget.onToggleFavorite(pick.asset);
+                                  if (mounted) setState(() {});
+                                },
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                      ],
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+/// Таб тематики в пикере: «Все» (текст) или иконка-эмодзи темы. Активный —
+/// на заливке [primary]. Список табов горизонтально скроллится (тем может быть
+/// больше). Эмодзи берём из [coloringCategoryMeta].
+class _PickerThemeTab extends StatelessWidget {
+  const _PickerThemeTab({
+    this.label,
+    this.emoji,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final String? label;
+  final String? emoji;
+  final bool selected;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 40,
+        padding: const EdgeInsets.symmetric(horizontal: 14),
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? colors.primary : colors.surface,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected
+                ? colors.primary
+                : colors.onSurface.withValues(alpha: 0.12),
+            width: 2,
+          ),
+        ),
+        child: emoji != null
+            ? Text(emoji!, style: const TextStyle(fontSize: 20))
+            : Text(
+                label ?? '',
+                style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                      color: selected
+                          ? colors.onPrimary
+                          : colors.onSurface.withValues(alpha: 0.8),
+                      fontWeight: FontWeight.w800,
+                    ),
+              ),
+      ),
     );
   }
 }

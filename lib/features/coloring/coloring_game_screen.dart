@@ -155,11 +155,14 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
     final storage = GameStorage.instance;
     showColoringPicturePicker(
       context,
-      picks: _game.picksForCurrentCategory(),
+      picks: _game.allPicks(),
+      categories: _game.coloringCategories,
+      currentCategory: _game.category.value,
       currentAsset: _game.currentAsset,
       isFavorite: storage.isColoringFavorite,
       onToggleFavorite: storage.toggleColoringFavorite,
-      onSelect: (pick) => _game.selectRasterPicture(pick.level, pick.asset),
+      onSelect: (pick) =>
+          _game.selectRasterPicture(pick.category, pick.level, pick.asset),
     );
   }
 
