@@ -247,6 +247,11 @@ class ColoringBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    // Видимость действий: при замке прячем «Заново»/«Картинка», «Картинку» —
+    // ещё и в свободном рисовании (там картинки нет). Разделитель — если есть
+    // хоть одно действие после стрелок.
+    final showClear = !locked;
+    final showPicture = !locked && mode != ColoringMode.freeDraw;
     return SafeArea(
       top: false,
       child: Container(
@@ -387,17 +392,24 @@ class ColoringBottomBar extends StatelessWidget {
             Wrap(
               alignment: WrapAlignment.center,
               crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 6,
+              spacing: 8,
+              runSpacing: 8,
               children: <Widget>[
                 _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
                 _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
-                if (!locked)
-                  _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
-                if (!locked && mode != ColoringMode.freeDraw)
-                  _ActionBtn(
+                if (showClear || showPicture) _ActionDivider(colors: colors),
+                if (showClear)
+                  _ActionChip(
+                    icon: Icons.refresh_rounded,
+                    label: 'Заново',
+                    tint: colors.primary,
+                    onTap: onClear,
+                  ),
+                if (showPicture)
+                  _ActionChip(
                     icon: Icons.image_rounded,
                     label: 'Картинка',
-                    colors: colors,
+                    tint: colors.secondary,
                     onTap: onPicture,
                   ),
               ],
@@ -833,31 +845,67 @@ class _NavIconBtn extends StatelessWidget {
   }
 }
 
-class _ActionBtn extends StatelessWidget {
-  const _ActionBtn({
+/// Кнопка-действие как прямоугольная плитка: иконка + подпись на лёгкой заливке
+/// акцентного цвета. Тон [tint] передаётся из темы (`colors.primary` /
+/// `colors.secondary`) — хардкода нет, в любой палитре раскрашивается сама.
+class _ActionChip extends StatelessWidget {
+  const _ActionChip({
     required this.icon,
     required this.label,
-    required this.colors,
+    required this.tint,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
-  final AppColors colors;
+  final Color tint;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return TextButton.icon(
-      onPressed: onTap,
-      icon: Icon(icon, size: 20),
-      label: Text(label),
-      style: TextButton.styleFrom(
-        foregroundColor: colors.onSurface.withValues(alpha: 0.75),
-        textStyle: Theme.of(context)
-            .textTheme
-            .labelLarge
-            ?.copyWith(fontWeight: FontWeight.w800),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: tint.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: tint.withValues(alpha: 0.32), width: 1.5),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(icon, size: 20, color: tint),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                    color: tint,
+                    fontWeight: FontWeight.w800,
+                  ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Вертикальный разделитель между группами нижнего ряда: отмена/возврат —
+/// слева, действия (Заново/Картинка) — справа.
+class _ActionDivider extends StatelessWidget {
+  const _ActionDivider({required this.colors});
+
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1.5,
+      height: 30,
+      decoration: BoxDecoration(
+        color: colors.onSurface.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(1),
       ),
     );
   }
