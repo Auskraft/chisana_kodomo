@@ -66,26 +66,15 @@ class _MusicGameScreenState extends State<MusicGameScreen> {
                     onStart: _game.start,
                   );
                 case MusicPhase.playing:
-                  return ValueListenableBuilder<bool>(
-                    valueListenable: _game.isPaused,
-                    builder: (context, paused, _) {
-                      if (paused) {
-                        return PausePanel(
-                          onResume: _game.resume,
-                          onRestart: _game.start,
-                          onExit: _exit,
-                        );
-                      }
-                      return ValueListenableBuilder<Instrument>(
-                        valueListenable: _game.instrument,
-                        builder: (context, inst, _) => MusicHud(
-                          onPause: _game.togglePause,
-                          instruments: Instrument.all,
-                          currentId: inst.id,
-                          onInstrument: _game.setInstrument,
-                        ),
-                      );
-                    },
+                  // Свободная игрушка — без пауз; выход кнопкой «домой».
+                  return ValueListenableBuilder<Instrument>(
+                    valueListenable: _game.instrument,
+                    builder: (context, inst, _) => MusicHud(
+                      onHome: _exit,
+                      instruments: Instrument.all,
+                      currentId: inst.id,
+                      onInstrument: _game.setInstrument,
+                    ),
                   );
               }
             },

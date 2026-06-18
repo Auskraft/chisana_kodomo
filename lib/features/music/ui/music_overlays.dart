@@ -1,23 +1,22 @@
 import 'package:flutter/material.dart';
 
-import '../../../core/components/overlay_kit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../logic/music_logic.dart';
 
 /// HUD «Музыки»: сегментированный таб-бар инструментов (как в раскраске — одна
-/// «пилюля», сегменты — иконки-эмодзи, активный на заливке primary) + пауза.
-/// FittedBox (а не скролл): тень пилюли не режется, и на узких экранах группа
-/// чуть ужимается; по высоте не тянется — HUD держится в шапке.
+/// «пилюля», сегменты — иконки, активный на заливке primary) + кнопка «домой».
+/// Свободная игрушка — без пауз/наборов/раундов; выход кнопкой «домой».
+/// FittedBox (а не скролл): тень пилюли не режется и по высоте не тянется.
 class MusicHud extends StatelessWidget {
   const MusicHud({
     super.key,
-    required this.onPause,
+    required this.onHome,
     required this.instruments,
     required this.currentId,
     required this.onInstrument,
   });
 
-  final VoidCallback onPause;
+  final VoidCallback onHome;
   final List<Instrument> instruments;
   final String currentId;
   final ValueChanged<Instrument> onInstrument;
@@ -43,8 +42,33 @@ class MusicHud extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 8),
-            PauseButton(onTap: onPause),
+            _HomeButton(onTap: onHome, colors: colors),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Кнопка «домой» (выход в лобби) — стиль как у круглых кнопок HUD.
+class _HomeButton extends StatelessWidget {
+  const _HomeButton({required this.onTap, required this.colors});
+
+  final VoidCallback onTap;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: colors.surface,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Icon(Icons.home_rounded, color: colors.onSurface, size: 24),
         ),
       ),
     );

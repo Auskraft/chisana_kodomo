@@ -87,34 +87,19 @@ class MusicGame extends FlameGame {
 
   final ValueNotifier<MusicPhase> phase =
       ValueNotifier<MusicPhase>(MusicPhase.ready);
-  final ValueNotifier<bool> isPaused = ValueNotifier<bool>(false);
 
   /// Текущий инструмент (переключается табами; перестраивает клавиатуру).
   final ValueNotifier<Instrument> instrument =
       ValueNotifier<Instrument>(Instrument.all.first);
 
-  bool get _active => phase.value == MusicPhase.playing && !isPaused.value;
+  bool get _active => phase.value == MusicPhase.playing;
 
   @override
   Color backgroundColor() => colors.background;
 
   void start() {
     phase.value = MusicPhase.playing;
-    isPaused.value = false;
-    paused = false;
     _buildKeyboard();
-  }
-
-  void togglePause() {
-    if (phase.value != MusicPhase.playing) return;
-    isPaused.value = !isPaused.value;
-    paused = isPaused.value;
-  }
-
-  void resume() {
-    if (!isPaused.value) return;
-    isPaused.value = false;
-    paused = false;
   }
 
   /// Сменить инструмент: перестраиваем клавиатуру под его вид (если уже играем).
