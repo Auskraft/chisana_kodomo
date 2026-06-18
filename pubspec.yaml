@@ -80,6 +80,7 @@ flutter:
     - assets/backgrounds/
     - assets/sfx/
     - assets/notes/
+    - assets/music/
     - assets/animals/
     - assets/coloring/
     # Раскраски: assets/coloring/<категория>/<уровень>/. Темы — animals/cars/

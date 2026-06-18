@@ -86,6 +86,7 @@ class _InstrumentTabs extends StatelessWidget {
         children: <Widget>[
           for (final inst in instruments)
             _InstrumentSegment(
+              iconAsset: inst.iconAsset,
               emoji: inst.emoji,
               label: inst.name,
               selected: inst.id == currentId,
@@ -98,10 +99,11 @@ class _InstrumentTabs extends StatelessWidget {
   }
 }
 
-/// Один сегмент: иконка-эмодзи инструмента; активный — на заливке [primary].
-/// Название — в Semantics (доступность), визуально только иконка.
+/// Один сегмент: арт-иконка инструмента (эмодзи — фолбэк, если файла нет);
+/// активный — на заливке [primary]. Название — в Semantics (доступность).
 class _InstrumentSegment extends StatelessWidget {
   const _InstrumentSegment({
+    required this.iconAsset,
     required this.emoji,
     required this.label,
     required this.selected,
@@ -109,6 +111,7 @@ class _InstrumentSegment extends StatelessWidget {
     required this.onTap,
   });
 
+  final String iconAsset;
   final String emoji;
   final String label;
   final bool selected;
@@ -126,14 +129,21 @@ class _InstrumentSegment extends StatelessWidget {
         behavior: HitTestBehavior.opaque,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 160),
-          width: 52,
-          height: 44,
+          width: 54,
+          height: 46,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: selected ? colors.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: Text(emoji, style: const TextStyle(fontSize: 24)),
+          child: Image.asset(
+            iconAsset,
+            width: 36,
+            height: 36,
+            cacheWidth: 108,
+            errorBuilder: (_, _, _) =>
+                Text(emoji, style: const TextStyle(fontSize: 24)),
+          ),
         ),
       ),
     );

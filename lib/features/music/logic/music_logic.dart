@@ -68,6 +68,9 @@ class Instrument {
   /// Вид раскладки.
   final InstrumentStyle style;
 
+  /// Путь к арт-иконке таба (`assets/music/<id>.png`; имена файлов = id).
+  String get iconAsset => 'assets/music/$id.png';
+
   /// Инструменты в порядке табов.
   static const List<Instrument> all = <Instrument>[
     Instrument(
