@@ -4,10 +4,10 @@ import '../../../core/components/overlay_kit.dart';
 import '../../../core/theme/app_colors.dart';
 import '../logic/music_logic.dart';
 
-/// HUD «Музыки»: горизонтально-прокручиваемые чипы инструментов + кнопка паузы.
-/// Свободная игра — без набора/раунда. Прокрутка (а не сжатие): чипы остаются
-/// читаемыми и крупными при любом числе инструментов; SingleChildScrollView не
-/// растягивается по высоте — HUD держится в шапке.
+/// HUD «Музыки»: сегментированный таб-бар инструментов (как в раскраске — одна
+/// «пилюля», активный сегмент на заливке primary) + кнопка паузы. Пилюля
+/// горизонтально прокручивается (5 названий не влезают в строку в читаемом
+/// размере); SingleChildScrollView по высоте не тянется — HUD держится в шапке.
 class MusicHud extends StatelessWidget {
   const MusicHud({
     super.key,
@@ -33,19 +33,11 @@ class MusicHud extends StatelessWidget {
             Expanded(
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: <Widget>[
-                    for (final inst in instruments)
-                      Padding(
-                        padding: const EdgeInsets.only(right: 8),
-                        child: _InstrumentChip(
-                          label: inst.name,
-                          selected: inst.id == currentId,
-                          colors: colors,
-                          onTap: () => onInstrument(inst),
-                        ),
-                      ),
-                  ],
+                child: _InstrumentTabs(
+                  instruments: instruments,
+                  currentId: currentId,
+                  colors: colors,
+                  onTap: onInstrument,
                 ),
               ),
             ),
@@ -58,9 +50,55 @@ class MusicHud extends StatelessWidget {
   }
 }
 
-/// Чип-таб инструмента: активный — на заливке [primary].
-class _InstrumentChip extends StatelessWidget {
-  const _InstrumentChip({
+/// Сегментированный таб-бар: одна «пилюля» с сегментами-названиями инструментов
+/// (как `_ModeTabs` в раскраске).
+class _InstrumentTabs extends StatelessWidget {
+  const _InstrumentTabs({
+    required this.instruments,
+    required this.currentId,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final List<Instrument> instruments;
+  final String currentId;
+  final AppColors colors;
+  final ValueChanged<Instrument> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(22),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final inst in instruments)
+            _InstrumentSegment(
+              label: inst.name,
+              selected: inst.id == currentId,
+              colors: colors,
+              onTap: () => onTap(inst),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Один сегмент таб-бара: активный — на заливке [primary], неактивный прозрачный.
+class _InstrumentSegment extends StatelessWidget {
+  const _InstrumentSegment({
     required this.label,
     required this.selected,
     required this.colors,
@@ -79,17 +117,10 @@ class _InstrumentChip extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(20),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colors.onBackground.withValues(alpha: 0.12),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
-          ],
+          color: selected ? colors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(18),
         ),
         child: Text(
           label,
