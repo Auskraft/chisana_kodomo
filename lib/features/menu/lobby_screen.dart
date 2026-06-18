@@ -23,6 +23,12 @@ import 'set_picker_screen.dart';
 /// Кол-во фоновых сцен (`assets/backgrounds/1..N.png`). Переключаются в Настройках.
 const int kBackgroundCount = 9;
 
+/// Насколько приподнять фон (масштаб с якорем по низу): сюжет/маскот уходит в
+/// свободное место над карточками, края не оголяются. 1.0 = как есть; больше =
+/// выше и чуть крупнее. Подбирается на глаз (на высоких экранах cover режет
+/// бока, а не верх/низ, поэтому одним `alignment` фон не поднять).
+const double _kBgRaiseScale = 1.15;
+
 /// Главный экран: иллюстрированный фон (выбирается в Настройках) + витрина игр.
 class LobbyScreen extends StatefulWidget {
   const LobbyScreen({super.key});
@@ -51,6 +57,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/farm.png', playable: true),
     _Game('odd_one_out', 'Что лишнее?', '🧩',
         image: 'assets/games/odd_one_out.png', playable: true),
+    // 9-я игра — пока заглушка (нет логики/арта). Тап → «Скоро!».
+    _Game('puzzles', 'Пазлы', '🧩', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
@@ -111,8 +119,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
       case 'odd_one_out':
         await _openSets(g, OddSet.all.length,
             (int i) => OddOneOutGameScreen(set: OddSet.all[i]));
+      case 'puzzles':
+        _comingSoon();
     }
     if (mounted) setState(() => _stars = _computeStars());
+  }
+
+  /// Заглушка для ещё не готовой игры («Пазлы») — мягкое «Скоро».
+  void _comingSoon() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Скоро! 🧩'),
+        duration: Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _openSets(_Game g, int setCount, Widget Function(int) build) {
@@ -136,11 +157,16 @@ class _LobbyScreenState extends State<LobbyScreen> {
       body: Stack(
         fit: StackFit.expand,
         children: <Widget>[
-          // Выбранный фон.
-          Image.asset(
-            'assets/backgrounds/${_bg + 1}.png',
-            fit: BoxFit.cover,
-            errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
+          // Выбранный фон, слегка приподнят (маскот/сюжет — в свободном месте над
+          // карточками). Якорь по низу: поднимает и чуть увеличивает, края целы.
+          Transform.scale(
+            scale: _kBgRaiseScale,
+            alignment: Alignment.bottomCenter,
+            child: Image.asset(
+              'assets/backgrounds/${_bg + 1}.png',
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
+            ),
           ),
           // Лёгкий скрим сверху — читаемость заголовка на любом фоне.
           IgnorePointer(
