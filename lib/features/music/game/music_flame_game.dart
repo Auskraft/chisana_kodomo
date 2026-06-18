@@ -217,7 +217,7 @@ class _Keyboard extends PositionComponent {
     for (var i = 0; i < count; i++) {
       final note = notes[i]; // слева — низкая нота (до)
       final color = id == 'piano'
-          ? const Color(0xFFFFFFFF)
+          ? const Color(0xFFF2ECDE) // мягкая «слоновая кость», не глянцевый белый
           : id == 'synth'
               ? kSynthColors[i % kSynthColors.length]
               : kOrganColors[i % kOrganColors.length];
@@ -226,6 +226,7 @@ class _Keyboard extends PositionComponent {
         note: note,
         color: color,
         labelColor: _labelColorOn(color),
+        borderColor: id == 'piano' ? const Color(0xFFD8D0BF) : null,
         labelYFrac: 0.86,
         radiusFrac: 0.18,
         padSize: Vector2(keyW, keysH),
@@ -248,11 +249,15 @@ class _Pad extends PositionComponent with TapCallbacks {
     required Vector2 padSize,
     required Vector2 position,
     required this.onHit,
+    this.borderColor,
   }) : super(size: padSize, anchor: Anchor.center, position: position);
 
   final XyloNote note;
   final Color color;
   final Color labelColor;
+
+  /// Обводка (для белых клавиш пианино — чтобы очерчивались, а не сливались/слепили).
+  final Color? borderColor;
 
   /// Где подпись по вертикали (доля высоты): по центру пластины / у низа клавиши.
   final double labelYFrac;
@@ -298,6 +303,15 @@ class _Pad extends PositionComponent with TapCallbacks {
       Radius.circular(math.min(size.x, size.y) * radiusFrac),
     );
     canvas.drawRRect(r, Paint()..color = col);
+    if (borderColor != null) {
+      canvas.drawRRect(
+        r,
+        Paint()
+          ..color = borderColor!
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+    }
     _labelPaint.render(
       canvas,
       note.label,
