@@ -74,7 +74,7 @@ class MusicGame extends FlameGame {
     if (!_active) return;
     Sfx.play(SfxEvent.tap);
     Haptics.tap();
-    // TODO(Фаза 5): сыграть тон Xylophone.frequency(note.semitone).
+    // Тон ноты играет хост (music_game_screen) через onNote → notes/note_N.wav.
     onNote?.call(note);
   }
 
