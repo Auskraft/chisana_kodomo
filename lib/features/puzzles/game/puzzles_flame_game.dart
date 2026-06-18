@@ -333,8 +333,8 @@ class _PuzzleSurface extends PositionComponent with DragCallbacks {
     final hudPad = s.y * 0.1; // верх: место под HUD (набор/пауза)
     final bottomPad = s.y * 0.05; // низ: чтобы лоток не липнул к краю
     final boardGap = s.y * 0.04; // между доской и лотком
+    final trayGap = s.x * 0.025; // зазор между кусочками в лотке (чтоб не слипались)
     final trayAreaW = s.x * 0.96;
-    final trayLeft = (s.x - trayAreaW) / 2;
     final avail = s.y - hudPad - bottomPad;
 
     // Доска — на 15% меньше прежнего максимума; дальше ужимаем, только если
@@ -342,13 +342,15 @@ class _PuzzleSurface extends PositionComponent with DragCallbacks {
     var side = min(s.x * 0.92, s.y * 0.5) * 0.85;
     var cellW = side / cols;
     var cellH = side / rows;
-    var trayCols = max(1, (trayAreaW / cellW).floor());
-    var contentH = side + boardGap + (pieces / trayCols).ceil() * cellH;
+    var trayCols = max(1, ((trayAreaW + trayGap) / (cellW + trayGap)).floor());
+    var trayRows = (pieces / trayCols).ceil();
+    var contentH = side + boardGap + trayRows * cellH + (trayRows - 1) * trayGap;
     for (var attempt = 0; attempt < 40; attempt++) {
       cellW = side / cols;
       cellH = side / rows;
-      trayCols = max(1, (trayAreaW / cellW).floor());
-      contentH = side + boardGap + (pieces / trayCols).ceil() * cellH;
+      trayCols = max(1, ((trayAreaW + trayGap) / (cellW + trayGap)).floor());
+      trayRows = (pieces / trayCols).ceil();
+      contentH = side + boardGap + trayRows * cellH + (trayRows - 1) * trayGap;
       if (contentH <= avail) break;
       side *= 0.94;
     }
@@ -379,9 +381,12 @@ class _PuzzleSurface extends PositionComponent with DragCallbacks {
       );
       final tr = slot ~/ trayCols;
       final tc = slot % trayCols;
+      // Центрируем каждый ряд лотка (последний может быть неполным) + зазор.
+      final inRow = min(trayCols, order.length - tr * trayCols);
+      final rowW = inRow * cellW + (inRow - 1) * trayGap;
       final trayCenter = Vector2(
-        trayLeft + tc * cellW + cellW / 2,
-        trayTop + tr * cellH + cellH / 2,
+        (s.x - rowW) / 2 + tc * (cellW + trayGap) + cellW / 2,
+        trayTop + tr * (cellH + trayGap) + cellH / 2,
       );
       final placed = owner._session.isPlaced(piece);
       final view = _Piece(
