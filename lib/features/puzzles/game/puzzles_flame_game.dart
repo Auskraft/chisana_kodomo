@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 import 'dart:ui' as ui;
 
@@ -7,6 +8,7 @@ import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flame/particles.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show AssetManifest, rootBundle;
 
 import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
@@ -16,6 +18,45 @@ import '../logic/puzzles_logic.dart';
 
 /// Фаза экрана игры «Пазлы».
 enum PuzzlePhase { ready, playing, setDone }
+
+/// Пользовательские картинки-пазлы `assets/puzzles/*.png|jpg`. Если папка пуста —
+/// игра режет эмодзи. Список читается из манифеста один раз; картинки грузятся
+/// по одной (в памяти — только текущая). Картинки лучше **квадратные**.
+abstract final class PuzzlePictures {
+  static List<String> _assets = const <String>[];
+  static bool _loaded = false;
+
+  static bool get hasImages => _assets.isNotEmpty;
+  static List<String> get assets => _assets;
+
+  static Future<void> ensureLoaded() async {
+    if (_loaded) return;
+    _loaded = true;
+    try {
+      final manifest = await AssetManifest.loadFromAssetBundle(rootBundle);
+      _assets = <String>[
+        for (final k in manifest.listAssets())
+          if (k.startsWith('assets/puzzles/') &&
+              (k.toLowerCase().endsWith('.png') ||
+                  k.toLowerCase().endsWith('.jpg') ||
+                  k.toLowerCase().endsWith('.jpeg')))
+            k,
+      ]..sort();
+    } catch (_) {
+      _assets = const <String>[];
+    }
+  }
+
+  static Future<ui.Image?> load(String asset) async {
+    try {
+      final data = await rootBundle.load(asset);
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      return (await codec.getNextFrame()).image;
+    } catch (_) {
+      return null;
+    }
+  }
+}
 
 /// Flame-игра «Пазлы»: большая эмодзи-картинка режется на сетку кусочков; малыш
 /// перетаскивает кусочки из лотка на доску-«призрак». Кусочек встаёт только на
@@ -46,6 +87,8 @@ class PuzzlesGame extends FlameGame {
 
   late PuzzleSession _session;
   String? _lastEmoji;
+  String? _lastAsset;
+  int _buildGen = 0; // версия сборки картинки — гасит устаревшие async-загрузки
 
   final ValueNotifier<PuzzlePhase> phase = ValueNotifier<PuzzlePhase>(
     PuzzlePhase.ready,
@@ -75,6 +118,11 @@ class PuzzlesGame extends FlameGame {
   @override
   Color backgroundColor() => colors.background;
 
+  @override
+  Future<void> onLoad() async {
+    await PuzzlePictures.ensureLoaded();
+  }
+
   /// Начать/перезапустить набор (новая сессия, первая картинка).
   void start() {
     _session = PuzzleSession(set, random: _rng);
@@ -82,7 +130,7 @@ class PuzzlesGame extends FlameGame {
     phase.value = PuzzlePhase.playing;
     isPaused.value = false;
     paused = false;
-    _buildPicture(announce: true);
+    unawaited(_buildPicture(announce: true));
   }
 
   void togglePause() {
@@ -108,6 +156,16 @@ class PuzzlesGame extends FlameGame {
     return e;
   }
 
+  String _pickAsset() {
+    final list = PuzzlePictures.assets;
+    String a;
+    do {
+      a = list[_rng.nextInt(list.length)];
+    } while (a == _lastAsset && list.length > 1);
+    _lastAsset = a;
+    return a;
+  }
+
   /// Нарисовать эмодзи в квадратную картинку [px]×[px] (синхронно — без ожидания).
   ui.Image _renderEmojiImage(String emoji, int px) {
     final recorder = ui.PictureRecorder();
@@ -120,9 +178,27 @@ class PuzzlesGame extends FlameGame {
     return recorder.endRecording().toImageSync(px, px);
   }
 
-  void _buildPicture({bool announce = false}) {
+  /// Построить картинку: пользовательский PNG (если есть) или эмодзи-запас.
+  /// Async из-за загрузки PNG; [_buildGen] гасит устаревшие вызовы (рестарт/выход).
+  Future<void> _buildPicture({bool announce = false}) async {
+    final gen = ++_buildGen;
+    ui.Image img;
+    if (PuzzlePictures.hasImages) {
+      final loaded = await PuzzlePictures.load(_pickAsset());
+      if (gen != _buildGen || !isMounted) {
+        loaded?.dispose();
+        return;
+      }
+      img = loaded ?? _renderEmojiImage(_pickEmoji(), 600);
+    } else {
+      img = _renderEmojiImage(_pickEmoji(), 600);
+    }
+    if (gen != _buildGen || !isMounted) {
+      img.dispose();
+      return;
+    }
     _clearSurface();
-    add(_PuzzleSurface(owner: this, image: _renderEmojiImage(_pickEmoji(), 600)));
+    add(_PuzzleSurface(owner: this, image: img));
     onSay?.call('Собери картинку!', flush: announce);
   }
 
@@ -155,7 +231,7 @@ class PuzzlesGame extends FlameGame {
     } else {
       pictureNumber.value += 1;
       _session.nextPicture();
-      _buildPicture();
+      unawaited(_buildPicture());
     }
   }
 
@@ -254,29 +330,37 @@ class _PuzzleSurface extends PositionComponent with DragCallbacks {
     final rows = owner.set.rows;
     final pieces = owner.set.pieces;
 
-    final topPad = s.y * 0.11;
+    final hudPad = s.y * 0.1; // верх: место под HUD (набор/пауза)
+    final bottomPad = s.y * 0.05; // низ: чтобы лоток не липнул к краю
+    final boardGap = s.y * 0.04; // между доской и лотком
     final trayAreaW = s.x * 0.96;
     final trayLeft = (s.x - trayAreaW) / 2;
+    final avail = s.y - hudPad - bottomPad;
 
-    // Подбираем размер доски так, чтобы доска + лоток влезли по высоте.
-    var side = min(s.x * 0.92, s.y * 0.5);
+    // Доска — на 15% меньше прежнего максимума; дальше ужимаем, только если
+    // доска + лоток не влезают в доступную высоту.
+    var side = min(s.x * 0.92, s.y * 0.5) * 0.85;
     var cellW = side / cols;
     var cellH = side / rows;
     var trayCols = max(1, (trayAreaW / cellW).floor());
-    var trayTop = topPad + side + s.y * 0.035;
+    var contentH = side + boardGap + (pieces / trayCols).ceil() * cellH;
     for (var attempt = 0; attempt < 40; attempt++) {
       cellW = side / cols;
       cellH = side / rows;
       trayCols = max(1, (trayAreaW / cellW).floor());
-      final trayRows = (pieces / trayCols).ceil();
-      trayTop = topPad + side + s.y * 0.035;
-      if (trayTop + trayRows * cellH <= s.y * 0.99) break;
+      contentH = side + boardGap + (pieces / trayCols).ceil() * cellH;
+      if (contentH <= avail) break;
       side *= 0.94;
     }
 
+    // Блок «доска + лоток» центрируем по вертикали между HUD и низом — доска
+    // опускается от верха, лоток поднимается от низа.
+    final startY = hudPad + (avail - contentH) / 2;
+    final trayTop = startY + side + boardGap;
+
     _boardSide = side;
     _boardLeft = (s.x - side) / 2;
-    _boardTop = topPad;
+    _boardTop = startY;
     _cellW = cellW;
     _cellH = cellH;
 

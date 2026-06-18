@@ -76,6 +76,7 @@ flutter:
 
   assets:
     - assets/games/
+    - assets/puzzles/
     - assets/voice/pack/
     - assets/backgrounds/
     - assets/sfx/
