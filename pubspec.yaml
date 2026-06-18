@@ -84,8 +84,8 @@ flutter:
     - assets/animals/
     - assets/coloring/
     # Раскраски: assets/coloring/<категория>/<уровень>/. Темы — animals/cars/
-    # nature/food, уровни 1–5. Владелец кладёт PNG в нужную папку — появятся сами
-    # (пустые помечены README.txt). Новая тема = новая папка + строки ниже.
+    # nature/food/sea/space, уровни 1–5. Владелец кладёт PNG в нужную папку —
+    # появятся сами (пустые помечены README.txt). Новая тема = папка + строки ниже.
     - assets/coloring/animals/1/
     - assets/coloring/animals/2/
     - assets/coloring/animals/3/
@@ -106,6 +106,16 @@ flutter:
     - assets/coloring/food/3/
     - assets/coloring/food/4/
     - assets/coloring/food/5/
+    - assets/coloring/sea/1/
+    - assets/coloring/sea/2/
+    - assets/coloring/sea/3/
+    - assets/coloring/sea/4/
+    - assets/coloring/sea/5/
+    - assets/coloring/space/1/
+    - assets/coloring/space/2/
+    - assets/coloring/space/3/
+    - assets/coloring/space/4/
+    - assets/coloring/space/5/
     - assets/ui/
     - assets/icon.png
 

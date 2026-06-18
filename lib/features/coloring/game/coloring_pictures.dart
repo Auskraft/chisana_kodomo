@@ -195,11 +195,13 @@ const Map<String, ColoringCategoryMeta> kColoringCategoryMeta =
   'cars': ColoringCategoryMeta('Транспорт', '🚗'),
   'nature': ColoringCategoryMeta('Природа', '🌼'),
   'food': ColoringCategoryMeta('Еда', '🍎'),
+  'sea': ColoringCategoryMeta('Море', '🌊'),
+  'space': ColoringCategoryMeta('Космос', '🚀'),
 };
 
 /// Порядок тем в селекторе: известные — в этом порядке, прочие — после.
 const List<String> kColoringCategoryOrder = <String>[
-  'animals', 'cars', 'nature', 'food',
+  'animals', 'cars', 'nature', 'food', 'sea', 'space',
 ];
 
 /// Метаданные темы по ключу (с фолбэком для незнакомых папок).
