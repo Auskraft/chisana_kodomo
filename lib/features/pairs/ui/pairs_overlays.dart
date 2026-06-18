@@ -24,7 +24,7 @@ class PairsHud extends StatelessWidget {
         padding: const EdgeInsets.all(12),
         child: Row(
           children: <Widget>[
-            StatChip(label: 'Набор', value: '$setNumber'),
+            StatChip(label: 'Уровень', value: '$setNumber'),
             const SizedBox(width: 10),
             StatChip(label: 'Пары', value: '$matched / $total'),
             const Spacer(),

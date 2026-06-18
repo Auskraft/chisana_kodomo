@@ -50,7 +50,7 @@ class ParentZoneScreen extends StatelessWidget {
       builder: (_) => AlertDialog(
         title: const Text('Сбросить прогресс?'),
         content: const Text(
-          'Звёзды, наклейки и открытые наборы обнулятся. Настройки сохранятся. '
+          'Звёзды, наклейки и открытые уровни обнулятся. Настройки сохранятся. '
           'Это нельзя отменить.',
         ),
         actions: <Widget>[

@@ -56,8 +56,8 @@ class _SetPickerScreenState extends State<SetPickerScreen> {
         child: LayoutBuilder(
           builder: (context, c) {
             final pad = (c.maxWidth * 0.05).clamp(12.0, 28.0).toDouble();
-            const cols = 2;
-            final gap = pad;
+            const cols = 5;
+            final gap = pad * 0.5;
             final tile = (c.maxWidth - pad * 2 - gap * (cols - 1)) / cols;
             return SingleChildScrollView(
               padding: EdgeInsets.all(pad),
@@ -67,7 +67,7 @@ class _SetPickerScreenState extends State<SetPickerScreen> {
                   Padding(
                     padding: EdgeInsets.only(bottom: pad, left: 4),
                     child: Text(
-                      'Выбери набор',
+                      'Выбери уровень',
                       style: text.titleMedium?.copyWith(
                         fontWeight: FontWeight.w800,
                         color: colors.onBackground.withValues(alpha: 0.8),
@@ -145,10 +145,11 @@ class _SetCard extends StatelessWidget {
           else ...<Widget>[
             Text(
               '$number',
-              style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                    fontWeight: FontWeight.w900,
-                    color: colors.primary,
-                  ),
+              style: TextStyle(
+                fontSize: size * 0.42,
+                fontWeight: FontWeight.w900,
+                color: colors.primary,
+              ),
             ),
             SizedBox(height: size * 0.03),
             StarRow(filled: stars, total: starsPerSet, size: size * 0.13),
