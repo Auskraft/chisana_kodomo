@@ -43,12 +43,13 @@ INSTRUMENTS = {
     "organ": dict(  # орган: тянущийся, октавные обертоны (2×, 4×, 8×)
         harmonics=(1.0, 0.5, 0.0, 0.45, 0.0, 0.0, 0.0, 0.3),
         dur=0.8, attack=0.02, release=0.12, sustain=True),
-    "bells": dict(  # колокольчики/металлофон: яркий звон, долгий «хвост»
-        harmonics=(1.0, 0.0, 0.6, 0.0, 0.4, 0.0, 0.25),
-        dur=1.5, attack=0.002, decay=2.2, sustain=False),
-    "synth": dict(  # синтезатор: «квадратная» волна (нечётные обертоны), электронно
-        harmonics=(1.0, 0.0, 0.33, 0.0, 0.2, 0.0, 0.14, 0.0, 0.11),
-        dur=0.6, attack=0.003, decay=4.0, sustain=False),
+    "bells": dict(  # колокольчики/металлофон: НЕгармонические обертоны (как у
+                    # струнного металла) → яркий «металлический» звон, долгий хвост
+        partials=[(1.0, 1.0), (2.76, 0.55), (5.40, 0.30), (8.93, 0.16)],
+        dur=1.6, attack=0.001, decay=3.0, sustain=False),
+    "synth": dict(  # синтезатор: «пила» (все обертоны 1/n) → яркий бузз, электронно
+        harmonics=(1.0, 0.5, 0.33, 0.25, 0.2, 0.16, 0.14, 0.12),
+        dur=0.7, attack=0.005, decay=3.0, sustain=False),
 }
 
 
@@ -64,13 +65,16 @@ def envelope(t, p):
 
 def note(freq, p):
     n = int(p["dur"] * SR)
-    hs = sum(p["harmonics"])
+    # partials=[(ratio, amp), …] — произвольные обертоны (в т.ч. НЕцелые, для
+    # колокольчиков); иначе harmonics → целые кратные 1×, 2×, 3× …
+    parts = p["partials"] if "partials" in p \
+        else [(k + 1, h) for k, h in enumerate(p["harmonics"])]
+    norm = sum(a for _, a in parts)
     out = []
     for i in range(n):
         t = i / SR
-        s = sum(h * math.sin(2 * math.pi * freq * (k + 1) * t)
-                for k, h in enumerate(p["harmonics"]))
-        out.append(0.5 * envelope(t, p) * s / hs)
+        s = sum(a * math.sin(2 * math.pi * freq * r * t) for r, a in parts)
+        out.append(0.5 * envelope(t, p) * s / norm)
     return out
 
 
