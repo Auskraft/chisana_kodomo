@@ -70,6 +70,10 @@ const List<Color> kSynthColors = <Color>[
 Color _labelColorOn(Color c) =>
     c.computeLuminance() > 0.5 ? const Color(0xFF4E342E) : Colors.white;
 
+/// Верхний отступ клавиатуры (доля высоты) — ОДИНАКОВ у всех инструментов, чтобы
+/// верхняя пластина/клавиша не упиралась в шапку с табами.
+const double _kKeyboardTopPad = 0.16;
+
 /// Flame-«Музыка»: клавишный инструмент (ксилофон/пианино/орган — переключаются
 /// табами). 8 нот до-мажора с подписями (до-ре-ми); тап → отскок + вспышка +
 /// вибро + тон (`onNote` → сэмпл инструмента). **Без проигрышей.**
@@ -168,7 +172,7 @@ class _Keyboard extends PositionComponent {
   void _layoutBars(List<XyloNote> notes) {
     final s = owner.size;
     final count = notes.length;
-    final topPad = s.y * 0.12;
+    final topPad = s.y * _kKeyboardTopPad;
     final bottomPad = s.y * 0.04;
     final areaH = s.y - topPad - bottomPad;
     final slot = areaH / count;
@@ -203,7 +207,7 @@ class _Keyboard extends PositionComponent {
     final s = owner.size;
     final count = notes.length;
     final id = owner.instrument.value.id;
-    final topPad = s.y * 0.14;
+    final topPad = s.y * _kKeyboardTopPad;
     final bottomPad = s.y * 0.06;
     final keysH = s.y - topPad - bottomPad;
     final totalW = s.x * 0.94;
