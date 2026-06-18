@@ -213,9 +213,12 @@ class ReadyPanel extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onStart,
+    this.iconAsset,
     this.startLabel = 'Играть',
   });
 
+  /// Кастомная иконка игры (`assets/games/<id>.png`); null → показываем [emoji].
+  final String? iconAsset;
   final String emoji;
   final String title;
   final String subtitle;
@@ -230,7 +233,17 @@ class ReadyPanel extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
-          Text(emoji, style: TextStyle(fontSize: _frac(context, 0.22, 56, 110))),
+          if (iconAsset != null)
+            Image.asset(
+              iconAsset!,
+              width: _frac(context, 0.3, 76, 148),
+              height: _frac(context, 0.3, 76, 148),
+              errorBuilder: (_, _, _) => Text(emoji,
+                  style: TextStyle(fontSize: _frac(context, 0.22, 56, 110))),
+            )
+          else
+            Text(emoji,
+                style: TextStyle(fontSize: _frac(context, 0.22, 56, 110))),
           SizedBox(height: _frac(context, 0.02, 8, 20)),
           Text(
             title,

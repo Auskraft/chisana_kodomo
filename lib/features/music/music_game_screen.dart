@@ -61,6 +61,7 @@ class _MusicGameScreenState extends State<MusicGameScreen> {
                 case MusicPhase.ready:
                   return ReadyPanel(
                     emoji: '🎹',
+                    iconAsset: 'assets/games/music.png',
                     title: 'Музыка',
                     subtitle: 'Нажимай на пластинки!',
                     onStart: _game.start,

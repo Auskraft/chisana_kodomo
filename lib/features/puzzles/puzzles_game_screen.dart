@@ -95,6 +95,7 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
                 case PuzzlePhase.ready:
                   return ReadyPanel(
                     emoji: '🧩',
+                    iconAsset: 'assets/games/puzzles.png',
                     title: 'Пазлы',
                     subtitle: 'Собери картинку из кусочков!',
                     onStart: _game.start,

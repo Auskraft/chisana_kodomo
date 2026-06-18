@@ -99,6 +99,7 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
                 case CountPhase.ready:
                   return ReadyPanel(
                     emoji: '🔢',
+                    iconAsset: 'assets/games/counting.png',
                     title: 'Счёт',
                     subtitle: _subtitle(),
                     onStart: _game.start,

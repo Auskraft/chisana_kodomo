@@ -108,6 +108,7 @@ class _FarmGameScreenState extends State<FarmGameScreen> {
                 case FarmPhase.ready:
                   return ReadyPanel(
                     emoji: '🔊',
+                    iconAsset: 'assets/games/farm.png',
                     title: 'Угадай, кто это',
                     subtitle: 'Послушай звук и выбери зверя!',
                     onStart: _game.start,

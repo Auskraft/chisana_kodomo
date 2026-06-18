@@ -92,6 +92,7 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
                 case PairsPhase.ready:
                   return ReadyPanel(
                     emoji: '🃏',
+                    iconAsset: 'assets/games/pairs.png',
                     title: 'Парочки',
                     subtitle: 'Открой две одинаковые карточки!',
                     onStart: _game.start,

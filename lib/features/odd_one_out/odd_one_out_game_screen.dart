@@ -92,6 +92,7 @@ class _OddOneOutGameScreenState extends State<OddOneOutGameScreen> {
                 case OddPhase.ready:
                   return ReadyPanel(
                     emoji: '🔎',
+                    iconAsset: 'assets/games/odd_one_out.png',
                     title: 'Лишнее',
                     subtitle: 'Найди лишний предмет!',
                     onStart: _game.start,
