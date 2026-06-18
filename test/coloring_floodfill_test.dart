@@ -74,4 +74,45 @@ void main() {
     final n = floodFill(px, w, h, 1, 1, r: 0, g: 128, b: 0).length;
     expect(n, w * h);
   });
+
+  group('regionMask (удержание в контуре)', () {
+    int count(Uint8List m) => m.where((int v) => v == 1).length;
+
+    test('маска ограничена тёмным контуром; пиксели не меняются', () {
+      const w = 5, h = 3;
+      final px = _grid(w, h, 255);
+      for (var y = 0; y < h; y++) {
+        final i = (y * w + 2) * 4;
+        px[i] = 0;
+        px[i + 1] = 0;
+        px[i + 2] = 0;
+      }
+      final m = regionMask(px, w, h, 0, 0);
+      expect(count(m), 6); // столбцы 0–1 × 3 строки
+      expect(m[0 * w + 0], 1);
+      expect(m[0 * w + 2], 0); // контур не в маске
+      expect(m[0 * w + 3], 0); // правая часть за барьером
+      expect(px[0], 255); // буфер не тронут
+      expect(px[(0 * w + 3) * 4], 255);
+    });
+
+    test('старт на тёмном контуре → пустая маска', () {
+      final px = _grid(3, 3, 255);
+      final c = (1 * 3 + 1) * 4;
+      px[c] = 0;
+      px[c + 1] = 0;
+      px[c + 2] = 0;
+      expect(count(regionMask(px, 3, 3, 1, 1)), 0);
+    });
+
+    test('вне границ → пустая маска', () {
+      final px = _grid(2, 2, 255);
+      expect(count(regionMask(px, 2, 2, -1, 0)), 0);
+      expect(count(regionMask(px, 2, 2, 9, 9)), 0);
+    });
+
+    test('сплошное светлое поле → маска целиком', () {
+      expect(count(regionMask(_grid(4, 4, 250), 4, 4, 2, 2)), 16);
+    });
+  });
 }

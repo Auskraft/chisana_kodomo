@@ -39,6 +39,10 @@ class ColoringGame extends FlameGame {
   final ValueNotifier<int> level = ValueNotifier<int>(1); // уровень сложности
   final ValueNotifier<bool> completed = ValueNotifier<bool>(false);
 
+  /// Инструмент в режиме «Раскрасить» и толщина мазка (0..2).
+  final ValueNotifier<PaintTool> tool = ValueNotifier<PaintTool>(PaintTool.fill);
+  final ValueNotifier<int> brushSize = ValueNotifier<int>(1);
+
   /// Активный цвет кисти: выбранный в пикере или из палитры.
   Color get brushColor =>
       pickedColor.value ??
@@ -115,6 +119,9 @@ class ColoringGame extends FlameGame {
   /// Произвольный цвет из колор-пикера.
   void setPickedColor(Color c) => pickedColor.value = c;
 
+  void setTool(PaintTool t) => tool.value = t;
+  void setBrushSize(int i) => brushSize.value = i < 0 ? 0 : (i > 2 ? 2 : i);
+
   void setPicture(int i) {
     final len = _sourceLength;
     pictureIndex.value = len == 0 ? 0 : i % len;
@@ -156,6 +163,22 @@ class ColoringGame extends FlameGame {
     completed.value = false;
     _rebuild();
   }
+
+  // ── Ввод растрового холста (от хост-Listener; 1 палец рисует) ───────────────
+  _RasterPicture? get _raster {
+    final list = children.whereType<_RasterPicture>();
+    return list.isEmpty ? null : list.first;
+  }
+
+  /// Можно ли рисовать по растровой картинке (режим «Раскрасить» с картинкой).
+  bool get canPaintRaster => mode.value == ColoringMode.fill && _raster != null;
+
+  void canvasDown(Offset local) =>
+      _raster?.beginStroke(local, tool.value, brushColor, brushSize.value);
+  void canvasMove(Offset local) =>
+      _raster?.extendStroke(local, tool.value, brushColor, brushSize.value);
+  void canvasUp() => _raster?.endStroke();
+  void canvasCancel() => _raster?.cancelStroke();
 
   /// Сбросить рисунок (заливки или штрихи).
   void clearArt() {
@@ -459,24 +482,78 @@ class _FreeCanvas extends PositionComponent with DragCallbacks {
   }
 }
 
-/// Растровая раскраска: показывает контурную картинку (`assets/coloring/`) и
-/// заливает область по тапу (flood fill). Координаты тапа → пиксель; буфер
-/// перекрашивается и пересобирается в [ui.Image]. Завершения нет — свободное
-/// раскрашивание (хит-тест/качество заливки проверяются на устройстве).
-class _RasterPicture extends PositionComponent with TapCallbacks {
+// ── Параметры кистей (подобраны «на глаз», легко править на устройстве) ───────
+const int _kMaskTolerance = 72; // тот же порог, что у заливки
+
+/// Прозрачность мазка по инструменту (0..1). Акварель — низкая (копится слоями).
+double _toolAlpha(PaintTool t) {
+  switch (t) {
+    case PaintTool.pencil:
+      return 0.90;
+    case PaintTool.marker:
+      return 0.85;
+    case PaintTool.watercolor:
+      return 0.16;
+    case PaintTool.gouache:
+      return 0.80;
+    case PaintTool.fill:
+      return 1.0;
+  }
+}
+
+/// Вес мазка от центра (1) к краю (0) — «мягкость» кисти ([d2]/[r2] — квадраты).
+double _toolEdge(PaintTool t, double d2, double r2) {
+  final dist = r2 <= 0 ? 0.0 : sqrt(d2 / r2); // 0 центр .. 1 край
+  switch (t) {
+    case PaintTool.pencil:
+      return dist <= 0.85 ? 1.0 : 0.0; // жёсткий край
+    case PaintTool.marker:
+      return dist <= 0.90 ? 1.0 : (1 - dist) / 0.10; // почти жёсткий
+    case PaintTool.gouache:
+      return dist <= 0.80 ? 1.0 : (1 - dist) / 0.20; // плотный, лёгкое перо
+    case PaintTool.watercolor:
+      return (1 - dist) * (1 - dist); // мягкая растушёвка
+    case PaintTool.fill:
+      return 1.0;
+  }
+}
+
+/// Растровая раскраска «Раскрасить»: контурная картинка + инструменты [PaintTool].
+/// Заливка — по тапу; кисти (карандаш/маркер/акварель/гуашь) кладут мазки ТОЛЬКО
+/// внутри области, по которой ведёт малыш ([regionMask] по исходному line-art →
+/// «удержание в контуре»: неровные движения остаются аккуратными). Ввод приходит
+/// от хост-Listener. Перерисовка дросселируется в [update].
+class _RasterPicture extends PositionComponent {
   _RasterPicture({required this.owner, required this.asset});
 
   final ColoringGame owner;
   final String asset;
 
   ui.Image? _display;
-  Uint8List? _px;
+  Uint8List? _orig; // пристина line-art (для масок областей)
+  Uint8List? _px; // рабочий буфер (рисуем и показываем)
   int _w = 0;
   int _h = 0;
-  Rect _imgRect = Rect.zero;
-  bool _rebuilding = false;
-  final List<_FillStep> _undo = <_FillStep>[];
-  final List<_FillStep> _redo = <_FillStep>[];
+  Rect _baseRect = Rect.zero; // «лист», куда картинка вписана при зуме 1.0
+
+  // Вид (зум/панорама). В этом коммите фиксирован 1.0 — зум добавится следом.
+  final double _scale = 1;
+  final Offset _pan = Offset.zero;
+
+  bool _decoding = false;
+  bool _dirty = false;
+
+  // Активный мазок кистью.
+  Uint8List? _mask;
+  bool _stroking = false;
+  int _lastIx = 0;
+  int _lastIy = 0;
+  Map<int, int> _before = <int, int>{};
+  Map<int, int> _after = <int, int>{};
+
+  final List<_PaintStep> _undo = <_PaintStep>[];
+  final List<_PaintStep> _redo = <_PaintStep>[];
+  static const int _maxUndo = 10;
 
   @override
   Future<void> onLoad() async {
@@ -500,9 +577,14 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
       _w = image.width;
       _h = image.height;
       final bytes = await image.toByteData(format: ui.ImageByteFormat.rawRgba);
-      _px = bytes?.buffer.asUint8List();
+      final view = bytes?.buffer.asUint8List();
+      if (view != null) {
+        _orig = Uint8List.fromList(view);
+        _px = Uint8List.fromList(view);
+      }
       _display = image;
     } catch (_) {
+      _orig = null;
       _px = null;
     }
   }
@@ -516,27 +598,286 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
       height: side,
     );
     if (_w == 0 || _h == 0) {
-      _imgRect = fit;
+      _baseRect = fit;
       return;
     }
     final scale =
         (fit.width / _w < fit.height / _h) ? fit.width / _w : fit.height / _h;
-    _imgRect = Rect.fromCenter(
+    _baseRect = Rect.fromCenter(
       center: fit.center,
       width: _w * scale,
       height: _h * scale,
     );
   }
 
+  Rect get _drawRect => (_scale == 1 && _pan == Offset.zero)
+      ? _baseRect
+      : Rect.fromCenter(
+          center: _baseRect.center + _pan,
+          width: _baseRect.width * _scale,
+          height: _baseRect.height * _scale,
+        );
+
+  /// Пиксель картинки под точкой холста [p] (с учётом зума) либо null.
+  (int, int)? _pixelAt(Offset p) {
+    if (_w == 0 || !_baseRect.contains(p)) return null;
+    final dr = _drawRect;
+    final fx = (p.dx - dr.left) / dr.width;
+    final fy = (p.dy - dr.top) / dr.height;
+    if (fx < 0 || fy < 0 || fx >= 1 || fy >= 1) return null;
+    return ((fx * _w).floor(), (fy * _h).floor());
+  }
+
+  double _dabRadius(PaintTool t, int sizeIdx) {
+    final imgMin = (_w < _h ? _w : _h).toDouble();
+    const frac = <double>[0.012, 0.020, 0.030]; // S / M / L (доля картинки)
+    const k = <PaintTool, double>{
+      PaintTool.pencil: 0.55,
+      PaintTool.marker: 1.20,
+      PaintTool.watercolor: 1.50,
+      PaintTool.gouache: 1.10,
+      PaintTool.fill: 1.0,
+    };
+    final si = sizeIdx < 0 ? 0 : (sizeIdx > 2 ? 2 : sizeIdx);
+    return frac[si] * imgMin * (k[t] ?? 1.0);
+  }
+
+  // ── Ввод (от хоста) ─────────────────────────────────────────────────────────
+
+  void beginStroke(Offset local, PaintTool t, Color color, int sizeIdx) {
+    final orig = _orig;
+    if (orig == null || _px == null) return;
+    final pix = _pixelAt(local);
+    if (pix == null) return;
+    final (ix, iy) = pix;
+    if (t == PaintTool.fill) {
+      _fillRegion(ix, iy, color);
+      return;
+    }
+    final mask = regionMask(orig, _w, _h, ix, iy, tolerance: _kMaskTolerance);
+    if (mask[iy * _w + ix] == 0) {
+      Sfx.play(SfxEvent.soft); // попали на контур — мазок не начинаем
+      return;
+    }
+    _mask = mask;
+    _stroking = true;
+    _before = <int, int>{};
+    _after = <int, int>{};
+    _lastIx = ix;
+    _lastIy = iy;
+    _dab(ix, iy, t, color, sizeIdx);
+    Sfx.play(SfxEvent.tap);
+    Haptics.tap();
+    _dirty = true;
+  }
+
+  void extendStroke(Offset local, PaintTool t, Color color, int sizeIdx) {
+    if (!_stroking) return;
+    final pix = _pixelAt(local);
+    if (pix == null) return;
+    final (ix, iy) = pix;
+    _dabLine(_lastIx, _lastIy, ix, iy, t, color, sizeIdx);
+    _lastIx = ix;
+    _lastIy = iy;
+    _dirty = true;
+  }
+
+  void endStroke() {
+    if (!_stroking) return;
+    _stroking = false;
+    _mask = null;
+    if (_before.isNotEmpty) _pushUndo(_PaintStep(_before, _after));
+    _before = <int, int>{};
+    _after = <int, int>{};
+  }
+
+  /// Откатить незавершённый мазок (напр. лёг второй палец → пойдёт зум).
+  void cancelStroke() {
+    if (!_stroking) return;
+    _stroking = false;
+    _mask = null;
+    final px = _px;
+    if (px != null) {
+      _before.forEach((p, packed) => _writePacked(px, p, packed));
+      _dirty = true;
+    }
+    _before = <int, int>{};
+    _after = <int, int>{};
+  }
+
+  void _fillRegion(int ix, int iy, Color color) {
+    final px = _px;
+    final orig = _orig;
+    if (px == null || orig == null) return;
+    final mask = regionMask(orig, _w, _h, ix, iy, tolerance: _kMaskTolerance);
+    if (mask[iy * _w + ix] == 0) {
+      Sfx.play(SfxEvent.soft);
+      return;
+    }
+    final argb = color.toARGB32();
+    final nr = (argb >> 16) & 0xFF;
+    final ng = (argb >> 8) & 0xFF;
+    final nb = argb & 0xFF;
+    final newPacked = (nr << 16) | (ng << 8) | nb;
+    final before = <int, int>{};
+    final after = <int, int>{};
+    final n = _w * _h;
+    for (var p = 0; p < n; p++) {
+      if (mask[p] == 0) continue;
+      final i = p * 4;
+      final old = (px[i] << 16) | (px[i + 1] << 8) | px[i + 2];
+      if (old == newPacked) continue;
+      before[p] = old;
+      px[i] = nr;
+      px[i + 1] = ng;
+      px[i + 2] = nb;
+      px[i + 3] = 255;
+      after[p] = newPacked;
+    }
+    if (before.isNotEmpty) {
+      _pushUndo(_PaintStep(before, after));
+      Sfx.play(SfxEvent.tap);
+      Haptics.tap();
+      _dirty = true;
+    }
+  }
+
+  void _dab(int cx, int cy, PaintTool t, Color color, int sizeIdx) {
+    final px = _px;
+    final mask = _mask;
+    if (px == null || mask == null) return;
+    final r = _dabRadius(t, sizeIdx).round();
+    if (r < 1) return;
+    final r2 = (r * r).toDouble();
+    final baseA = _toolAlpha(t);
+    final argb = color.toARGB32();
+    final br = (argb >> 16) & 0xFF;
+    final bg = (argb >> 8) & 0xFF;
+    final bb = argb & 0xFF;
+    final x0 = max(0, cx - r);
+    final x1 = min(_w - 1, cx + r);
+    final y0 = max(0, cy - r);
+    final y1 = min(_h - 1, cy + r);
+    for (var y = y0; y <= y1; y++) {
+      for (var x = x0; x <= x1; x++) {
+        final ddx = (x - cx).toDouble();
+        final ddy = (y - cy).toDouble();
+        final d2 = ddx * ddx + ddy * ddy;
+        if (d2 > r2) continue;
+        final p = y * _w + x;
+        if (mask[p] == 0) continue;
+        final a = baseA * _toolEdge(t, d2, r2);
+        if (a <= 0) continue;
+        final i = p * 4;
+        _before.putIfAbsent(
+            p, () => (px[i] << 16) | (px[i + 1] << 8) | px[i + 2]);
+        px[i] = (px[i] * (1 - a) + br * a).round();
+        px[i + 1] = (px[i + 1] * (1 - a) + bg * a).round();
+        px[i + 2] = (px[i + 2] * (1 - a) + bb * a).round();
+        px[i + 3] = 255;
+        _after[p] = (px[i] << 16) | (px[i + 1] << 8) | px[i + 2];
+      }
+    }
+  }
+
+  void _dabLine(
+      int x0, int y0, int x1, int y1, PaintTool t, Color color, int sizeIdx) {
+    final r = _dabRadius(t, sizeIdx);
+    final spacing = (r * 0.35) < 1.0 ? 1.0 : r * 0.35;
+    final dx = (x1 - x0).toDouble();
+    final dy = (y1 - y0).toDouble();
+    final dist = sqrt(dx * dx + dy * dy);
+    if (dist < spacing) {
+      _dab(x1, y1, t, color, sizeIdx);
+      return;
+    }
+    final steps = (dist / spacing).ceil();
+    for (var s = 1; s <= steps; s++) {
+      final f = s / steps;
+      _dab((x0 + dx * f).round(), (y0 + dy * f).round(), t, color, sizeIdx);
+    }
+  }
+
+  // ── Отмена / возврат / сброс ────────────────────────────────────────────────
+
+  void undo() {
+    if (_undo.isEmpty) return;
+    final step = _undo.removeLast();
+    _applyPacked(step.before);
+    _redo.add(step);
+    Haptics.tap();
+    _dirty = true;
+  }
+
+  void redo() {
+    if (_redo.isEmpty) return;
+    final step = _redo.removeLast();
+    _applyPacked(step.after);
+    _undo.add(step);
+    Haptics.tap();
+    _dirty = true;
+  }
+
+  Future<void> reset() async {
+    _undo.clear();
+    _redo.clear();
+    final orig = _orig;
+    if (orig != null) {
+      _px = Uint8List.fromList(orig);
+      _dirty = true;
+    } else {
+      await _loadOriginal();
+      _layout();
+    }
+  }
+
+  void _pushUndo(_PaintStep step) {
+    _undo.add(step);
+    if (_undo.length > _maxUndo) _undo.removeAt(0);
+    _redo.clear();
+  }
+
+  void _applyPacked(Map<int, int> m) {
+    final px = _px;
+    if (px == null) return;
+    m.forEach((p, packed) => _writePacked(px, p, packed));
+  }
+
+  void _writePacked(Uint8List px, int p, int packed) {
+    final i = p * 4;
+    px[i] = (packed >> 16) & 0xFF;
+    px[i + 1] = (packed >> 8) & 0xFF;
+    px[i + 2] = packed & 0xFF;
+    px[i + 3] = 255;
+  }
+
+  // ── Рендер ──────────────────────────────────────────────────────────────────
+
   @override
-  bool containsLocalPoint(Vector2 point) => _imgRect.contains(point.toOffset());
+  void update(double dt) {
+    super.update(dt);
+    if (_dirty && !_decoding) {
+      final px = _px;
+      if (px == null) {
+        _dirty = false;
+        return;
+      }
+      _dirty = false;
+      _decoding = true;
+      ui.decodeImageFromPixels(px, _w, _h, ui.PixelFormat.rgba8888,
+          (ui.Image img) {
+        _display = img;
+        _decoding = false;
+      });
+    }
+  }
 
   @override
   void render(Canvas canvas) {
     final img = _display;
     if (img == null) return;
-    // Белый «лист» под картинкой: line-art с прозрачным фоном выглядит как бумага.
-    final paper = RRect.fromRectAndRadius(_imgRect, const Radius.circular(18));
+    // Белый «лист»: line-art с прозрачным фоном выглядит как бумага.
+    final paper = RRect.fromRectAndRadius(_baseRect, const Radius.circular(18));
     canvas.drawRRect(
       paper.shift(const Offset(0, 4)),
       Paint()
@@ -549,100 +890,17 @@ class _RasterPicture extends PositionComponent with TapCallbacks {
     canvas.drawImageRect(
       img,
       Rect.fromLTWH(0, 0, _w.toDouble(), _h.toDouble()),
-      _imgRect,
+      _drawRect,
       Paint()..filterQuality = FilterQuality.medium,
     );
     canvas.restore();
   }
-
-  @override
-  void onTapDown(TapDownEvent event) {
-    final px = _px;
-    if (px == null || _rebuilding) return;
-    final lp = event.localPosition.toOffset();
-    if (!_imgRect.contains(lp)) return;
-
-    final ix = (((lp.dx - _imgRect.left) / _imgRect.width) * _w).floor();
-    final iy = (((lp.dy - _imgRect.top) / _imgRect.height) * _h).floor();
-    if (ix < 0 || iy < 0 || ix >= _w || iy >= _h) return;
-    final startByte = (iy * _w + ix) * 4;
-    final pr = px[startByte];
-    final pg = px[startByte + 1];
-    final pb = px[startByte + 2];
-
-    final argb = owner.brushColor.toARGB32();
-    final nr = (argb >> 16) & 0xFF;
-    final ng = (argb >> 8) & 0xFF;
-    final nb = argb & 0xFF;
-    final filled = floodFill(px, _w, _h, ix, iy, r: nr, g: ng, b: nb, tolerance: 72);
-    if (filled.isNotEmpty) {
-      _undo.add(_FillStep(filled, pr, pg, pb, nr, ng, nb));
-      if (_undo.length > 24) _undo.removeAt(0);
-      _redo.clear();
-      Sfx.play(SfxEvent.tap);
-      Haptics.tap();
-      _rebuildDisplay();
-    } else {
-      Sfx.play(SfxEvent.soft);
-    }
-  }
-
-  void _paint(List<int> indices, int r, int g, int b) {
-    final px = _px;
-    if (px == null) return;
-    for (final p in indices) {
-      final i = p * 4;
-      px[i] = r;
-      px[i + 1] = g;
-      px[i + 2] = b;
-      px[i + 3] = 255;
-    }
-  }
-
-  /// Отменить последнюю заливку.
-  void undo() {
-    if (_px == null || _undo.isEmpty) return;
-    final step = _undo.removeLast();
-    _paint(step.indices, step.pr, step.pg, step.pb);
-    _redo.add(step);
-    Haptics.tap();
-    _rebuildDisplay();
-  }
-
-  /// Вернуть отменённую заливку.
-  void redo() {
-    if (_px == null || _redo.isEmpty) return;
-    final step = _redo.removeLast();
-    _paint(step.indices, step.nr, step.ng, step.nb);
-    _undo.add(step);
-    Haptics.tap();
-    _rebuildDisplay();
-  }
-
-  void _rebuildDisplay() {
-    final px = _px;
-    if (px == null) return;
-    _rebuilding = true;
-    ui.decodeImageFromPixels(px, _w, _h, ui.PixelFormat.rgba8888,
-        (ui.Image img) {
-      _display = img;
-      _rebuilding = false;
-    });
-  }
-
-  /// Сбросить к исходной картинке (кнопка «Заново»).
-  Future<void> reset() async {
-    _undo.clear();
-    _redo.clear();
-    await _loadOriginal();
-    _layout();
-  }
 }
 
-/// Шаг истории растровой заливки: пиксели + прежний и новый цвет (отмена/возврат).
-class _FillStep {
-  _FillStep(this.indices, this.pr, this.pg, this.pb, this.nr, this.ng, this.nb);
-  final List<int> indices;
-  final int pr, pg, pb; // прежний цвет
-  final int nr, ng, nb; // новый цвет
+/// Шаг истории растрового рисования: упакованные RGB (0xRRGGBB) до/после по
+/// затронутым пикселям. [before] — для отмены, [after] — для возврата.
+class _PaintStep {
+  _PaintStep(this.before, this.after);
+  final Map<int, int> before;
+  final Map<int, int> after;
 }

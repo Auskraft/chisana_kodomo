@@ -7,7 +7,7 @@ import '../logic/coloring_logic.dart';
 String _modeLabel(ColoringMode m) {
   switch (m) {
     case ColoringMode.fill:
-      return 'Залить';
+      return 'Раскрасить';
     case ColoringMode.byNumber:
       return 'По номерам';
     case ColoringMode.freeDraw:
@@ -204,6 +204,11 @@ class ColoringBottomBar extends StatelessWidget {
     required this.onRedo,
     required this.onClear,
     required this.onPicture,
+    required this.paintTool,
+    required this.onTool,
+    required this.brushSize,
+    required this.onBrushSize,
+    required this.showTools,
     required this.locked,
   });
 
@@ -225,8 +230,17 @@ class ColoringBottomBar extends StatelessWidget {
   /// Действие кнопки «Картинка»: открыть пикер (растровые) или следующая (вектор).
   final VoidCallback onPicture;
 
-  /// «Детский замок»: прячем навигацию/деструктив (темы/уровни/Заново/Картинка),
-  /// оставляем палитру и отмену/возврат — малыш просто продолжает раскрашивать.
+  /// Активный инструмент и толщина мазка (режим «Раскрасить»).
+  final PaintTool paintTool;
+  final ValueChanged<PaintTool> onTool;
+  final int brushSize;
+  final ValueChanged<int> onBrushSize;
+
+  /// Показывать ряд инструментов (есть растровая картинка для рисования).
+  final bool showTools;
+
+  /// «Детский замок»: прячем навигацию/деструктив (инструменты/темы/уровни/Заново/
+  /// Картинка), оставляем палитру и отмену/возврат — малыш продолжает раскрашивать.
   final bool locked;
 
   @override
@@ -252,6 +266,51 @@ class ColoringBottomBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             if (!locked && mode == ColoringMode.fill) ...<Widget>[
+              // Инструменты (Заливка/Карандаш/Маркер/Акварель/Гуашь) + толщина.
+              if (showTools) ...<Widget>[
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: <Widget>[
+                    for (final t in PaintTool.values)
+                      _ToolChip(
+                        tool: t,
+                        selected: t == paintTool,
+                        colors: colors,
+                        onTap: () => onTool(t),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                if (paintTool != PaintTool.fill) ...<Widget>[
+                  Wrap(
+                    alignment: WrapAlignment.center,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    spacing: 8,
+                    children: <Widget>[
+                      Padding(
+                        padding: const EdgeInsets.only(right: 2),
+                        child: Text(
+                          'Толщина',
+                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                color: colors.onSurface.withValues(alpha: 0.6),
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                      for (var i = 0; i < 3; i++)
+                        _ThickDot(
+                          dot: 8.0 + i * 6,
+                          selected: i == brushSize,
+                          colors: colors,
+                          onTap: () => onBrushSize(i),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              ],
               // Лента выбора темы (показываем, если тем с картинками ≥ 2).
               if (categories.length >= 2) ...<Widget>[
                 Wrap(
@@ -589,6 +648,120 @@ class _CategoryChip extends StatelessWidget {
                   ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Иконка + подпись инструмента раскрашивания.
+({IconData icon, String label}) _toolMeta(PaintTool t) {
+  switch (t) {
+    case PaintTool.fill:
+      return (icon: Icons.format_color_fill_rounded, label: 'Заливка');
+    case PaintTool.pencil:
+      return (icon: Icons.edit_rounded, label: 'Карандаш');
+    case PaintTool.marker:
+      return (icon: Icons.brush_rounded, label: 'Маркер');
+    case PaintTool.watercolor:
+      return (icon: Icons.water_drop_rounded, label: 'Акварель');
+    case PaintTool.gouache:
+      return (icon: Icons.format_paint_rounded, label: 'Гуашь');
+  }
+}
+
+/// Чип инструмента: иконка + название, подсветка выбранного.
+class _ToolChip extends StatelessWidget {
+  const _ToolChip({
+    required this.tool,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final PaintTool tool;
+  final bool selected;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final meta = _toolMeta(tool);
+    final fg =
+        selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.8);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        decoration: BoxDecoration(
+          color:
+              selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(
+            color: selected
+                ? colors.primary
+                : colors.onSurface.withValues(alpha: 0.12),
+            width: 2,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(meta.icon, size: 18, color: fg),
+            const SizedBox(width: 5),
+            Text(
+              meta.label,
+              style: Theme.of(context)
+                  .textTheme
+                  .labelMedium
+                  ?.copyWith(color: fg, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Кружок выбора толщины: точка растёт с размером.
+class _ThickDot extends StatelessWidget {
+  const _ThickDot({
+    required this.dot,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final double dot;
+  final bool selected;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 34,
+        height: 34,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: selected ? colors.primary.withValues(alpha: 0.18) : colors.surface,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected
+                ? colors.primary
+                : colors.onSurface.withValues(alpha: 0.15),
+            width: 2,
+          ),
+        ),
+        child: Container(
+          width: dot,
+          height: dot,
+          decoration: BoxDecoration(
+            color: colors.onSurface.withValues(alpha: 0.8),
+            shape: BoxShape.circle,
+          ),
         ),
       ),
     );

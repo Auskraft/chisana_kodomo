@@ -24,6 +24,8 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   late final ColoringGame _game;
   bool _created = false;
   bool _locked = false; // детский замок: прячет навигацию, блокирует «Назад»
+  final Map<int, Offset> _pointers = <int, Offset>{};
+  bool _painting = false;
 
   @override
   void didChangeDependencies() {
@@ -53,6 +55,43 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   void _unlock() {
     Haptics.success();
     setState(() => _locked = false);
+  }
+
+  // ── Ввод холста: 1 палец рисует (зум 2 пальцами — следующий коммит) ──────────
+  void _onPointerDown(PointerDownEvent e) {
+    _pointers[e.pointer] = e.localPosition;
+    if (_game.mode.value != ColoringMode.fill || !_game.canPaintRaster) return;
+    if (_pointers.length == 1) {
+      _painting = true;
+      _game.canvasDown(e.localPosition);
+    } else if (_painting) {
+      _painting = false;
+      _game.canvasCancel(); // лёг второй палец — мазок отменяем
+    }
+  }
+
+  void _onPointerMove(PointerMoveEvent e) {
+    if (!_pointers.containsKey(e.pointer)) return;
+    _pointers[e.pointer] = e.localPosition;
+    if (_painting && _pointers.length == 1) {
+      _game.canvasMove(e.localPosition);
+    }
+  }
+
+  void _onPointerUp(PointerUpEvent e) {
+    _pointers.remove(e.pointer);
+    if (_painting && _pointers.isEmpty) {
+      _painting = false;
+      _game.canvasUp();
+    }
+  }
+
+  void _onPointerCancel(PointerCancelEvent e) {
+    _pointers.remove(e.pointer);
+    if (_painting && _pointers.isEmpty) {
+      _painting = false;
+      _game.canvasUp();
+    }
   }
 
   /// Колор-пикер: выбрать произвольный цвет кисти.
@@ -119,7 +158,15 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
       child: Scaffold(
         body: Stack(
           children: <Widget>[
-            GameWidget(game: _game),
+            // Холст + ввод: 1 палец рисует/заливает, 2 пальца — зум (коммит 2).
+            Listener(
+              behavior: HitTestBehavior.translucent,
+              onPointerDown: _onPointerDown,
+              onPointerMove: _onPointerMove,
+              onPointerUp: _onPointerUp,
+              onPointerCancel: _onPointerCancel,
+              child: GameWidget(game: _game),
+            ),
             // Верхняя панель — режимы + замок.
             Align(
               alignment: Alignment.topCenter,
@@ -145,6 +192,8 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
                   _game.pickedColor,
                   _game.category,
                   _game.level,
+                  _game.tool,
+                  _game.brushSize,
                 ]),
                 builder: (context, _) => ColoringBottomBar(
                   mode: _game.mode.value,
@@ -162,6 +211,12 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
                   onRedo: _game.redo,
                   onClear: _game.clearArt,
                   onPicture: _openPicture,
+                  paintTool: _game.tool.value,
+                  onTool: _game.setTool,
+                  brushSize: _game.brushSize.value,
+                  onBrushSize: _game.setBrushSize,
+                  showTools: _game.mode.value == ColoringMode.fill &&
+                      _game.canPaintRaster,
                   locked: _locked,
                 ),
               ),
