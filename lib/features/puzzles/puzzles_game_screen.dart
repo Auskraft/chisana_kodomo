@@ -16,9 +16,12 @@ const String kPuzzlesGameId = 'puzzles';
 /// Экран-хост игры «Пазлы»: Flame-канвас + оверлеи по фазе/паузе, голосовые
 /// подсказки и запись прогресса (звёзды/наборы).
 class PuzzlesGameScreen extends StatefulWidget {
-  const PuzzlesGameScreen({super.key, required this.set});
+  const PuzzlesGameScreen({super.key, required this.set, this.autoStart = false});
 
   final PuzzleSet set;
+
+  /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
+  final bool autoStart;
 
   @override
   State<PuzzlesGameScreen> createState() => _PuzzlesGameScreenState();
@@ -41,6 +44,12 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
+    // «Дальше» на следующий уровень — стартуем сразу, без панели «Играть».
+    if (widget.autoStart) {
+      _game.loaded.then((_) {
+        if (mounted) _game.start();
+      });
+    }
   }
 
   void _onPhase() {
@@ -58,7 +67,8 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
     if (_hasNext) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => PuzzlesGameScreen(set: PuzzleSet.all[widget.set.index + 1]),
+          builder: (_) => PuzzlesGameScreen(
+              set: PuzzleSet.all[widget.set.index + 1], autoStart: true),
         ),
       );
     } else {
@@ -93,6 +103,7 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
             builder: (context, phase, _) {
               switch (phase) {
                 case PuzzlePhase.ready:
+                  if (widget.autoStart) return const SizedBox.shrink();
                   return ReadyPanel(
                     emoji: '🧩',
                     iconAsset: 'assets/games/puzzles.png',

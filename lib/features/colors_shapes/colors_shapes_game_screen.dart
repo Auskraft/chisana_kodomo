@@ -16,9 +16,12 @@ const String kColorsShapesGameId = 'colors_shapes';
 /// Экран-хост «Цвета и формы»: Flame-канвас + оверлеи по фазе/паузе, голос и
 /// запись прогресса (звёзды/наборы).
 class ColorsShapesGameScreen extends StatefulWidget {
-  const ColorsShapesGameScreen({super.key, required this.set});
+  const ColorsShapesGameScreen({super.key, required this.set, this.autoStart = false});
 
   final CSSet set;
+
+  /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
+  final bool autoStart;
 
   @override
   State<ColorsShapesGameScreen> createState() => _ColorsShapesGameScreenState();
@@ -41,6 +44,12 @@ class _ColorsShapesGameScreenState extends State<ColorsShapesGameScreen> {
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
+    // «Дальше» на следующий уровень — стартуем сразу, без панели «Играть».
+    if (widget.autoStart) {
+      _game.loaded.then((_) {
+        if (mounted) _game.start();
+      });
+    }
   }
 
   void _onPhase() {
@@ -57,8 +66,8 @@ class _ColorsShapesGameScreenState extends State<ColorsShapesGameScreen> {
     if (_hasNext) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) =>
-              ColorsShapesGameScreen(set: CSSet.all[widget.set.index + 1]),
+          builder: (_) => ColorsShapesGameScreen(
+              set: CSSet.all[widget.set.index + 1], autoStart: true),
         ),
       );
     } else {
@@ -102,6 +111,7 @@ class _ColorsShapesGameScreenState extends State<ColorsShapesGameScreen> {
             builder: (context, phase, _) {
               switch (phase) {
                 case CSPhase.ready:
+                  if (widget.autoStart) return const SizedBox.shrink();
                   return ReadyPanel(
                     emoji: '🎨',
                     iconAsset: 'assets/games/colors_shapes.png',

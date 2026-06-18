@@ -17,9 +17,12 @@ const String kAnimalsGameId = 'animals';
 /// Экран-хост «Звуки животных»: Flame-канвас + оверлеи по фазе/паузе, голос и
 /// запись прогресса (звёзды/наборы).
 class AnimalsGameScreen extends StatefulWidget {
-  const AnimalsGameScreen({super.key, required this.set});
+  const AnimalsGameScreen({super.key, required this.set, this.autoStart = false});
 
   final AnimalSet set;
+
+  /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
+  final bool autoStart;
 
   @override
   State<AnimalsGameScreen> createState() => _AnimalsGameScreenState();
@@ -46,6 +49,12 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
+    // «Дальше» на следующий уровень — стартуем сразу, без панели «Играть».
+    if (widget.autoStart) {
+      _game.loaded.then((_) {
+        if (mounted) _game.start();
+      });
+    }
   }
 
   void _onPhase() {
@@ -62,7 +71,8 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
     if (_hasNext) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => AnimalsGameScreen(set: AnimalSet.all[widget.set.index + 1]),
+          builder: (_) => AnimalsGameScreen(
+              set: AnimalSet.all[widget.set.index + 1], autoStart: true),
         ),
       );
     } else {
@@ -96,6 +106,7 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
             builder: (context, phase, _) {
               switch (phase) {
                 case AnimalsPhase.ready:
+                  if (widget.autoStart) return const SizedBox.shrink();
                   return ReadyPanel(
                     emoji: '🐶',
                     iconAsset: 'assets/games/animals.png',

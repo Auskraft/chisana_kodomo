@@ -16,9 +16,12 @@ const String kCountingGameId = 'counting';
 /// Экран-хост игры «Счёт»: Flame-канвас + оверлеи по фазе/паузе, голосовые
 /// подсказки и запись прогресса (звёзды/наборы).
 class CountingGameScreen extends StatefulWidget {
-  const CountingGameScreen({super.key, required this.set});
+  const CountingGameScreen({super.key, required this.set, this.autoStart = false});
 
   final CountSet set;
+
+  /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
+  final bool autoStart;
 
   @override
   State<CountingGameScreen> createState() => _CountingGameScreenState();
@@ -41,6 +44,12 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
+    // «Дальше» на следующий уровень — стартуем сразу, без панели «Играть».
+    if (widget.autoStart) {
+      _game.loaded.then((_) {
+        if (mounted) _game.start();
+      });
+    }
   }
 
   void _onPhase() {
@@ -58,7 +67,8 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
     if (_hasNext) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => CountingGameScreen(set: CountSet.all[widget.set.index + 1]),
+          builder: (_) => CountingGameScreen(
+              set: CountSet.all[widget.set.index + 1], autoStart: true),
         ),
       );
     } else {
@@ -97,6 +107,7 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
             builder: (context, phase, _) {
               switch (phase) {
                 case CountPhase.ready:
+                  if (widget.autoStart) return const SizedBox.shrink();
                   return ReadyPanel(
                     emoji: '🔢',
                     iconAsset: 'assets/games/counting.png',

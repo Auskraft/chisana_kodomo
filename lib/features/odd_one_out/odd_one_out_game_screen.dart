@@ -16,9 +16,12 @@ const String kOddOneOutGameId = 'odd_one_out';
 /// Экран-хост «Что лишнее?»: Flame-канвас + оверлеи по фазе/паузе, голос и
 /// запись прогресса (звёзды/наборы).
 class OddOneOutGameScreen extends StatefulWidget {
-  const OddOneOutGameScreen({super.key, required this.set});
+  const OddOneOutGameScreen({super.key, required this.set, this.autoStart = false});
 
   final OddSet set;
+
+  /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
+  final bool autoStart;
 
   @override
   State<OddOneOutGameScreen> createState() => _OddOneOutGameScreenState();
@@ -41,6 +44,12 @@ class _OddOneOutGameScreenState extends State<OddOneOutGameScreen> {
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
+    // «Дальше» на следующий уровень — стартуем сразу, без панели «Играть».
+    if (widget.autoStart) {
+      _game.loaded.then((_) {
+        if (mounted) _game.start();
+      });
+    }
   }
 
   void _onPhase() {
@@ -57,7 +66,8 @@ class _OddOneOutGameScreenState extends State<OddOneOutGameScreen> {
     if (_hasNext) {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
-          builder: (_) => OddOneOutGameScreen(set: OddSet.all[widget.set.index + 1]),
+          builder: (_) => OddOneOutGameScreen(
+              set: OddSet.all[widget.set.index + 1], autoStart: true),
         ),
       );
     } else {
@@ -90,6 +100,7 @@ class _OddOneOutGameScreenState extends State<OddOneOutGameScreen> {
             builder: (context, phase, _) {
               switch (phase) {
                 case OddPhase.ready:
+                  if (widget.autoStart) return const SizedBox.shrink();
                   return ReadyPanel(
                     emoji: '🔎',
                     iconAsset: 'assets/games/odd_one_out.png',
