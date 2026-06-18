@@ -35,3 +35,50 @@ abstract final class Xylophone {
   static double frequency(int semitone) =>
       baseHz * math.pow(2, semitone / 12).toDouble();
 }
+
+/// Вид раскладки инструмента: «лесенка» цветных пластин (ксилофон) или ряд
+/// вертикальных клавиш (пианино/орган).
+enum InstrumentStyle { bars, keys }
+
+/// Клавишный инструмент «Музыки»: вид раскладки + набор сэмплов. Ноты (до-мажор,
+/// 8 — [Xylophone.cMajor]) общие для всех; различаются вид и тембр
+/// (`assets/notes/<soundPrefix>_0..7.wav`, генерит `tool/gen_notes.py`).
+class Instrument {
+  const Instrument({
+    required this.id,
+    required this.name,
+    required this.soundPrefix,
+    required this.style,
+  });
+
+  /// Технический id (для табов/сравнения).
+  final String id;
+
+  /// Подпись таба.
+  final String name;
+
+  /// Префикс файлов нот: `assets/notes/<soundPrefix>_N.wav`.
+  final String soundPrefix;
+
+  /// Вид раскладки.
+  final InstrumentStyle style;
+
+  /// Три инструмента в порядке табов.
+  static const List<Instrument> all = <Instrument>[
+    Instrument(
+        id: 'xylophone',
+        name: 'Ксилофон',
+        soundPrefix: 'note',
+        style: InstrumentStyle.bars),
+    Instrument(
+        id: 'piano',
+        name: 'Пианино',
+        soundPrefix: 'piano',
+        style: InstrumentStyle.keys),
+    Instrument(
+        id: 'organ',
+        name: 'Орган',
+        soundPrefix: 'organ',
+        style: InstrumentStyle.keys),
+  ];
+}

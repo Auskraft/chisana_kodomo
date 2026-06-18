@@ -32,8 +32,8 @@ class _MusicGameScreenState extends State<MusicGameScreen> {
     _created = true;
     _game = MusicGame(
       colors: context.appColors,
-      onNote: (XyloNote note) =>
-          _notes.play('notes/note_${Xylophone.cMajor.indexOf(note)}.wav'),
+      onNote: (XyloNote note) => _notes.play(
+          'notes/${_game.instrument.value.soundPrefix}_${Xylophone.cMajor.indexOf(note)}.wav'),
     );
   }
 
@@ -76,7 +76,15 @@ class _MusicGameScreenState extends State<MusicGameScreen> {
                           onExit: _exit,
                         );
                       }
-                      return MusicHud(onPause: _game.togglePause);
+                      return ValueListenableBuilder<Instrument>(
+                        valueListenable: _game.instrument,
+                        builder: (context, inst, _) => MusicHud(
+                          onPause: _game.togglePause,
+                          instruments: Instrument.all,
+                          currentId: inst.id,
+                          onInstrument: _game.setInstrument,
+                        ),
+                      );
                     },
                   );
               }
