@@ -688,9 +688,9 @@ class _LevelChip extends StatelessWidget {
   }
 }
 
-/// Капсула «Тематика» в шапке: эмодзи текущей темы + подпись + стрелка; по тапу
-/// открывает выпадающий список тем (с картинками), текущая помечена галочкой.
-/// Стиль капсулы — как у таб-бара режимов (surface-пилюля с тенью).
+/// Капсула «Тема» в шапке: эмодзи текущей темы + короткая подпись + стрелка; по
+/// тапу открывает выпадающий список тем (с картинками), текущая — с галочкой.
+/// Стиль капсулы — как у таб-бара режимов (surface-пилюля с тенью), компактная.
 class _ThemeCapsule extends StatelessWidget {
   const _ThemeCapsule({
     required this.category,
@@ -709,7 +709,7 @@ class _ThemeCapsule extends StatelessWidget {
     final meta = coloringCategoryMeta(category);
     return PopupMenuButton<String>(
       onSelected: onCategory,
-      tooltip: 'Тематика',
+      tooltip: 'Тема',
       color: colors.surface,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
       itemBuilder: (context) => <PopupMenuEntry<String>>[
@@ -738,10 +738,10 @@ class _ThemeCapsule extends StatelessWidget {
           ),
       ],
       child: Container(
-        padding: const EdgeInsets.fromLTRB(12, 9, 8, 9),
+        padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
         decoration: BoxDecoration(
           color: colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(18),
           boxShadow: <BoxShadow>[
             BoxShadow(
               color: colors.onBackground.withValues(alpha: 0.12),
@@ -753,17 +753,17 @@ class _ThemeCapsule extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            Text(meta.emoji, style: const TextStyle(fontSize: 18)),
-            const SizedBox(width: 6),
+            Text(meta.emoji, style: const TextStyle(fontSize: 16)),
+            const SizedBox(width: 4),
             Text(
-              'Тематика',
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+              'Тема',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
                     color: colors.onSurface.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w800,
                   ),
             ),
             Icon(Icons.arrow_drop_down_rounded,
-                size: 22, color: colors.onSurface.withValues(alpha: 0.7)),
+                size: 18, color: colors.onSurface.withValues(alpha: 0.7)),
           ],
         ),
       ),
