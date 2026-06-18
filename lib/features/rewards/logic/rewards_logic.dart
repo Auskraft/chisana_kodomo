@@ -13,6 +13,7 @@ class StarGame {
     required this.title,
     required this.emoji,
     required this.setCount,
+    this.starsPerSet = 3,
   });
 
   final String id;
@@ -22,8 +23,11 @@ class StarGame {
   /// Сколько наборов в игре (берётся из её `*Set.all.length`).
   final int setCount;
 
-  /// Максимум звёзд в игре (3 за набор).
-  int get maxStars => setCount * 3;
+  /// Сколько звёзд даёт один набор (обычно 3; у «Пазлов» — 1 за уровень).
+  final int starsPerSet;
+
+  /// Максимум звёзд в игре.
+  int get maxStars => setCount * starsPerSet;
 }
 
 /// Реестр игр со звёздами. Число наборов берём прямо из логики игр — не дублируем
@@ -36,7 +40,7 @@ abstract final class RewardsCatalog {
     StarGame(id: 'animals', title: 'Звуки', emoji: '🐶', setCount: AnimalSet.all.length),
     StarGame(id: 'odd_one_out', title: 'Лишнее', emoji: '🔎', setCount: OddSet.all.length),
     StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
-    StarGame(id: 'puzzles', title: 'Пазлы', emoji: '🧩', setCount: PuzzleSet.all.length),
+    StarGame(id: 'puzzles', title: 'Пазлы', emoji: '🧩', setCount: PuzzleSet.all.length, starsPerSet: 1),
   ];
 
   /// Максимум звёзд по всем играм.
@@ -75,6 +79,13 @@ abstract final class Stickers {
     Sticker('🏆', 120),
     Sticker('👑', 130),
     Sticker('💎', 138),
+    Sticker('🌟', 150),
+    Sticker('🎯', 165),
+    Sticker('🦁', 180),
+    Sticker('🐉', 195),
+    Sticker('🚂', 210),
+    Sticker('🏰', 225),
+    Sticker('🎪', 240),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.

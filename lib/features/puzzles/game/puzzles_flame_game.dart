@@ -104,14 +104,8 @@ class PuzzlesGame extends FlameGame {
     '🍓', '🦋', '🐢', '🌈', '🐤', '🍉', '🚀', '🌞',
   ];
 
-  /// Сколько картинок собрать в наборе: у мелких сеток больше, у крупных меньше —
-  /// чтобы сессия оставалась посильной по числу перетаскиваний.
-  int get picturesPerSet {
-    final p = set.pieces;
-    if (p <= 4) return 4;
-    if (p <= 9) return 3;
-    return 2;
-  }
+  /// 1 картинка = 1 уровень (на уровне собираем одну картинку).
+  int get picturesPerSet => 1;
 
   bool get _active => phase.value == PuzzlePhase.playing && !isPaused.value;
 
@@ -237,7 +231,7 @@ class PuzzlesGame extends FlameGame {
 
   void _finishSet() {
     _clearSurface();
-    earnedStars.value = PuzzleSet.starsForMistakes(_session.mistakes, set.pieces);
+    earnedStars.value = 1; // 1 звезда за пройденный уровень
     Sfx.play(SfxEvent.complete);
     onSay?.call(setDonePhrase);
     phase.value = PuzzlePhase.setDone;

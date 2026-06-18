@@ -321,10 +321,12 @@ class PraisePanel extends StatelessWidget {
     required this.onExit,
     this.emoji = '🌟',
     this.nextLabel = 'Дальше',
+    this.totalStars = 3,
   });
 
   final String title;
   final int stars;
+  final int totalStars;
   final VoidCallback onNext;
   final VoidCallback onAgain;
   final VoidCallback onExit;
@@ -350,7 +352,7 @@ class PraisePanel extends StatelessWidget {
             ),
           ),
           SizedBox(height: _frac(context, 0.02, 10, 22)),
-          StarRow(filled: stars),
+          StarRow(filled: stars, total: totalStars),
           SizedBox(height: _frac(context, 0.035, 16, 32)),
           BigButton(label: nextLabel, onTap: onNext),
           SoftTextButton(label: 'Ещё разок', onTap: onAgain),

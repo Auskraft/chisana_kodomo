@@ -7,7 +7,8 @@ void main() {
       expect(RewardsCatalog.games, hasLength(7));
       for (final g in RewardsCatalog.games) {
         expect(g.setCount, greaterThan(0));
-        expect(g.maxStars, g.setCount * 3);
+        expect(g.starsPerSet, greaterThan(0));
+        expect(g.maxStars, g.setCount * g.starsPerSet);
       }
     });
 

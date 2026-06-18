@@ -1,5 +1,8 @@
 import 'dart:math';
 
+/// Сколько уровней в «Пазлах»: по 1 картинке на уровень, сложность растёт.
+const int kPuzzleLevels = 99;
+
 /// Набор (ступень сложности) игры «Пазлы».
 ///
 /// Картинка режется на сетку [rows]×[cols]; малыш собирает её из кусочков.
@@ -25,25 +28,26 @@ class PuzzleSet {
   /// Всего кусочков (= ячеек на доске).
   int get pieces => rows * cols;
 
-  /// Плавная длинная кривая: 2 → 4 → 6 → 9 → 12 → 16 кусочков. Сетки близки к
-  /// квадрату (портретно-удобно: рядов ≥ столбцов), картинка не искажается.
-  static const List<PuzzleSet> all = <PuzzleSet>[
-    PuzzleSet(index: 0, rows: 2, cols: 1), // 2 — картинка пополам (верх/низ)
-    PuzzleSet(index: 1, rows: 2, cols: 2), // 4
-    PuzzleSet(index: 2, rows: 3, cols: 2), // 6
-    PuzzleSet(index: 3, rows: 3, cols: 3), // 9
-    PuzzleSet(index: 4, rows: 4, cols: 3), // 12
-    PuzzleSet(index: 5, rows: 4, cols: 4), // 16
+  /// Сетки по возрастанию сложности (rows≥cols, портретно-удобно):
+  /// 2·4·6·9·12·16·20·25·30 кусочков.
+  static const List<List<int>> _grids = <List<int>>[
+    <int>[2, 1], <int>[2, 2], <int>[3, 2], <int>[3, 3], <int>[4, 3],
+    <int>[4, 4], <int>[5, 4], <int>[5, 5], <int>[6, 5],
   ];
 
-  /// Звёзды за набор по числу ошибок (промахов мимо своей ячейки). Порог
-  /// масштабируется числом кусочков — у больших пазлов промахи естественны.
-  /// «Без проигрышей»: всегда минимум 1 звезда.
-  static int starsForMistakes(int mistakes, int pieces) {
-    if (mistakes <= 0) return 3;
-    if (mistakes <= pieces) return 2;
-    return 1;
-  }
+  static int _gridFor(int level) =>
+      (level * (_grids.length - 1) / (kPuzzleLevels - 1)).round();
+
+  /// [kPuzzleLevels] уровней: сложность плавно растёт от 2 до 30 кусочков.
+  /// Картинка на уровне — случайная из пула `assets/puzzles/` (берётся в Flame-слое).
+  static final List<PuzzleSet> all = <PuzzleSet>[
+    for (var i = 0; i < kPuzzleLevels; i++)
+      PuzzleSet(
+        index: i,
+        rows: _grids[_gridFor(i)][0],
+        cols: _grids[_gridFor(i)][1],
+      ),
+  ];
 }
 
 /// Исход попытки положить кусочек на ячейку.

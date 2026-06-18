@@ -106,6 +106,7 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
                     builder: (context, stars, _) => PraisePanel(
                       title: 'Молодец!',
                       stars: stars,
+                      totalStars: 1,
                       nextLabel: _hasNext ? 'Дальше' : 'В лобби',
                       onNext: _next,
                       onAgain: _again,
@@ -123,14 +124,10 @@ class _PuzzlesGameScreenState extends State<PuzzlesGameScreen> {
                           onExit: _exit,
                         );
                       }
-                      return ValueListenableBuilder<int>(
-                        valueListenable: _game.pictureNumber,
-                        builder: (context, picture, _) => PuzzlesHud(
-                          setNumber: widget.set.index + 1,
-                          pictureNumber: picture,
-                          picturesPerSet: _game.picturesPerSet,
-                          onPause: _game.togglePause,
-                        ),
+                      return PuzzlesHud(
+                        levelNumber: widget.set.index + 1,
+                        totalLevels: PuzzleSet.all.length,
+                        onPause: _game.togglePause,
                       );
                     },
                   );

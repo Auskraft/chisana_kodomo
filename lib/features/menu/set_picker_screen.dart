@@ -15,11 +15,15 @@ class SetPickerScreen extends StatefulWidget {
     required this.title,
     required this.setCount,
     required this.buildGame,
+    this.starsPerSet = 3,
   });
 
   final String gameId;
   final String title;
   final int setCount;
+
+  /// Сколько звёзд даёт набор (кружки на карточке; у «Пазлов» — 1).
+  final int starsPerSet;
 
   /// Построить экран игры для набора [index].
   final Widget Function(int index) buildGame;
@@ -81,6 +85,7 @@ class _SetPickerScreenState extends State<SetPickerScreen> {
                           colors: colors,
                           locked: i >= unlocked,
                           stars: _s.setStars(widget.gameId, i),
+                          starsPerSet: widget.starsPerSet,
                           onTap: i >= unlocked ? null : () => _openSet(i),
                         ),
                     ],
@@ -102,6 +107,7 @@ class _SetCard extends StatelessWidget {
     required this.colors,
     required this.locked,
     required this.stars,
+    required this.starsPerSet,
     required this.onTap,
   });
 
@@ -110,6 +116,7 @@ class _SetCard extends StatelessWidget {
   final AppColors colors;
   final bool locked;
   final int stars;
+  final int starsPerSet;
   final VoidCallback? onTap;
 
   @override
@@ -144,7 +151,7 @@ class _SetCard extends StatelessWidget {
                   ),
             ),
             SizedBox(height: size * 0.03),
-            StarRow(filled: stars, size: size * 0.13),
+            StarRow(filled: stars, total: starsPerSet, size: size * 0.13),
           ],
         ],
       ),

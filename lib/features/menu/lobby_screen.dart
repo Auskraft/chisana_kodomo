@@ -123,18 +123,21 @@ class _LobbyScreenState extends State<LobbyScreen> {
             (int i) => OddOneOutGameScreen(set: OddSet.all[i]));
       case 'puzzles':
         await _openSets(g, PuzzleSet.all.length,
-            (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]));
+            (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]),
+            starsPerSet: 1);
     }
     if (mounted) setState(() => _stars = _computeStars());
   }
 
-  Future<void> _openSets(_Game g, int setCount, Widget Function(int) build) {
+  Future<void> _openSets(_Game g, int setCount, Widget Function(int) build,
+      {int starsPerSet = 3}) {
     return Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => SetPickerScreen(
         gameId: g.id,
         title: g.title,
         setCount: setCount,
         buildGame: build,
+        starsPerSet: starsPerSet,
       ),
     ));
   }

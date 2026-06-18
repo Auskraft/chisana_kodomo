@@ -5,7 +5,8 @@ import 'package:chisana_kodomo/features/puzzles/logic/puzzles_logic.dart';
 
 void main() {
   group('PuzzleSet.all', () {
-    test('кусочки растут плавно, сетка валидна, рядов ≥ столбцов', () {
+    test('99 уровней: сетка валидна, рядов ≥ столбцов, сложность не убывает', () {
+      expect(PuzzleSet.all, hasLength(99));
       var prev = 0;
       for (var i = 0; i < PuzzleSet.all.length; i++) {
         final s = PuzzleSet.all[i];
@@ -15,23 +16,18 @@ void main() {
         expect(s.pieces, s.rows * s.cols);
         expect(s.rows, greaterThanOrEqualTo(s.cols),
             reason: 'портретно-удобно: рядов не меньше столбцов');
-        expect(s.pieces, greaterThan(prev), reason: 'кривая монотонна');
+        expect(s.pieces, greaterThanOrEqualTo(prev), reason: 'кривая не убывает');
         prev = s.pieces;
       }
-    });
-
-    test('звёзды по промахам: 0→3, ≤pieces→2, иначе 1 (минимум 1)', () {
-      expect(PuzzleSet.starsForMistakes(0, 9), 3);
-      expect(PuzzleSet.starsForMistakes(1, 9), 2);
-      expect(PuzzleSet.starsForMistakes(9, 9), 2);
-      expect(PuzzleSet.starsForMistakes(10, 9), 1);
-      expect(PuzzleSet.starsForMistakes(999, 4), 1);
+      expect(PuzzleSet.all.last.pieces,
+          greaterThan(PuzzleSet.all.first.pieces),
+          reason: 'к концу сложнее, чем в начале');
     });
   });
 
   group('PuzzleSession', () {
     test('лоток — перестановка 0..pieces−1, детерминирован по seed', () {
-      final set = PuzzleSet.all[3]; // 9 кусочков
+      final set = PuzzleSet.all[40]; // ~9 кусочков
       final a = PuzzleSession(set, random: Random(7)).trayOrder;
       final b = PuzzleSession(set, random: Random(7)).trayOrder;
       expect(a, b, reason: 'один seed → одинаковый лоток');
@@ -40,7 +36,7 @@ void main() {
     });
 
     test('верное размещение копит progress и завершает картинку', () {
-      final set = PuzzleSet.all[1]; // 4 кусочка
+      final set = PuzzleSet.all[40]; // ~9 кусочков
       final s = PuzzleSession(set, random: Random(1));
       for (var p = 0; p < set.pieces; p++) {
         expect(s.isPlaced(p), isFalse);
