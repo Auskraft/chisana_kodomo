@@ -336,9 +336,9 @@ class _GameCard extends StatelessWidget {
             fit: StackFit.expand,
             children: <Widget>[
               Padding(
-                // Иконка на 20% меньше карточки (отступ 10% с каждой стороны).
+                // Иконка ~60% карточки (отступ 20% с каждой стороны).
                 // Подпись — отдельный слой Stack, остаётся на месте.
-                padding: EdgeInsets.all(size * 0.1),
+                padding: EdgeInsets.all(size * 0.2),
                 child: Image.asset(
                   game.image!,
                   fit: BoxFit.contain,
