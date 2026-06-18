@@ -9,8 +9,9 @@ import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/voice/voice.dart';
 
-/// Экран настроек: тумблеры (голос/звук/вибро) + выбор системного голоса
-/// помощника. «Живые» встроенные голоса добавятся в этот же список позже.
+/// Экран настроек — редизайн «Цветные секции» (вариант B, Claude Design):
+/// тёплые секции-карточки (звук/голос · кто играет · внешний вид · голос
+/// помощника · для родителей). Функционал прежний; цвета — через [AppColors].
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
@@ -18,7 +19,8 @@ class SettingsScreen extends StatefulWidget {
   State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen>
+    with SingleTickerProviderStateMixin {
   final GameStorage _s = GameStorage.instance;
 
   late bool _voiceOn = _s.voiceOn;
@@ -32,12 +34,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   int _bgIndex = GameStorage.instance.backgroundIndex;
   bool _loading = true;
 
+  late final AnimationController _bob = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 3400),
+  )..repeat(reverse: true);
+
   static const int _bgCount = 9;
 
   @override
   void initState() {
     super.initState();
     _loadVoices();
+  }
+
+  @override
+  void dispose() {
+    _bob.dispose();
+    super.dispose();
   }
 
   Future<void> _loadVoices() async {
@@ -47,6 +60,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _voices = v;
       _loading = false;
     });
+  }
+
+  Future<void> _refreshVoices() async {
+    Haptics.select();
+    setState(() => _loading = true);
+    await _loadVoices();
   }
 
   Future<void> _pick(VoiceOption v) async {
@@ -86,195 +105,886 @@ class _SettingsScreenState extends State<SettingsScreen> {
     setState(() => _gender = g);
   }
 
-  String _genderLabel(Gender g) {
-    switch (g) {
-      case Gender.boy:
-        return 'Мальчик';
-      case Gender.girl:
-        return 'Девочка';
-      case Gender.neutral:
-        return 'Нейтрально (по умолчанию)';
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
-    final text = Theme.of(context).textTheme;
-
+    final pad =
+        (MediaQuery.of(context).size.width * 0.04).clamp(12.0, 18.0).toDouble();
     return Scaffold(
-      appBar: AppBar(title: const Text('Настройки')),
-      body: ListView(
-        padding: const EdgeInsets.symmetric(vertical: 8),
+      backgroundColor: colors.background,
+      body: SafeArea(
+        child: Column(
+          children: <Widget>[
+            _Header(
+              colors: colors,
+              bob: _bob,
+              onBack: () => Navigator.of(context).pop(),
+            ),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.fromLTRB(pad, 14, pad, 36),
+                children: <Widget>[
+                  _soundSection(colors),
+                  _whoSection(colors),
+                  _appearanceSection(colors),
+                  _voiceSection(colors),
+                  _parentsCard(colors),
+                  const SizedBox(height: 16),
+                  Center(
+                    child: Text(
+                      'Chisana kodomo · офлайн, без рекламы',
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w500,
+                        color: colors.onSurface.withValues(alpha: 0.45),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Секция 1: Звук и голос ──────────────────────────────────────────────────
+  Widget _soundSection(AppColors colors) {
+    return _SectionCard(
+      colors: colors,
+      tint: colors.primary,
+      emoji: '🔊',
+      title: 'Звук и голос',
+      child: Column(
         children: <Widget>[
-          SwitchListTile(
-            value: _voiceOn,
-            secondary: const Icon(Icons.record_voice_over_rounded),
-            title: const Text('Голос'),
-            onChanged: (bool v) {
+          _toggleRow(
+            colors, '🗣️', 'Голос', 'Подсказки и озвучка заданий', _voiceOn,
+            (bool v) {
               setState(() => _voiceOn = v);
               _s.setVoiceOn(v);
               Voice.instance.enabled = v;
             },
           ),
-          SwitchListTile(
-            value: _soundOn,
-            secondary: const Icon(Icons.music_note_rounded),
-            title: const Text('Звук'),
-            onChanged: (bool v) {
+          _rowDivider(colors),
+          _toggleRow(
+            colors, '🎵', 'Звук', 'Музыка и звуковые эффекты', _soundOn,
+            (bool v) {
               setState(() => _soundOn = v);
               _s.setSoundOn(v);
               Sfx.enabled = v;
             },
           ),
-          SwitchListTile(
-            value: _hapticsOn,
-            secondary: const Icon(Icons.vibration_rounded),
-            title: const Text('Вибрация'),
-            onChanged: (bool v) {
+          _rowDivider(colors),
+          _toggleRow(
+            colors, '📳', 'Вибрация', 'Лёгкий отклик при касании', _hapticsOn,
+            (bool v) {
               setState(() => _hapticsOn = v);
               _s.setHapticsOn(v);
               Haptics.enabled = v;
             },
           ),
-          const Divider(height: 24),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text(
-              'Обращение к ребёнку',
-              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
-          for (final g in Gender.values)
-            ListTile(
-              onTap: () => _setGender(g),
-              leading: Icon(
-                _gender == g ? Icons.check_circle_rounded : Icons.circle_outlined,
-                color: _gender == g
-                    ? colors.primary
-                    : colors.onSurface.withValues(alpha: 0.35),
-              ),
-              title: Text(_genderLabel(g)),
-            ),
-          const Divider(height: 24),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Text(
-              'Фон главного экрана',
-              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
-            ),
-          ),
-          SizedBox(
-            height: 104,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _bgCount,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (context, i) {
-                final selected = i == _bgIndex;
-                return GestureDetector(
-                  onTap: () {
-                    GameStorage.instance.setBackgroundIndex(i);
-                    Haptics.select();
-                    setState(() => _bgIndex = i);
-                  },
-                  child: Container(
-                    width: 60,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: selected ? colors.primary : Colors.transparent,
-                        width: 3,
-                      ),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(11),
-                      child: Image.asset(
-                        'assets/backgrounds/${i + 1}.png',
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) =>
-                            ColoredBox(color: colors.surface),
-                      ),
+        ],
+      ),
+    );
+  }
+
+  Widget _rowDivider(AppColors colors) => Divider(
+        height: 18,
+        thickness: 1,
+        color: colors.onSurface.withValues(alpha: 0.07),
+      );
+
+  Widget _toggleRow(AppColors colors, String emoji, String title, String desc,
+      bool value, ValueChanged<bool> onChanged) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => onChanged(!value),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        child: Row(
+          children: <Widget>[
+            Text(emoji, style: const TextStyle(fontSize: 20)),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
                     ),
                   ),
-                );
-              },
+                  Text(
+                    desc,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colors.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _Toggle(value: value, colors: colors),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Секция 2: Кто играет ────────────────────────────────────────────────────
+  Widget _whoSection(AppColors colors) {
+    return _SectionCard(
+      colors: colors,
+      tint: colors.accent,
+      emoji: '🧒',
+      title: 'Кто играет',
+      subtitle: 'Как обращаться к ребёнку в игре',
+      child: Row(
+        children: <Widget>[
+          _genderPill(colors, Gender.boy, '👦', 'Мальчик'),
+          const SizedBox(width: 9),
+          _genderPill(colors, Gender.girl, '👧', 'Девочка'),
+          const SizedBox(width: 9),
+          _genderPill(colors, Gender.neutral, '🙂', 'Нейтрально'),
+        ],
+      ),
+    );
+  }
+
+  Widget _genderPill(AppColors colors, Gender g, String emoji, String label) {
+    final selected = _gender == g;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _setGender(g),
+        child: Stack(
+          children: <Widget>[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: selected
+                    ? colors.primary
+                    : colors.surface.withValues(alpha: 0.6),
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: selected
+                    ? <BoxShadow>[
+                        BoxShadow(
+                          color: colors.primary.withValues(alpha: 0.35),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ]
+                    : null,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Text(emoji, style: const TextStyle(fontSize: 24)),
+                  const SizedBox(height: 2),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: selected
+                          ? colors.onPrimary
+                          : colors.onSurface.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Positioned(
+                top: 6,
+                right: 6,
+                child: Icon(Icons.check_circle_rounded,
+                    size: 18, color: colors.success),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── Секция 3: Внешний вид ───────────────────────────────────────────────────
+  Widget _appearanceSection(AppColors colors) {
+    return _SectionCard(
+      colors: colors,
+      tint: colors.success,
+      emoji: '🎨',
+      title: 'Внешний вид',
+      subtitle: 'Фон главного экрана',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          SizedBox(
+            height: 80,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              itemCount: _bgCount,
+              separatorBuilder: (_, _) => const SizedBox(width: 11),
+              itemBuilder: (context, i) => _bgTile(colors, i),
             ),
           ),
-          const Divider(height: 24),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
-            child: Text(
-              'Голос помощника',
-              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+          const SizedBox(height: 12),
+          _rowDivider(colors),
+          const SizedBox(height: 8),
+          _themePlaceholder(colors),
+        ],
+      ),
+    );
+  }
+
+  Widget _bgTile(AppColors colors, int i) {
+    final selected = i == _bgIndex;
+    return GestureDetector(
+      onTap: () {
+        GameStorage.instance.setBackgroundIndex(i);
+        Haptics.select();
+        setState(() => _bgIndex = i);
+      },
+      child: Stack(
+        children: <Widget>[
+          AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 70,
+            height: 70,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(
+                color: selected ? colors.primary : Colors.transparent,
+                width: 3,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              'Нажми голос, чтобы услышать. «Встроенный» работает офлайн (озвучку добавляем отдельно).',
-              style: text.bodySmall?.copyWith(
-                color: colors.onBackground.withValues(alpha: 0.6),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(15),
+              child: Image.asset(
+                'assets/backgrounds/${i + 1}.png',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => ColoredBox(color: colors.surface),
               ),
             ),
           ),
-          // Встроенный (офлайн) — всегда доступен; пока нет клипов, звучит через TTS.
-          ListTile(
-            onTap: _pickPack,
-            leading: Icon(
-              _usePack ? Icons.check_circle_rounded : Icons.circle_outlined,
-              color: _usePack
-                  ? colors.primary
-                  : colors.onSurface.withValues(alpha: 0.35),
+          if (selected)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Icon(Icons.check_circle_rounded,
+                  size: 20, color: colors.primary),
             ),
-            title: const Text('Встроенный голос (офлайн)'),
-            subtitle: const Text('Без интернета, одинаково на всех'),
-            trailing: const Icon(Icons.volume_up_rounded),
+        ],
+      ),
+    );
+  }
+
+  /// Задел под будущий выбор темы оформления (5–10 тем) — заглушка «СКОРО».
+  Widget _themePlaceholder(AppColors colors) {
+    final dots = <Color>[
+      colors.primary,
+      colors.secondary,
+      colors.success,
+      colors.accent,
+      colors.onSurface.withValues(alpha: 0.45),
+    ];
+    return Opacity(
+      opacity: 0.55,
+      child: Row(
+        children: <Widget>[
+          Text(
+            'Тема оформления',
+            style: TextStyle(
+              fontSize: 12.5,
+              fontWeight: FontWeight.w600,
+              color: colors.onSurface.withValues(alpha: 0.7),
+            ),
           ),
-          const Divider(height: 1, indent: 16, endIndent: 16),
-          // Голоса телефона
-          if (_loading)
-            const Padding(
-              padding: EdgeInsets.all(24),
-              child: Center(child: CircularProgressIndicator()),
-            )
-          else if (_voices.isEmpty)
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            decoration: BoxDecoration(
+              color: colors.primary.withValues(alpha: 0.14),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Text(
+              'СКОРО',
+              style: TextStyle(
+                fontSize: 9.5,
+                fontWeight: FontWeight.w800,
+                letterSpacing: 0.5,
+                color: colors.primary,
+              ),
+            ),
+          ),
+          const Spacer(),
+          for (final c in dots)
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              child: Text(
-                'Русские голоса на телефоне не найдены. Их можно поставить в '
-                'настройках телефона: «Синтез речи» → русский язык.',
-                style: text.bodyMedium?.copyWith(
-                  color: colors.onBackground.withValues(alpha: 0.7),
+              padding: const EdgeInsets.only(left: 6),
+              child: Container(
+                width: 22,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: c,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 2),
                 ),
               ),
-            )
-          else
-            for (final VoiceOption v in _voices)
-              ListTile(
-                onTap: () => _pick(v),
-                leading: Icon(
-                  (!_usePack && v.name == _selected)
-                      ? Icons.check_circle_rounded
-                      : Icons.circle_outlined,
-                  color: (!_usePack && v.name == _selected)
-                      ? colors.primary
-                      : colors.onSurface.withValues(alpha: 0.35),
-                ),
-                title: Text(v.name, maxLines: 1, overflow: TextOverflow.ellipsis),
-                subtitle: Text(v.locale),
-                trailing: const Icon(Icons.volume_up_rounded),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // ── Секция 4: Голос помощника ───────────────────────────────────────────────
+  Widget _voiceSection(AppColors colors) {
+    return _SectionCard(
+      colors: colors,
+      tint: colors.secondary,
+      emoji: '🎙️',
+      title: 'Голос помощника',
+      trailing: GestureDetector(
+        onTap: _loading ? null : _refreshVoices,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Icon(Icons.refresh_rounded, size: 16, color: colors.secondary),
+            const SizedBox(width: 3),
+            Text(
+              'Обновить',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: colors.secondary,
               ),
-          const Divider(height: 24),
-          ListTile(
-            leading: const Icon(Icons.family_restroom_rounded),
-            title: const Text('Для родителей'),
-            subtitle: const Text('Связь, оценка, политика, сброс прогресса'),
-            trailing: const Icon(Icons.lock_outline_rounded),
-            onTap: _openParentZone,
+            ),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          _builtinRow(colors),
+          const SizedBox(height: 12),
+          Text(
+            'ГОЛОСА ТЕЛЕФОНА',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: colors.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _voiceList(colors),
+        ],
+      ),
+    );
+  }
+
+  Widget _builtinRow(AppColors colors) {
+    final selected = _usePack;
+    return GestureDetector(
+      onTap: _pickPack,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? colors.primary.withValues(alpha: 0.12) : colors.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: selected
+                ? colors.primary
+                : colors.onSurface.withValues(alpha: 0.10),
+            width: selected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: <Widget>[
+            const Text('🦊', style: TextStyle(fontSize: 22)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Встроенный голос',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  Text(
+                    'Работает офлайн · рекомендуем',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: colors.onSurface.withValues(alpha: 0.55),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (selected)
+              Icon(Icons.check_circle_rounded, size: 20, color: colors.success),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _voiceList(AppColors colors) {
+    if (_loading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        child: Row(
+          children: <Widget>[
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                color: colors.secondary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Загружаем голоса телефона…',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: colors.onSurface.withValues(alpha: 0.6),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    if (_voices.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: colors.accent.withValues(alpha: 0.14),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: <Widget>[
+            const Text('🔍', style: TextStyle(fontSize: 20)),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  Text(
+                    'Русские голоса не найдены',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Поставь рус. голос: Настройки телефона → Язык и ввод → '
+                    'Синтез речи.',
+                    style: TextStyle(
+                      fontSize: 11.5,
+                      color: colors.onSurface.withValues(alpha: 0.6),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return Column(
+      children: <Widget>[
+        for (final v in _voices) _voiceTile(colors, v),
+      ],
+    );
+  }
+
+  Widget _voiceTile(AppColors colors, VoiceOption v) {
+    final selected = !_usePack && v.name == _selected;
+    final initial = v.name.isNotEmpty ? v.name.substring(0, 1).toUpperCase() : '?';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => _pick(v),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? colors.success
+                  : colors.onSurface.withValues(alpha: 0.10),
+              width: selected ? 2 : 1,
+            ),
+          ),
+          child: Row(
+            children: <Widget>[
+              Container(
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: colors.secondary.withValues(alpha: 0.18),
+                  shape: BoxShape.circle,
+                ),
+                child: Text(
+                  initial,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    color: colors.secondary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      v.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 13.5,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    Text(
+                      v.locale,
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.onSurface.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.secondary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.play_arrow_rounded,
+                        size: 16, color: colors.secondary),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Послушать',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: colors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Padding(
+                  padding: const EdgeInsets.only(left: 6),
+                  child: Icon(Icons.check_circle_rounded,
+                      size: 18, color: colors.success),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Секция 5: Для родителей ─────────────────────────────────────────────────
+  Widget _parentsCard(AppColors colors) {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: <Color>[
+            colors.primary.withValues(alpha: 0.16),
+            colors.accent.withValues(alpha: 0.14),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: colors.primary.withValues(alpha: 0.30), width: 1.5),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(24),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: _openParentZone,
+          child: Padding(
+            padding: const EdgeInsets.all(14),
+            child: Row(
+              children: <Widget>[
+                Container(
+                  width: 44,
+                  height: 44,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: colors.primary,
+                    borderRadius: BorderRadius.circular(14),
+                    boxShadow: <BoxShadow>[
+                      BoxShadow(
+                        color: colors.primary.withValues(alpha: 0.35),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: const Text('🔒', style: TextStyle(fontSize: 22)),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: <Widget>[
+                      Text(
+                        'Для родителей',
+                        style: TextStyle(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w700,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                      Text(
+                        'Под защитой · откроется после примера',
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.onSurface.withValues(alpha: 0.6),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded,
+                    color: colors.onSurface.withValues(alpha: 0.5)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Липкая шапка экрана: «назад» + заголовок/подзаголовок + маскот 🎈 (покачивание).
+class _Header extends StatelessWidget {
+  const _Header({required this.colors, required this.bob, required this.onBack});
+
+  final AppColors colors;
+  final AnimationController bob;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(14, 8, 14, 12),
+      decoration: BoxDecoration(
+        color: colors.background,
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.10),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
           ),
         ],
+      ),
+      child: Row(
+        children: <Widget>[
+          Material(
+            color: colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            elevation: 1,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(16),
+              onTap: onBack,
+              child: SizedBox(
+                width: 48,
+                height: 48,
+                child: Icon(Icons.chevron_left_rounded, color: colors.onSurface),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Text(
+                  'Настройки',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.5,
+                    color: colors.onSurface,
+                  ),
+                ),
+                Text(
+                  'Здесь всё настраивает взрослый',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    color: colors.onSurface.withValues(alpha: 0.55),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          AnimatedBuilder(
+            animation: bob,
+            builder: (context, child) => Transform.translate(
+              offset: Offset(0, -4 + 8 * Curves.easeInOut.transform(bob.value)),
+              child: child,
+            ),
+            child: const Text('🎈', style: TextStyle(fontSize: 30)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Секция-карточка варианта B: лёгкая заливка оттенком [tint], бейдж-иконка,
+/// заголовок (+ подзаголовок/действие справа) и содержимое.
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({
+    required this.colors,
+    required this.tint,
+    required this.emoji,
+    required this.title,
+    this.subtitle,
+    this.trailing,
+    required this.child,
+  });
+
+  final AppColors colors;
+  final Color tint;
+  final String emoji;
+  final String title;
+  final String? subtitle;
+  final Widget? trailing;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
+      decoration: BoxDecoration(
+        color: tint.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.06),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Row(
+            children: <Widget>[
+              Container(
+                width: 40,
+                height: 40,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: tint.withValues(alpha: 0.22),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(emoji, style: const TextStyle(fontSize: 20)),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    if (subtitle != null)
+                      Text(
+                        subtitle!,
+                        style: TextStyle(
+                          fontSize: 11.5,
+                          color: colors.onSurface.withValues(alpha: 0.55),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              ?trailing,
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
+    );
+  }
+}
+
+/// Тумблер варианта B: трек 52×30, белый «knob» едет при включении (primary).
+class _Toggle extends StatelessWidget {
+  const _Toggle({required this.value, required this.colors});
+
+  final bool value;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: 52,
+      height: 30,
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        color: value ? colors.primary : colors.onSurface.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: AnimatedAlign(
+        duration: const Duration(milliseconds: 200),
+        alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+        child: Container(
+          width: 24,
+          height: 24,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: <BoxShadow>[
+              BoxShadow(
+                color: colors.onBackground.withValues(alpha: 0.2),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
