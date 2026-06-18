@@ -98,7 +98,7 @@ class _AnimalsGameScreenState extends State<AnimalsGameScreen> {
                 case AnimalsPhase.ready:
                   return ReadyPanel(
                     emoji: '🐶',
-                    title: 'Звуки животных',
+                    title: 'Звуки',
                     subtitle: 'Слушай: где зверёк?',
                     onStart: _game.start,
                   );

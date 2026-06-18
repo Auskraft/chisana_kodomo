@@ -32,9 +32,9 @@ abstract final class RewardsCatalog {
   static final List<StarGame> games = <StarGame>[
     StarGame(id: 'counting', title: 'Счёт', emoji: '🔢', setCount: CountSet.all.length),
     StarGame(id: 'pairs', title: 'Парочки', emoji: '🃏', setCount: PairsSet.all.length),
-    StarGame(id: 'colors_shapes', title: 'Цвета и формы', emoji: '🎨', setCount: CSSet.all.length),
-    StarGame(id: 'animals', title: 'Звуки животных', emoji: '🐶', setCount: AnimalSet.all.length),
-    StarGame(id: 'odd_one_out', title: 'Что лишнее?', emoji: '🔎', setCount: OddSet.all.length),
+    StarGame(id: 'colors_shapes', title: 'Угадай-ка', emoji: '🎨', setCount: CSSet.all.length),
+    StarGame(id: 'animals', title: 'Звуки', emoji: '🐶', setCount: AnimalSet.all.length),
+    StarGame(id: 'odd_one_out', title: 'Лишнее', emoji: '🔎', setCount: OddSet.all.length),
     StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
     StarGame(id: 'puzzles', title: 'Пазлы', emoji: '🧩', setCount: PuzzleSet.all.length),
   ];

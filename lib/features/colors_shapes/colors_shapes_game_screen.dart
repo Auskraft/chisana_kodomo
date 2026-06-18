@@ -104,7 +104,7 @@ class _ColorsShapesGameScreenState extends State<ColorsShapesGameScreen> {
                 case CSPhase.ready:
                   return ReadyPanel(
                     emoji: '🎨',
-                    title: 'Цвета и формы',
+                    title: 'Угадай-ка',
                     subtitle: _subtitle(),
                     onStart: _game.start,
                   );
