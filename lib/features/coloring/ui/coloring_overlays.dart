@@ -186,6 +186,11 @@ class _HoldToUnlockState extends State<_HoldToUnlock>
   }
 }
 
+/// Выбор уровня сложности временно скрыт (по просьбе владельца) — поставь
+/// `true`, чтобы вернуть. Намеренно `final`, а не `const`: при `const false`
+/// анализатор счёл бы ветку мёртвым кодом, а `_LevelChip` — неиспользуемым.
+final bool _showLevelSelector = false;
+
 /// Нижняя панель: палитра + действия (заново / следующая картинка).
 class ColoringBottomBar extends StatelessWidget {
   const ColoringBottomBar({
@@ -272,14 +277,14 @@ class ColoringBottomBar extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
             if (!locked && mode == ColoringMode.fill) ...<Widget>[
-              // Инструменты (Заливка/Карандаш/Маркер/Акварель/Гуашь) + толщина.
+              // Инструменты (Заливка/Маркер/Акварель/Карандашик) + толщина.
               if (showTools) ...<Widget>[
                 Wrap(
                   alignment: WrapAlignment.center,
                   spacing: 6,
                   runSpacing: 6,
                   children: <Widget>[
-                    for (final t in PaintTool.values)
+                    for (final t in _toolOrder)
                       _ToolChip(
                         tool: t,
                         selected: t == paintTool,
@@ -335,8 +340,8 @@ class ColoringBottomBar extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
               ],
-              // Уровень сложности внутри темы (показываем, если уровней ≥ 2).
-              if (availableLevels.length >= 2) ...<Widget>[
+              // Уровень сложности временно скрыт (флаг _showLevelSelector выше).
+              if (_showLevelSelector && availableLevels.length >= 2) ...<Widget>[
                 Wrap(
                   alignment: WrapAlignment.center,
                   crossAxisAlignment: WrapCrossAlignment.center,
@@ -725,13 +730,23 @@ class _CategoryChip extends StatelessWidget {
   }
 }
 
+/// Набор и порядок инструментов в панели (по просьбе владельца). Гуашь
+/// временно убрана — вернуть = добавить `PaintTool.gouache` в список. Сам enum
+/// `PaintTool` и логика мазков во Flame не тронуты.
+const List<PaintTool> _toolOrder = <PaintTool>[
+  PaintTool.fill,
+  PaintTool.marker,
+  PaintTool.watercolor,
+  PaintTool.pencil,
+];
+
 /// Иконка + подпись инструмента раскрашивания.
 ({IconData icon, String label}) _toolMeta(PaintTool t) {
   switch (t) {
     case PaintTool.fill:
       return (icon: Icons.format_color_fill_rounded, label: 'Заливка');
     case PaintTool.pencil:
-      return (icon: Icons.edit_rounded, label: 'Карандаш');
+      return (icon: Icons.edit_rounded, label: 'Карандашик');
     case PaintTool.marker:
       return (icon: Icons.brush_rounded, label: 'Маркер');
     case PaintTool.watercolor:
