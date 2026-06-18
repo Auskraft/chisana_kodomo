@@ -13,14 +13,12 @@ class SetPickerScreen extends StatefulWidget {
     super.key,
     required this.gameId,
     required this.title,
-    required this.emoji,
     required this.setCount,
     required this.buildGame,
   });
 
   final String gameId;
   final String title;
-  final String emoji;
   final int setCount;
 
   /// Построить экран игры для набора [index].
@@ -49,7 +47,7 @@ class _SetPickerScreenState extends State<SetPickerScreen> {
     final unlocked = _s.unlockedSets(widget.gameId);
 
     return Scaffold(
-      appBar: AppBar(title: Text('${widget.emoji}  ${widget.title}')),
+      appBar: AppBar(title: Text(widget.title)),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, c) {

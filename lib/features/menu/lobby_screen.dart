@@ -142,7 +142,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
       builder: (_) => SetPickerScreen(
         gameId: g.id,
         title: g.title,
-        emoji: g.emoji,
         setCount: setCount,
         buildGame: build,
       ),
