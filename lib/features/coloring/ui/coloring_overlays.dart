@@ -69,9 +69,14 @@ class ColoringTopBar extends StatelessWidget {
           children: <Widget>[
             _RoundBtn(icon: Icons.home_rounded, colors: colors, onTap: onHome),
             // Переключатель режимов — сегментированный таб-бар (иконки без текста).
+            // Центрируем через Row, а не Center/Align: те при ограниченной высоте
+            // растягиваются на весь экран и утягивают бар в середину.
             Expanded(
-              child: Center(
-                child: _ModeTabs(mode: mode, colors: colors, onMode: onMode),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _ModeTabs(mode: mode, colors: colors, onMode: onMode),
+                ],
               ),
             ),
             _RoundBtn(
