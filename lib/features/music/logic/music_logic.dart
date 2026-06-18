@@ -80,5 +80,15 @@ class Instrument {
         name: 'Орган',
         soundPrefix: 'organ',
         style: InstrumentStyle.keys),
+    Instrument(
+        id: 'bells',
+        name: 'Колокольчики',
+        soundPrefix: 'bells',
+        style: InstrumentStyle.bars),
+    Instrument(
+        id: 'synth',
+        name: 'Синтезатор',
+        soundPrefix: 'synth',
+        style: InstrumentStyle.keys),
   ];
 }

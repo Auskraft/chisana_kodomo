@@ -41,6 +41,31 @@ const List<Color> kOrganColors = <Color>[
   Color(0xFF9E5C7A), // приглушённая роза
 ];
 
+/// Колокольчики/металлофон: холодные «серебристые» тона (отличны от тёплых
+/// пластин ксилофона/органа). Хардкод-палитра.
+const List<Color> kBellsColors = <Color>[
+  Color(0xFF90A4AE), // сине-серый
+  Color(0xFFB0BEC5),
+  Color(0xFF80CBC4), // светлая бирюза
+  Color(0xFF4DD0E1), // циан
+  Color(0xFF64B5F6), // светло-синий
+  Color(0xFF7986CB), // индиго-светлый
+  Color(0xFF9FA8DA), // лаванда
+  Color(0xFFB39DDB), // светло-фиолетовый
+];
+
+/// Синтезатор: яркая «неоновая» палитра (электронный вид). Хардкод-палитра.
+const List<Color> kSynthColors = <Color>[
+  Color(0xFFFF1744), // неон-красный
+  Color(0xFFFF9100), // неон-оранж
+  Color(0xFFFFEA00), // неон-жёлтый
+  Color(0xFF00E676), // неон-зелёный
+  Color(0xFF00E5FF), // неон-циан
+  Color(0xFF2979FF), // неон-синий
+  Color(0xFFD500F9), // неон-фиолет
+  Color(0xFFFF4081), // неон-розовый
+];
+
 /// Цвет подписи ноты: тёмный на светлой пластине/клавише, белый на тёмной.
 Color _labelColorOn(Color c) =>
     c.computeLuminance() > 0.5 ? const Color(0xFF4E342E) : Colors.white;
@@ -150,12 +175,15 @@ class _Keyboard extends PositionComponent {
     final barH = slot * 0.82;
     final maxW = s.x * 0.88;
     final minW = s.x * 0.5;
+    // Ксилофон — радужная палитра, колокольчики — холодная «серебристая».
+    final palette =
+        owner.instrument.value.id == 'bells' ? kBellsColors : kBarColors;
     for (var row = 0; row < count; row++) {
       final noteIndex = count - 1 - row; // сверху — высокие
       final note = notes[noteIndex];
       final w = maxW - (maxW - minW) * (noteIndex / (count - 1));
       final cy = topPad + slot * row + slot / 2;
-      final color = kBarColors[noteIndex % kBarColors.length];
+      final color = palette[noteIndex % palette.length];
       add(_Pad(
         note: note,
         color: color,
@@ -174,7 +202,7 @@ class _Keyboard extends PositionComponent {
   void _layoutKeys(List<XyloNote> notes) {
     final s = owner.size;
     final count = notes.length;
-    final piano = owner.instrument.value.id == 'piano';
+    final id = owner.instrument.value.id;
     final topPad = s.y * 0.14;
     final bottomPad = s.y * 0.06;
     final keysH = s.y - topPad - bottomPad;
@@ -184,9 +212,11 @@ class _Keyboard extends PositionComponent {
     final startX = (s.x - totalW) / 2 + keyW / 2;
     for (var i = 0; i < count; i++) {
       final note = notes[i]; // слева — низкая нота (до)
-      final color = piano
+      final color = id == 'piano'
           ? const Color(0xFFFFFFFF)
-          : kOrganColors[i % kOrganColors.length];
+          : id == 'synth'
+              ? kSynthColors[i % kSynthColors.length]
+              : kOrganColors[i % kOrganColors.length];
       final cx = startX + i * (keyW + gap);
       add(_Pad(
         note: note,
