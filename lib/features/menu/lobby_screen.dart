@@ -373,7 +373,9 @@ class _GameCard extends StatelessWidget {
       height: size,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: colors.surface.withValues(alpha: 0.92),
+          // Карточка — в цвет кремового фона иконок (фон+accent ≈ #FCEDCA),
+          // чтобы вокруг ужатой иконки не было белого канта. Цвет из темы.
+          color: Color.lerp(colors.background, colors.accent, 0.17),
           borderRadius: radius,
           boxShadow: <BoxShadow>[
             BoxShadow(
