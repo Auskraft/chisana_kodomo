@@ -25,8 +25,9 @@ class PairsSet {
   /// Всего карточек на поле.
   int get cardCount => pairs * 2;
 
-  /// Плавная длинная кривая: 2 → 3 → 4 → 5 → 6 → 8 пар (сетка остаётся
-  /// портретно-удобной). Карточек на поле = pairs × 2.
+  /// Плавная длинная кривая: 2 → 3 → 4 → 5 → 6 → 8 → 10 → 12 → 14 → 16 пар
+  /// (сетка портретно-удобная, ≤4 колонок, все ряды полные). Максимум 16 пар =
+  /// размер пула эмодзи в `pairs_flame_game`. Карточек на поле = pairs × 2.
   static const List<PairsSet> all = <PairsSet>[
     PairsSet(index: 0, pairs: 2, columns: 2), // 2×2
     PairsSet(index: 1, pairs: 3, columns: 2), // 2×3
@@ -34,6 +35,10 @@ class PairsSet {
     PairsSet(index: 3, pairs: 5, columns: 2), // 2×5
     PairsSet(index: 4, pairs: 6, columns: 3), // 3×4
     PairsSet(index: 5, pairs: 8, columns: 4), // 4×4
+    PairsSet(index: 6, pairs: 10, columns: 4), // 4×5
+    PairsSet(index: 7, pairs: 12, columns: 4), // 4×6
+    PairsSet(index: 8, pairs: 14, columns: 4), // 4×7
+    PairsSet(index: 9, pairs: 16, columns: 4), // 4×8
   ];
 
   /// Звёзды за набор по числу несовпадений. Память: промахи — норма, поэтому
