@@ -182,7 +182,11 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 final pad = (w * 0.05).clamp(12.0, 32.0).toDouble();
                 final gap = (shortest * 0.03).clamp(8.0, 18.0).toDouble();
                 const cols = 3;
-                final tile = (w - pad * 2 - gap * (cols - 1)) / cols;
+                // Подложка-плашка под витриной: её внутренний отступ учитываем в
+                // размере карточки, чтобы сетка не вылезала за плашку.
+                final trayPad = gap;
+                final tile =
+                    (w - pad * 2 - trayPad * 2 - gap * (cols - 1)) / cols;
 
                 return Column(
                   children: <Widget>[
@@ -227,20 +231,41 @@ class _LobbyScreenState extends State<LobbyScreen> {
                     ),
                     const Spacer(),
                     Padding(
-                      padding: EdgeInsets.fromLTRB(pad, 0, pad, gap * 1.5),
-                      child: Wrap(
-                        spacing: gap,
-                        runSpacing: gap,
-                        alignment: WrapAlignment.center,
-                        children: <Widget>[
-                          for (final _Game g in _games)
-                            _GameCard(
-                              game: g,
-                              size: tile,
-                              colors: colors,
-                              onTap: () => _openGame(g),
+                      padding: EdgeInsets.fromLTRB(pad, 0, pad, gap * 1.4),
+                      child: Container(
+                        padding: EdgeInsets.all(trayPad),
+                        decoration: BoxDecoration(
+                          // Кремовая плашка чуть глубже фона — белые карточки на
+                          // ней читаются как «поднос» (цвета из темы, без хардкода).
+                          color: Color.lerp(
+                              colors.background, colors.onBackground, 0.07),
+                          borderRadius: BorderRadius.circular(tile * 0.32),
+                          border: Border.all(
+                            color: colors.onBackground.withValues(alpha: 0.10),
+                            width: 1.5,
+                          ),
+                          boxShadow: <BoxShadow>[
+                            BoxShadow(
+                              color: colors.onBackground.withValues(alpha: 0.14),
+                              blurRadius: 18,
+                              offset: const Offset(0, 8),
                             ),
-                        ],
+                          ],
+                        ),
+                        child: Wrap(
+                          spacing: gap,
+                          runSpacing: gap,
+                          alignment: WrapAlignment.center,
+                          children: <Widget>[
+                            for (final _Game g in _games)
+                              _GameCard(
+                                game: g,
+                                size: tile,
+                                colors: colors,
+                                onTap: () => _openGame(g),
+                              ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
