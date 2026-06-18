@@ -3,6 +3,7 @@ import '../../colors_shapes/logic/colors_shapes_logic.dart';
 import '../../counting/logic/counting_logic.dart';
 import '../../odd_one_out/logic/odd_one_out_logic.dart';
 import '../../pairs/logic/pairs_logic.dart';
+import '../../puzzles/logic/puzzles_logic.dart';
 
 /// Игра, в которой копятся звёзды (наборы со звёздами). Игры-«игрушки» (Музыка,
 /// Раскраска) сюда не входят — у них нет наборов/звёзд.
@@ -33,8 +34,9 @@ abstract final class RewardsCatalog {
     StarGame(id: 'pairs', title: 'Парочки', emoji: '🃏', setCount: PairsSet.all.length),
     StarGame(id: 'colors_shapes', title: 'Цвета и формы', emoji: '🎨', setCount: CSSet.all.length),
     StarGame(id: 'animals', title: 'Звуки животных', emoji: '🐶', setCount: AnimalSet.all.length),
-    StarGame(id: 'odd_one_out', title: 'Что лишнее?', emoji: '🧩', setCount: OddSet.all.length),
+    StarGame(id: 'odd_one_out', title: 'Что лишнее?', emoji: '🔎', setCount: OddSet.all.length),
     StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
+    StarGame(id: 'puzzles', title: 'Пазлы', emoji: '🧩', setCount: PuzzleSet.all.length),
   ];
 
   /// Максимум звёзд по всем играм.

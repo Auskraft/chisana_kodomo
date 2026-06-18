@@ -15,6 +15,8 @@ import '../odd_one_out/logic/odd_one_out_logic.dart';
 import '../odd_one_out/odd_one_out_game_screen.dart';
 import '../pairs/logic/pairs_logic.dart';
 import '../pairs/pairs_game_screen.dart';
+import '../puzzles/logic/puzzles_logic.dart';
+import '../puzzles/puzzles_game_screen.dart';
 import '../rewards/logic/rewards_logic.dart';
 import '../rewards/rewards_screen.dart';
 import '../settings/settings_screen.dart';
@@ -55,9 +57,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/coloring.png', playable: true),
     _Game('farm', 'Ферма', '🐮',
         image: 'assets/games/farm.png', playable: true),
-    _Game('odd_one_out', 'Что лишнее?', '🧩',
+    _Game('odd_one_out', 'Что лишнее?', '🔎',
         image: 'assets/games/odd_one_out.png', playable: true),
-    // 9-я игра — иконка готова, но логики пока нет (тап → «Скоро!»).
     _Game('puzzles', 'Пазлы', '🧩',
         image: 'assets/games/puzzles.png', playable: true),
   ];
@@ -121,20 +122,10 @@ class _LobbyScreenState extends State<LobbyScreen> {
         await _openSets(g, OddSet.all.length,
             (int i) => OddOneOutGameScreen(set: OddSet.all[i]));
       case 'puzzles':
-        _comingSoon();
+        await _openSets(g, PuzzleSet.all.length,
+            (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]));
     }
     if (mounted) setState(() => _stars = _computeStars());
-  }
-
-  /// Заглушка для ещё не готовой игры («Пазлы») — мягкое «Скоро».
-  void _comingSoon() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Скоро! 🧩'),
-        duration: Duration(seconds: 2),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
   }
 
   Future<void> _openSets(_Game g, int setCount, Widget Function(int) build) {
