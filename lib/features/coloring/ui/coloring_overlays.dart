@@ -15,22 +15,40 @@ String _modeLabel(ColoringMode m) {
   }
 }
 
-/// Верхняя панель: «домой» + переключатель режима.
+/// Верхняя панель: «домой» + переключатель режима + замок. При включённом
+/// «детском замке» прячем всё, кроме «держи, чтобы открыть» (малыш не выйдет).
 class ColoringTopBar extends StatelessWidget {
   const ColoringTopBar({
     super.key,
     required this.mode,
     required this.onMode,
     required this.onHome,
+    required this.locked,
+    required this.onLock,
+    required this.onUnlock,
   });
 
   final ColoringMode mode;
   final ValueChanged<ColoringMode> onMode;
   final VoidCallback onHome;
+  final bool locked;
+  final VoidCallback onLock;
+  final VoidCallback onUnlock;
 
   @override
   Widget build(BuildContext context) {
     final colors = context.appColors;
+    if (locked) {
+      return SafeArea(
+        child: Align(
+          alignment: Alignment.topRight,
+          child: Padding(
+            padding: const EdgeInsets.all(10),
+            child: _HoldToUnlock(colors: colors, onUnlock: onUnlock),
+          ),
+        ),
+      );
+    }
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(10),
@@ -59,6 +77,107 @@ class ColoringTopBar extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
+            _RoundBtn(
+              icon: Icons.lock_outline_rounded,
+              colors: colors,
+              onTap: onLock,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// «Держи, чтобы открыть»: удержание ~1.8 с снимает детский замок (родителю
+/// легко, малышу — трудно). Кольцо-прогресс рисуется вокруг замочка. Слушаем
+/// сырые pointer-события (Listener), чтобы лёгкое смещение пальца не сбрасывало.
+class _HoldToUnlock extends StatefulWidget {
+  const _HoldToUnlock({required this.colors, required this.onUnlock});
+
+  final AppColors colors;
+  final VoidCallback onUnlock;
+
+  @override
+  State<_HoldToUnlock> createState() => _HoldToUnlockState();
+}
+
+class _HoldToUnlockState extends State<_HoldToUnlock>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _c = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1800),
+  )..addStatusListener((AnimationStatus s) {
+      if (s == AnimationStatus.completed) {
+        widget.onUnlock();
+        _c.reset();
+      }
+    });
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = widget.colors;
+    return Listener(
+      onPointerDown: (_) => _c.forward(),
+      onPointerUp: (_) => _c.reverse(),
+      onPointerCancel: (_) => _c.reverse(),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.94),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            SizedBox(
+              width: 26,
+              height: 26,
+              child: AnimatedBuilder(
+                animation: _c,
+                builder: (BuildContext context, Widget? child) => Stack(
+                  alignment: Alignment.center,
+                  children: <Widget>[
+                    if (_c.value > 0)
+                      SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          value: _c.value,
+                          strokeWidth: 3,
+                          color: colors.primary,
+                          backgroundColor:
+                              colors.onSurface.withValues(alpha: 0.12),
+                        ),
+                      ),
+                    Icon(Icons.lock_rounded,
+                        size: 16, color: colors.onSurface.withValues(alpha: 0.7)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Держи, чтобы открыть',
+              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurface.withValues(alpha: 0.8),
+                  ),
+            ),
           ],
         ),
       ),
@@ -85,6 +204,7 @@ class ColoringBottomBar extends StatelessWidget {
     required this.onRedo,
     required this.onClear,
     required this.onPicture,
+    required this.locked,
   });
 
   final ColoringMode mode;
@@ -104,6 +224,10 @@ class ColoringBottomBar extends StatelessWidget {
 
   /// Действие кнопки «Картинка»: открыть пикер (растровые) или следующая (вектор).
   final VoidCallback onPicture;
+
+  /// «Детский замок»: прячем навигацию/деструктив (темы/уровни/Заново/Картинка),
+  /// оставляем палитру и отмену/возврат — малыш просто продолжает раскрашивать.
+  final bool locked;
 
   @override
   Widget build(BuildContext context) {
@@ -127,7 +251,7 @@ class ColoringBottomBar extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: <Widget>[
-            if (mode == ColoringMode.fill) ...<Widget>[
+            if (!locked && mode == ColoringMode.fill) ...<Widget>[
               // Лента выбора темы (показываем, если тем с картинками ≥ 2).
               if (categories.length >= 2) ...<Widget>[
                 Wrap(
@@ -207,8 +331,9 @@ class ColoringBottomBar extends StatelessWidget {
               children: <Widget>[
                 _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
                 _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
-                _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
-                if (mode != ColoringMode.freeDraw)
+                if (!locked)
+                  _ActionBtn(icon: Icons.refresh_rounded, label: 'Заново', colors: colors, onTap: onClear),
+                if (!locked && mode != ColoringMode.freeDraw)
                   _ActionBtn(
                     icon: Icons.image_rounded,
                     label: 'Картинка',
