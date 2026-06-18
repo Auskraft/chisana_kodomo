@@ -27,11 +27,34 @@ void main() {
   });
 
   group('OddSet.all', () {
+    test('ровно kOddLevels уровней', () {
+      expect(OddSet.all, hasLength(kOddLevels));
+    });
+
     test('по порядку, optionCount ≥ 3', () {
       for (var i = 0; i < OddSet.all.length; i++) {
         expect(OddSet.all[i].index, i);
         expect(OddSet.all[i].optionCount, greaterThanOrEqualTo(3));
       }
+    });
+
+    test('optionCount−1 ≤ размера наименьшей категории (генерация заполнима)', () {
+      final minCat = OddItems.categories
+          .map((c) => c.items.length)
+          .reduce((a, b) => a < b ? a : b);
+      for (final s in OddSet.all) {
+        // (optionCount−1) предметов берутся из категории-большинства.
+        expect(s.optionCount - 1, lessThanOrEqualTo(minCat), reason: 'набор ${s.index}');
+      }
+    });
+
+    test('сложность не убывает; растёт от 3 до потолка', () {
+      expect(OddSet.all.first.optionCount, 3);
+      for (var i = 1; i < OddSet.all.length; i++) {
+        expect(OddSet.all[i].optionCount,
+            greaterThanOrEqualTo(OddSet.all[i - 1].optionCount));
+      }
+      expect(OddSet.all.last.optionCount, greaterThan(3));
     });
   });
 

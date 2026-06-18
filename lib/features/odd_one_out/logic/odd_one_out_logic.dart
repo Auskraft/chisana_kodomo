@@ -26,6 +26,13 @@ abstract final class OddItems {
   ];
 }
 
+/// Сколько уровней в «Лишнем»: число предметов на экране плавно растёт.
+const int kOddLevels = 99;
+
+/// Потолок предметов на экране: лишний (1) + большинство (optionCount−1) одной
+/// категории; в категории 8 эмодзи, значит optionCount−1 ≤ 8 → не больше 9.
+const int _kOddMaxOptions = 9;
+
 /// Набор (ступень) — растёт число предметов на экране.
 class OddSet {
   const OddSet({required this.index, required this.optionCount})
@@ -36,13 +43,14 @@ class OddSet {
   /// Сколько предметов всего (1 лишний + остальные одной категории).
   final int optionCount;
 
-  static const List<OddSet> all = <OddSet>[
-    OddSet(index: 0, optionCount: 3),
-    OddSet(index: 1, optionCount: 4),
-    OddSet(index: 2, optionCount: 5),
-    OddSet(index: 3, optionCount: 6),
-    OddSet(index: 4, optionCount: 7),
-    OddSet(index: 5, optionCount: 8),
+  /// [kOddLevels] уровней: число предметов плавно растёт от 3 до
+  /// [_kOddMaxOptions] (потолок — размер категории).
+  static final List<OddSet> all = <OddSet>[
+    for (var i = 0; i < kOddLevels; i++)
+      OddSet(
+        index: i,
+        optionCount: 3 + (i * (_kOddMaxOptions - 3) / (kOddLevels - 1)).round(),
+      ),
   ];
 }
 

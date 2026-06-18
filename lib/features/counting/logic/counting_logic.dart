@@ -11,6 +11,10 @@ enum CountMode {
   chooseNumeral,
 }
 
+/// Сколько уровней в «Счёте»: длинная плавная кривая — от счёта тапом до
+/// выбора цифры до 10.
+const int kCountLevels = 30;
+
 /// Набор (ступень сложности) игры «Счёт».
 ///
 /// Прогрессия «без проигрышей»: наборы открываются по мере игры, сложность
@@ -45,21 +49,43 @@ class CountSet {
   /// (включая правильную). Для [CountMode.tapCount] не используется (0).
   final int optionCount;
 
-  /// Все наборы по порядку. Плавная длинная кривая: учим считать тапом (1–3,
-  /// затем 1–5), потом узнавать цифру (выбор из 2 → из 3 → из 4) с постепенно
-  /// растущим диапазоном — и наконец до 10.
-  static const List<CountSet> all = <CountSet>[
-    CountSet(index: 0, mode: CountMode.tapCount, minCount: 1, maxCount: 3),
-    CountSet(index: 1, mode: CountMode.tapCount, minCount: 1, maxCount: 5),
-    CountSet(index: 2, mode: CountMode.chooseNumeral, minCount: 1, maxCount: 5, optionCount: 2),
-    CountSet(index: 3, mode: CountMode.chooseNumeral, minCount: 1, maxCount: 5, optionCount: 3),
-    CountSet(index: 4, mode: CountMode.chooseNumeral, minCount: 2, maxCount: 6, optionCount: 3),
-    CountSet(index: 5, mode: CountMode.chooseNumeral, minCount: 2, maxCount: 7, optionCount: 3),
-    CountSet(index: 6, mode: CountMode.chooseNumeral, minCount: 3, maxCount: 8, optionCount: 3),
-    CountSet(index: 7, mode: CountMode.chooseNumeral, minCount: 3, maxCount: 9, optionCount: 4),
-    CountSet(index: 8, mode: CountMode.chooseNumeral, minCount: 4, maxCount: 10, optionCount: 4),
-    CountSet(index: 9, mode: CountMode.chooseNumeral, minCount: 5, maxCount: 10, optionCount: 4),
-  ];
+  /// Первые [_tapLevels] уровней — счёт тапом (учим сам процесс счёта),
+  /// остальные — выбор цифры с плавно растущим диапазоном и числом вариантов.
+  static const int _tapLevels = 6;
+
+  /// [kCountLevels] уровней одной плавной кривой: счёт тапом (число объектов
+  /// 3→6), затем выбор цифры (диапазон 1..5 → 5..10, вариантов 2 → 5). Вариантов
+  /// не больше, чем чисел в диапазоне; диапазон всегда шире одного числа.
+  static List<CountSet> _build() {
+    final sets = <CountSet>[];
+    for (var i = 0; i < kCountLevels; i++) {
+      if (i < _tapLevels) {
+        final maxC = 3 + (i * 3 / (_tapLevels - 1)).round(); // 3 → 6
+        sets.add(CountSet(
+          index: i,
+          mode: CountMode.tapCount,
+          minCount: 1,
+          maxCount: maxC,
+        ));
+      } else {
+        final t = (i - _tapLevels) / (kCountLevels - 1 - _tapLevels); // 0..1
+        final maxC = (5 + 5 * t).round(); // 5 → 10
+        final minC = (1 + 4 * t).round(); // 1 → 5
+        final opts = (2 + 3 * t).round(); // 2 → 5
+        sets.add(CountSet(
+          index: i,
+          mode: CountMode.chooseNumeral,
+          minCount: min(minC, maxC - 1),
+          maxCount: maxC,
+          optionCount: min(opts, maxC),
+        ));
+      }
+    }
+    return sets;
+  }
+
+  /// Все наборы по порядку ([kCountLevels] штук).
+  static final List<CountSet> all = _build();
 }
 
 /// Один раунд: сколько объектов на экране и (для выбора цифры) какие варианты.

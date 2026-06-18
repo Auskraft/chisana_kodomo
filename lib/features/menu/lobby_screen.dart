@@ -120,7 +120,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             (int i) => FarmGameScreen(set: AnimalSet.all[i]));
       case 'odd_one_out':
         await _openSets(g, OddSet.all.length,
-            (int i) => OddOneOutGameScreen(set: OddSet.all[i]));
+            (int i) => OddOneOutGameScreen(set: OddSet.all[i]), starsPerSet: 1);
       case 'puzzles':
         await _openSets(g, PuzzleSet.all.length,
             (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]),

@@ -39,7 +39,6 @@ class OddOneOutGame extends FlameGame {
   final Random _rng;
 
   late OddSession _session;
-  int _mistakes = 0;
   bool _locked = false;
 
   final ValueNotifier<OddPhase> phase = ValueNotifier<OddPhase>(OddPhase.ready);
@@ -59,7 +58,6 @@ class OddOneOutGame extends FlameGame {
 
   void start() {
     _session = OddSession(set, random: _rng);
-    _mistakes = 0;
     _locked = false;
     roundNumber.value = 1;
     phase.value = OddPhase.playing;
@@ -87,7 +85,6 @@ class OddOneOutGame extends FlameGame {
       _solveRound();
       return true;
     }
-    _mistakes++;
     Sfx.play(SfxEvent.soft);
     onSay?.call('Попробуй ещё', flush: true);
     return false;
@@ -123,7 +120,7 @@ class OddOneOutGame extends FlameGame {
 
   void _finishSet() {
     _clearRound();
-    earnedStars.value = Praise.starsForMistakes(_mistakes);
+    earnedStars.value = 1; // 1 звезда за пройденный уровень
     Sfx.play(SfxEvent.complete);
     onSay?.call(setDonePhrase);
     phase.value = OddPhase.setDone;

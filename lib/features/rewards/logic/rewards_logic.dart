@@ -38,7 +38,7 @@ abstract final class RewardsCatalog {
     StarGame(id: 'pairs', title: 'Парочки', emoji: '🃏', setCount: PairsSet.all.length, starsPerSet: 1),
     StarGame(id: 'colors_shapes', title: 'Угадай-ка', emoji: '🎨', setCount: CSSet.all.length),
     StarGame(id: 'animals', title: 'Звуки', emoji: '🐶', setCount: AnimalSet.all.length),
-    StarGame(id: 'odd_one_out', title: 'Лишнее', emoji: '🔎', setCount: OddSet.all.length),
+    StarGame(id: 'odd_one_out', title: 'Лишнее', emoji: '🔎', setCount: OddSet.all.length, starsPerSet: 1),
     StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
     StarGame(id: 'puzzles', title: 'Пазлы', emoji: '🧩', setCount: PuzzleSet.all.length, starsPerSet: 1),
   ];
@@ -91,6 +91,14 @@ abstract final class Stickers {
     Sticker('🎢', 285),
     Sticker('🌍', 300),
     Sticker('🏵️', 315),
+    Sticker('🎠', 333),
+    Sticker('🐳', 351),
+    Sticker('🦒', 369),
+    Sticker('🦚', 387),
+    Sticker('🌞', 405),
+    Sticker('🦉', 423),
+    Sticker('🐧', 441),
+    Sticker('🎆', 459),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.
