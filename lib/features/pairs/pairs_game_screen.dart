@@ -114,6 +114,7 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
                     builder: (context, stars, _) => PraisePanel(
                       title: 'Молодец!',
                       stars: stars,
+                      totalStars: 1,
                       nextLabel: _hasNext ? 'Дальше' : 'В лобби',
                       onNext: _next,
                       onAgain: _again,

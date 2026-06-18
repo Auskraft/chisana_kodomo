@@ -162,7 +162,7 @@ class PairsGame extends FlameGame {
 
   void _finishSet() {
     _clearBoard();
-    earnedStars.value = PairsSet.starsForMismatches(_session.mismatches, set.pairs);
+    earnedStars.value = 1; // 1 звезда за пройденный уровень
     Sfx.play(SfxEvent.complete);
     onSay?.call(setDonePhrase);
     phase.value = PairsPhase.setDone;

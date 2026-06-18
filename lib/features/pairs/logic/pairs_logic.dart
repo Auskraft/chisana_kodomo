@@ -1,5 +1,8 @@
 import 'dart:math';
 
+/// Сколько уровней в «Парочках»: сложность (число пар) растёт до 16 (пул эмодзи).
+const int kPairsLevels = 99;
+
 /// Набор (ступень сложности) игры «Парочки» (память).
 ///
 /// Прогрессия «без проигрышей»: число пар растёт плавно, сетка остаётся
@@ -25,29 +28,25 @@ class PairsSet {
   /// Всего карточек на поле.
   int get cardCount => pairs * 2;
 
-  /// Плавная длинная кривая: 2 → 3 → 4 → 5 → 6 → 8 → 10 → 12 → 14 → 16 пар
-  /// (сетка портретно-удобная, ≤4 колонок, все ряды полные). Максимум 16 пар =
-  /// размер пула эмодзи в `pairs_flame_game`. Карточек на поле = pairs × 2.
-  static const List<PairsSet> all = <PairsSet>[
-    PairsSet(index: 0, pairs: 2, columns: 2), // 2×2
-    PairsSet(index: 1, pairs: 3, columns: 2), // 2×3
-    PairsSet(index: 2, pairs: 4, columns: 2), // 2×4
-    PairsSet(index: 3, pairs: 5, columns: 2), // 2×5
-    PairsSet(index: 4, pairs: 6, columns: 3), // 3×4
-    PairsSet(index: 5, pairs: 8, columns: 4), // 4×4
-    PairsSet(index: 6, pairs: 10, columns: 4), // 4×5
-    PairsSet(index: 7, pairs: 12, columns: 4), // 4×6
-    PairsSet(index: 8, pairs: 14, columns: 4), // 4×7
-    PairsSet(index: 9, pairs: 16, columns: 4), // 4×8
+  /// Ступени сложности (пары, колонки) по возрастанию; пары упираются в пул
+  /// эмодзи (16) в `pairs_flame_game`. Сетка портретно-удобная (≤4 колонок).
+  static const List<List<int>> _steps = <List<int>>[
+    <int>[2, 2], <int>[3, 2], <int>[4, 2], <int>[5, 2], <int>[6, 3],
+    <int>[8, 4], <int>[10, 4], <int>[12, 4], <int>[14, 4], <int>[16, 4],
   ];
 
-  /// Звёзды за набор по числу несовпадений. Память: промахи — норма, поэтому
-  /// порог масштабируется числом пар; всегда минимум 1 (без проигрышей).
-  static int starsForMismatches(int mismatches, int pairs) {
-    if (mismatches <= 0) return 3;
-    if (mismatches <= pairs) return 2;
-    return 1;
-  }
+  static int _stepFor(int level) =>
+      (level * (_steps.length - 1) / (kPairsLevels - 1)).round();
+
+  /// [kPairsLevels] уровней: сложность (число пар) плавно растёт от 2 до 16.
+  static final List<PairsSet> all = <PairsSet>[
+    for (var i = 0; i < kPairsLevels; i++)
+      PairsSet(
+        index: i,
+        pairs: _steps[_stepFor(i)][0],
+        columns: _steps[_stepFor(i)][1],
+      ),
+  ];
 }
 
 /// Одна карточка на поле: какой символ под ней и её состояние.

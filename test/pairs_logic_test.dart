@@ -15,12 +15,6 @@ void main() {
       expect(PairsSet.all.first.cardCount, 4);
     });
 
-    test('звёзды: 0 промахов=3, до pairs=2, иначе 1 (минимум 1)', () {
-      expect(PairsSet.starsForMismatches(0, 4), 3);
-      expect(PairsSet.starsForMismatches(3, 4), 2);
-      expect(PairsSet.starsForMismatches(4, 4), 2);
-      expect(PairsSet.starsForMismatches(99, 4), 1);
-    });
   });
 
   group('колода', () {
