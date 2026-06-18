@@ -39,9 +39,6 @@ class ColoringTopBar extends StatelessWidget {
     required this.locked,
     required this.onLock,
     required this.onUnlock,
-    required this.category,
-    required this.categories,
-    required this.onCategory,
   });
 
   final ColoringMode mode;
@@ -50,12 +47,6 @@ class ColoringTopBar extends StatelessWidget {
   final bool locked;
   final VoidCallback onLock;
   final VoidCallback onUnlock;
-
-  /// Тема раскрасок (текущая) + список доступных + смена — для капсулы «Тематика»
-  /// в шапке (видна в режиме «Раскрасить» при ≥2 темах с картинками).
-  final String category;
-  final List<String> categories;
-  final ValueChanged<String> onCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -71,37 +62,21 @@ class ColoringTopBar extends StatelessWidget {
         ),
       );
     }
-    // Капсула «Тематика» — только в «Раскрасить» и при ≥2 темах с картинками.
-    final showTheme = mode == ColoringMode.fill && categories.length >= 2;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Row(
           children: <Widget>[
             _RoundBtn(icon: Icons.home_rounded, colors: colors, onTap: onHome),
-            // Центр: таб-бар режимов + (опц.) капсула «Тематика». FittedBox ужимает
-            // группу, чтобы всё умещалось в одну строку между «домой» и замком.
+            // Центр: таб-бар режимов (выбор тематики переехал в пикер картинок).
             Expanded(
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    _ModeTabs(mode: mode, colors: colors, onMode: onMode),
-                    if (showTheme) ...<Widget>[
-                      const SizedBox(width: 8),
-                      _ThemeCapsule(
-                        category: category,
-                        categories: categories,
-                        colors: colors,
-                        onCategory: onCategory,
-                      ),
-                    ],
-                  ],
-                ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: <Widget>[
+                  _ModeTabs(mode: mode, colors: colors, onMode: onMode),
+                ],
               ),
             ),
-            const SizedBox(width: 8),
             _RoundBtn(
               icon: Icons.lock_outline_rounded,
               colors: colors,
@@ -688,89 +663,6 @@ class _LevelChip extends StatelessWidget {
   }
 }
 
-/// Капсула «Тема» в шапке: эмодзи текущей темы + короткая подпись + стрелка; по
-/// тапу открывает выпадающий список тем (с картинками), текущая — с галочкой.
-/// Стиль капсулы — как у таб-бара режимов (surface-пилюля с тенью), компактная.
-class _ThemeCapsule extends StatelessWidget {
-  const _ThemeCapsule({
-    required this.category,
-    required this.categories,
-    required this.colors,
-    required this.onCategory,
-  });
-
-  final String category;
-  final List<String> categories;
-  final AppColors colors;
-  final ValueChanged<String> onCategory;
-
-  @override
-  Widget build(BuildContext context) {
-    final meta = coloringCategoryMeta(category);
-    return PopupMenuButton<String>(
-      onSelected: onCategory,
-      tooltip: 'Тема',
-      color: colors.surface,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-      itemBuilder: (context) => <PopupMenuEntry<String>>[
-        for (final c in categories)
-          PopupMenuItem<String>(
-            value: c,
-            child: Row(
-              children: <Widget>[
-                Text(coloringCategoryMeta(c).emoji,
-                    style: const TextStyle(fontSize: 20)),
-                const SizedBox(width: 10),
-                Text(
-                  coloringCategoryMeta(c).label,
-                  style: TextStyle(
-                    color: colors.onSurface,
-                    fontWeight:
-                        c == category ? FontWeight.w900 : FontWeight.w700,
-                  ),
-                ),
-                if (c == category) ...<Widget>[
-                  const SizedBox(width: 10),
-                  Icon(Icons.check_rounded, size: 18, color: colors.primary),
-                ],
-              ],
-            ),
-          ),
-      ],
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(10, 6, 6, 6),
-        decoration: BoxDecoration(
-          color: colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(18),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colors.onBackground.withValues(alpha: 0.12),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(meta.emoji, style: const TextStyle(fontSize: 16)),
-            const SizedBox(width: 4),
-            Text(
-              'Тема',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: colors.onSurface.withValues(alpha: 0.8),
-                    fontWeight: FontWeight.w800,
-                  ),
-            ),
-            Icon(Icons.arrow_drop_down_rounded,
-                size: 18, color: colors.onSurface.withValues(alpha: 0.7)),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 /// Набор и порядок инструментов в панели (по просьбе владельца). Гуашь
 /// временно убрана — вернуть = добавить `PaintTool.gouache` в список. Сам enum
 /// `PaintTool` и логика мазков во Flame не тронуты.
@@ -985,7 +877,6 @@ Future<void> showColoringPicturePicker(
   BuildContext context, {
   required List<ColoringPick> picks,
   required List<String> categories,
-  required String currentCategory,
   required String? currentAsset,
   required bool Function(String asset) isFavorite,
   required Future<void> Function(String asset) onToggleFavorite,
@@ -998,7 +889,6 @@ Future<void> showColoringPicturePicker(
     builder: (ctx) => _PicturePickerSheet(
       picks: picks,
       categories: categories,
-      currentCategory: currentCategory,
       currentAsset: currentAsset,
       isFavorite: isFavorite,
       onToggleFavorite: onToggleFavorite,
@@ -1014,7 +904,6 @@ class _PicturePickerSheet extends StatefulWidget {
   const _PicturePickerSheet({
     required this.picks,
     required this.categories,
-    required this.currentCategory,
     required this.currentAsset,
     required this.isFavorite,
     required this.onToggleFavorite,
@@ -1023,7 +912,6 @@ class _PicturePickerSheet extends StatefulWidget {
 
   final List<ColoringPick> picks;
   final List<String> categories;
-  final String currentCategory;
   final String? currentAsset;
   final bool Function(String asset) isFavorite;
   final Future<void> Function(String asset) onToggleFavorite;
@@ -1034,15 +922,8 @@ class _PicturePickerSheet extends StatefulWidget {
 }
 
 class _PicturePickerSheetState extends State<_PicturePickerSheet> {
-  // Выбранный таб тематики: null = «Все», иначе ключ темы.
+  // Выбранный таб тематики: null = «Все» (по умолчанию), иначе ключ темы.
   String? _tab;
-
-  @override
-  void initState() {
-    super.initState();
-    // По умолчанию — текущая тема (если тем ≥2), иначе «Все».
-    _tab = widget.categories.length >= 2 ? widget.currentCategory : null;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -1108,11 +989,10 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
                         ),
                       ),
                       if (showTabs) ...<Widget>[
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          height: 40,
-                          child: ListView(
-                            scrollDirection: Axis.horizontal,
+                        const SizedBox(height: 10),
+                        SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
                             children: <Widget>[
                               _PickerThemeTab(
                                 label: 'Все',
@@ -1120,16 +1000,13 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
                                 colors: colors,
                                 onTap: () => setState(() => _tab = null),
                               ),
-                              const SizedBox(width: 8),
-                              for (final c in widget.categories) ...<Widget>[
+                              for (final c in widget.categories)
                                 _PickerThemeTab(
                                   emoji: coloringCategoryMeta(c).emoji,
                                   selected: _tab == c,
                                   colors: colors,
                                   onTap: () => setState(() => _tab = c),
                                 ),
-                                const SizedBox(width: 8),
-                              ],
                             ],
                           ),
                         ),
@@ -1187,9 +1064,10 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
   }
 }
 
-/// Таб тематики в пикере: «Все» (текст) или иконка-эмодзи темы. Активный —
-/// на заливке [primary]. Список табов горизонтально скроллится (тем может быть
-/// больше). Эмодзи берём из [coloringCategoryMeta].
+/// Таб тематики в пикере: «Все» (текст) или иконка-эмодзи темы. Стиль — именно
+/// таб (а не чип): без рамки/заливки, активный отмечен подчёркиванием-индикатором
+/// [primary], неактивный приглушён. Содержимое центрировано по высоте; список
+/// горизонтально скроллится (тем может быть больше). Эмодзи — из [coloringCategoryMeta].
 class _PickerThemeTab extends StatelessWidget {
   const _PickerThemeTab({
     this.label,
@@ -1209,31 +1087,45 @@ class _PickerThemeTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        height: 40,
-        padding: const EdgeInsets.symmetric(horizontal: 14),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: selected ? colors.primary : colors.surface,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected
-                ? colors.primary
-                : colors.onSurface.withValues(alpha: 0.12),
-            width: 2,
-          ),
-        ),
-        child: emoji != null
-            ? Text(emoji!, style: const TextStyle(fontSize: 20))
-            : Text(
-                label ?? '',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                      color: selected
-                          ? colors.onPrimary
-                          : colors.onSurface.withValues(alpha: 0.8),
-                      fontWeight: FontWeight.w800,
-                    ),
+      behavior: HitTestBehavior.opaque,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            // Контент в фиксированной высоте → все табы вровень, центрированы.
+            SizedBox(
+              height: 30,
+              child: Center(
+                child: emoji != null
+                    ? Opacity(
+                        opacity: selected ? 1.0 : 0.45,
+                        child:
+                            Text(emoji!, style: const TextStyle(fontSize: 24)),
+                      )
+                    : Text(
+                        label ?? '',
+                        style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                              color: selected
+                                  ? colors.primary
+                                  : colors.onSurface.withValues(alpha: 0.5),
+                              fontWeight: FontWeight.w800,
+                            ),
+                      ),
               ),
+            ),
+            const SizedBox(height: 5),
+            // Индикатор-подчёркивание активного таба.
+            Container(
+              height: 3,
+              width: 24,
+              decoration: BoxDecoration(
+                color: selected ? colors.primary : Colors.transparent,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

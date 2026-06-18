@@ -157,7 +157,6 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
       context,
       picks: _game.allPicks(),
       categories: _game.coloringCategories,
-      currentCategory: _game.category.value,
       currentAsset: _game.currentAsset,
       isFavorite: storage.isColoringFavorite,
       onToggleFavorite: storage.toggleColoringFavorite,
@@ -193,21 +192,15 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
             // Верхняя панель — режимы + замок.
             Align(
               alignment: Alignment.topCenter,
-              child: ListenableBuilder(
-                listenable: Listenable.merge(<Listenable>[
-                  _game.mode,
-                  _game.category,
-                ]),
-                builder: (context, _) => ColoringTopBar(
-                  mode: _game.mode.value,
+              child: ValueListenableBuilder<ColoringMode>(
+                valueListenable: _game.mode,
+                builder: (context, mode, _) => ColoringTopBar(
+                  mode: mode,
                   onMode: _game.setMode,
                   onHome: _exit,
                   locked: _locked,
                   onLock: _lock,
                   onUnlock: _unlock,
-                  category: _game.category.value,
-                  categories: _game.coloringCategories,
-                  onCategory: _game.setCategory,
                 ),
               ),
             ),
