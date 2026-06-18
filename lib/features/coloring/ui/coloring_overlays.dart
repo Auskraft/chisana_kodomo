@@ -273,164 +273,171 @@ class ColoringBottomBar extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        // Компоновка в две колонки (по макету владельца): слева — инструменты
+        // и цвета, справа — стрелки (отмена/возврат) и действия (Заново/Картинка)
+        // круглыми кнопками.
+        child: Row(
           children: <Widget>[
-            if (!locked && mode == ColoringMode.fill) ...<Widget>[
-              // Инструменты (Заливка/Маркер/Акварель/Карандашик) + толщина.
-              if (showTools) ...<Widget>[
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: <Widget>[
-                    for (final t in _toolOrder)
-                      _ToolChip(
-                        tool: t,
-                        selected: t == paintTool,
-                        colors: colors,
-                        onTap: () => onTool(t),
+            // ── Левая колонка: инструменты + палитра ─────────────────────────
+            Expanded(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: <Widget>[
+                  if (!locked && mode == ColoringMode.fill) ...<Widget>[
+                    // Инструменты (Заливка/Маркер/Акварель/Карандашик) — без
+                    // подписей (иконки); кастомные владелец даст позже.
+                    if (showTools) ...<Widget>[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: <Widget>[
+                          for (final t in _toolOrder)
+                            _ToolIconBtn(
+                              tool: t,
+                              selected: t == paintTool,
+                              colors: colors,
+                              onTap: () => onTool(t),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (paintTool != PaintTool.fill) ...<Widget>[
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    spacing: 8,
-                    children: <Widget>[
-                      Padding(
-                        padding: const EdgeInsets.only(right: 2),
-                        child: Text(
-                          'Толщина',
-                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                color: colors.onSurface.withValues(alpha: 0.6),
-                                fontWeight: FontWeight.w700,
+                      if (paintTool != PaintTool.fill) ...<Widget>[
+                        const SizedBox(height: 8),
+                        Wrap(
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          spacing: 8,
+                          children: <Widget>[
+                            Padding(
+                              padding: const EdgeInsets.only(right: 2),
+                              child: Text(
+                                'Толщина',
+                                style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                      color: colors.onSurface.withValues(alpha: 0.6),
+                                      fontWeight: FontWeight.w700,
+                                    ),
                               ),
+                            ),
+                            for (var i = 0; i < 3; i++)
+                              _ThickDot(
+                                dot: 8.0 + i * 6,
+                                selected: i == brushSize,
+                                colors: colors,
+                                onTap: () => onBrushSize(i),
+                              ),
+                          ],
                         ),
+                      ],
+                      const SizedBox(height: 10),
+                    ],
+                    // Лента выбора темы (показываем, если тем с картинками ≥ 2).
+                    if (categories.length >= 2) ...<Widget>[
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: <Widget>[
+                          for (final c in categories)
+                            _CategoryChip(
+                              categoryKey: c,
+                              selected: c == category,
+                              colors: colors,
+                              onTap: () => onCategory(c),
+                            ),
+                        ],
                       ),
-                      for (var i = 0; i < 3; i++)
-                        _ThickDot(
-                          dot: 8.0 + i * 6,
-                          selected: i == brushSize,
+                      const SizedBox(height: 8),
+                    ],
+                    // Уровень сложности временно скрыт (флаг _showLevelSelector выше).
+                    if (_showLevelSelector && availableLevels.length >= 2) ...<Widget>[
+                      Wrap(
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        spacing: 6,
+                        children: <Widget>[
+                          Padding(
+                            padding: const EdgeInsets.only(right: 4),
+                            child: Text(
+                              'Уровень',
+                              style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                    color: colors.onSurface.withValues(alpha: 0.6),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                            ),
+                          ),
+                          for (var l = 1; l <= 5; l++)
+                            _LevelChip(
+                              n: l,
+                              selected: l == level,
+                              enabled: availableLevels.contains(l),
+                              colors: colors,
+                              onTap: () => onLevel(l),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                    ],
+                  ],
+                  // Палитра + колор-пикер (последним в ряду).
+                  Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: <Widget>[
+                      for (var i = 0; i < kColoringPalette.length; i++)
+                        _Swatch(
+                          index: i,
+                          color: kColoringPalette[i],
+                          selected: pickedColor == null && i == selectedColor,
+                          showNumber: mode == ColoringMode.byNumber,
                           colors: colors,
-                          onTap: () => onBrushSize(i),
+                          onTap: () => onColor(i),
+                        ),
+                      if (mode != ColoringMode.byNumber)
+                        _PickerSwatch(
+                          active: pickedColor != null,
+                          color: pickedColor,
+                          colors: colors,
+                          onTap: onPick,
                         ),
                     ],
                   ),
-                  const SizedBox(height: 10),
-                ],
-              ],
-              // Лента выбора темы (показываем, если тем с картинками ≥ 2).
-              if (categories.length >= 2) ...<Widget>[
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: 6,
-                  runSpacing: 6,
-                  children: <Widget>[
-                    for (final c in categories)
-                      _CategoryChip(
-                        categoryKey: c,
-                        selected: c == category,
-                        colors: colors,
-                        onTap: () => onCategory(c),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-              ],
-              // Уровень сложности временно скрыт (флаг _showLevelSelector выше).
-              if (_showLevelSelector && availableLevels.length >= 2) ...<Widget>[
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  spacing: 6,
-                  children: <Widget>[
-                    Padding(
-                      padding: const EdgeInsets.only(right: 4),
-                      child: Text(
-                        'Уровень',
-                        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                              color: colors.onSurface.withValues(alpha: 0.6),
-                              fontWeight: FontWeight.w700,
-                            ),
-                      ),
-                    ),
-                    for (var l = 1; l <= 5; l++)
-                      _LevelChip(
-                        n: l,
-                        selected: l == level,
-                        enabled: availableLevels.contains(l),
-                        colors: colors,
-                        onTap: () => onLevel(l),
-                      ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-              ],
-            ],
-            Wrap(
-              spacing: 10,
-              runSpacing: 12,
-              alignment: WrapAlignment.center,
-              children: <Widget>[
-                for (var i = 0; i < kColoringPalette.length; i++)
-                  _Swatch(
-                    index: i,
-                    color: kColoringPalette[i],
-                    selected: pickedColor == null && i == selectedColor,
-                    showNumber: mode == ColoringMode.byNumber,
-                    colors: colors,
-                    onTap: () => onColor(i),
-                  ),
-                if (mode != ColoringMode.byNumber)
-                  _PickerSwatch(
-                    active: pickedColor != null,
-                    color: pickedColor,
-                    colors: colors,
-                    onTap: onPick,
-                  ),
-              ],
-            ),
-            // Горизонтальный разделитель: палитра сверху — действия снизу.
-            Divider(
-              height: 24,
-              thickness: 1.5,
-              indent: 8,
-              endIndent: 8,
-              color: colors.onSurface.withValues(alpha: 0.12),
-            ),
-            // Действия — всегда в одну строку: FittedBox ужимает весь ряд, если
-            // не помещается (вместо переноса «Картинки» на вторую строку).
-            FittedBox(
-              fit: BoxFit.scaleDown,
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
-                  const SizedBox(width: 8),
-                  _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
-                  if (showClear) ...<Widget>[
-                    const SizedBox(width: 8),
-                    _ActionChip(
-                      icon: Icons.refresh_rounded,
-                      label: 'Заново',
-                      tint: colors.primary,
-                      onTap: onClear,
-                    ),
-                  ],
-                  if (showPicture) ...<Widget>[
-                    const SizedBox(width: 8),
-                    _ActionChip(
-                      icon: Icons.image_rounded,
-                      label: 'Картинка',
-                      tint: colors.secondary,
-                      onTap: onPicture,
-                    ),
-                  ],
                 ],
               ),
+            ),
+            const SizedBox(width: 12),
+            // ── Правая колонка: стрелки (сверху) + действия (снизу) ──────────
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
+                    const SizedBox(width: 8),
+                    _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
+                  ],
+                ),
+                if (showClear || showPicture) ...<Widget>[
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      if (showClear)
+                        _RoundActionBtn(
+                          icon: Icons.refresh_rounded,
+                          tint: colors.primary,
+                          colors: colors,
+                          onTap: onClear,
+                        ),
+                      if (showClear && showPicture) const SizedBox(width: 8),
+                      if (showPicture)
+                        _RoundActionBtn(
+                          icon: Icons.image_rounded,
+                          tint: colors.secondary,
+                          colors: colors,
+                          onTap: onPicture,
+                        ),
+                    ],
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -756,9 +763,11 @@ const List<PaintTool> _toolOrder = <PaintTool>[
   }
 }
 
-/// Чип инструмента: иконка + название, подсветка выбранного.
-class _ToolChip extends StatelessWidget {
-  const _ToolChip({
+/// Иконка-кнопка инструмента (без подписи): белая плитка, активный — на заливке
+/// [primary]. Название уходит в Semantics (доступность). Кастомные иконки —
+/// позже, меняются в [_toolMeta].
+class _ToolIconBtn extends StatelessWidget {
+  const _ToolIconBtn({
     required this.tool,
     required this.selected,
     required this.colors,
@@ -774,35 +783,30 @@ class _ToolChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final meta = _toolMeta(tool);
     final fg =
-        selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.8);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-        decoration: BoxDecoration(
-          color:
-              selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(
-            color: selected
-                ? colors.primary
-                : colors.onSurface.withValues(alpha: 0.12),
-            width: 2,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(meta.icon, size: 18, color: fg),
-            const SizedBox(width: 5),
-            Text(
-              meta.label,
-              style: Theme.of(context)
-                  .textTheme
-                  .labelMedium
-                  ?.copyWith(color: fg, fontWeight: FontWeight.w800),
+        selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.65);
+    return Semantics(
+      label: meta.label,
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          width: 46,
+          height: 42,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? colors.primary : colors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: selected
+                  ? colors.primary
+                  : colors.onSurface.withValues(alpha: 0.12),
+              width: 1.5,
             ),
-          ],
+          ),
+          child: Icon(meta.icon, size: 22, color: fg),
         ),
       ),
     );
@@ -873,20 +877,20 @@ class _NavIconBtn extends StatelessWidget {
   }
 }
 
-/// Кнопка-действие как прямоугольная плитка: иконка + подпись на лёгкой заливке
-/// акцентного цвета. Тон [tint] передаётся из темы (`colors.primary` /
-/// `colors.secondary`) — хардкода нет, в любой палитре раскрашивается сама.
-class _ActionChip extends StatelessWidget {
-  const _ActionChip({
+/// Круглая кнопка-действие (Заново/Картинка): белый кружок с цветной иконкой.
+/// Тон [tint] — из темы (`colors.primary`/`colors.secondary`), без хардкода.
+/// Размер 44 совпадает с кастомными PNG-стрелками рядом.
+class _RoundActionBtn extends StatelessWidget {
+  const _RoundActionBtn({
     required this.icon,
-    required this.label,
     required this.tint,
+    required this.colors,
     required this.onTap,
   });
 
   final IconData icon;
-  final String label;
   final Color tint;
+  final AppColors colors;
   final VoidCallback onTap;
 
   @override
@@ -894,26 +898,22 @@ class _ActionChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
+        width: 44,
+        height: 44,
+        alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: tint.withValues(alpha: 0.14),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: tint.withValues(alpha: 0.32), width: 1.5),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Icon(icon, size: 20, color: tint),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: tint,
-                    fontWeight: FontWeight.w800,
-                  ),
+          color: colors.surface,
+          shape: BoxShape.circle,
+          border: Border.all(color: tint.withValues(alpha: 0.35), width: 1.5),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.10),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
+        child: Icon(icon, size: 22, color: tint),
       ),
     );
   }
