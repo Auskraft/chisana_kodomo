@@ -335,11 +335,17 @@ class _GameCard extends StatelessWidget {
         ? Stack(
             fit: StackFit.expand,
             children: <Widget>[
-              Image.asset(
-                game.image!,
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => Center(
-                  child: Text(game.emoji, style: TextStyle(fontSize: size * 0.34)),
+              Padding(
+                // Иконка на 20% меньше карточки (отступ 10% с каждой стороны).
+                // Подпись — отдельный слой Stack, остаётся на месте.
+                padding: EdgeInsets.all(size * 0.1),
+                child: Image.asset(
+                  game.image!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, _, _) => Center(
+                    child: Text(game.emoji,
+                        style: TextStyle(fontSize: size * 0.34)),
+                  ),
                 ),
               ),
               Align(
