@@ -388,31 +388,44 @@ class ColoringBottomBar extends StatelessWidget {
                   ),
               ],
             ),
-            const SizedBox(height: 6),
-            Wrap(
-              alignment: WrapAlignment.center,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 8,
-              runSpacing: 8,
-              children: <Widget>[
-                _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
-                _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
-                if (showClear || showPicture) _ActionDivider(colors: colors),
-                if (showClear)
-                  _ActionChip(
-                    icon: Icons.refresh_rounded,
-                    label: 'Заново',
-                    tint: colors.primary,
-                    onTap: onClear,
-                  ),
-                if (showPicture)
-                  _ActionChip(
-                    icon: Icons.image_rounded,
-                    label: 'Картинка',
-                    tint: colors.secondary,
-                    onTap: onPicture,
-                  ),
-              ],
+            // Горизонтальный разделитель: палитра сверху — действия снизу.
+            Divider(
+              height: 24,
+              thickness: 1.5,
+              indent: 8,
+              endIndent: 8,
+              color: colors.onSurface.withValues(alpha: 0.12),
+            ),
+            // Действия — всегда в одну строку: FittedBox ужимает весь ряд, если
+            // не помещается (вместо переноса «Картинки» на вторую строку).
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  _NavIconBtn(asset: 'assets/ui/back.png', onTap: onUndo),
+                  const SizedBox(width: 8),
+                  _NavIconBtn(asset: 'assets/ui/forward.png', onTap: onRedo),
+                  if (showClear) ...<Widget>[
+                    const SizedBox(width: 8),
+                    _ActionChip(
+                      icon: Icons.refresh_rounded,
+                      label: 'Заново',
+                      tint: colors.primary,
+                      onTap: onClear,
+                    ),
+                  ],
+                  if (showPicture) ...<Widget>[
+                    const SizedBox(width: 8),
+                    _ActionChip(
+                      icon: Icons.image_rounded,
+                      label: 'Картинка',
+                      tint: colors.secondary,
+                      onTap: onPicture,
+                    ),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -886,26 +899,6 @@ class _ActionChip extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Вертикальный разделитель между группами нижнего ряда: отмена/возврат —
-/// слева, действия (Заново/Картинка) — справа.
-class _ActionDivider extends StatelessWidget {
-  const _ActionDivider({required this.colors});
-
-  final AppColors colors;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 1.5,
-      height: 30,
-      decoration: BoxDecoration(
-        color: colors.onSurface.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(1),
       ),
     );
   }
