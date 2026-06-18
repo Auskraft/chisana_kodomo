@@ -196,5 +196,6 @@
 - 🧾 Тех-долг / контент владельца: пуш на GitHub (фоны 16 МБ + аудио), CC0-звуки
   зверей (`assets/animals/`), голос-пак (`tool/gen_voice_pack.py`), URL стора в
   `ParentZoneScreen.storeUrl`, WebP-сжатие фонов, выбор темы (5–10), финальный
-  нейминг игр + иконки, картинки в «Раскраске»: темы `animals` (48), `cars` (42),
-  `food` (30) наполнены (ужаты `tool/compress_coloring.py`) — остаётся `nature`.
+  нейминг игр + иконки, картинки в «Раскраске»: **6 тем наполнены** — `animals` (48),
+  `cars` (42), `food` (36), `nature` (9), `sea` «Море» (6), `space` «Космос» (4)
+  (ужаты `tool/compress_coloring.py`).
