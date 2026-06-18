@@ -180,6 +180,10 @@ class ColoringGame extends FlameGame {
   void canvasUp() => _raster?.endStroke();
   void canvasCancel() => _raster?.cancelStroke();
 
+  void zoomBegin(Offset focal) => _raster?.zoomBegin(focal);
+  void zoomUpdate(double factor, Offset focal) =>
+      _raster?.zoomUpdate(factor, focal);
+
   /// Сбросить рисунок (заливки или штрихи).
   void clearArt() {
     completed.value = false;
@@ -536,9 +540,11 @@ class _RasterPicture extends PositionComponent {
   int _h = 0;
   Rect _baseRect = Rect.zero; // «лист», куда картинка вписана при зуме 1.0
 
-  // Вид (зум/панорама). В этом коммите фиксирован 1.0 — зум добавится следом.
-  final double _scale = 1;
-  final Offset _pan = Offset.zero;
+  // Вид (зум/панорама): 2 пальца. 1.0 / ноль — без зума.
+  double _scale = 1;
+  Offset _pan = Offset.zero;
+  double _zStartScale = 1;
+  Offset _zStartFrac = const Offset(0.5, 0.5); // доля картинки под фокусом жеста
 
   bool _decoding = false;
   bool _dirty = false;
@@ -626,6 +632,39 @@ class _RasterPicture extends PositionComponent {
     final fy = (p.dy - dr.top) / dr.height;
     if (fx < 0 || fy < 0 || fx >= 1 || fy >= 1) return null;
     return ((fx * _w).floor(), (fy * _h).floor());
+  }
+
+  // ── Зум/панорама (2 пальца) ──────────────────────────────────────────────────
+
+  void zoomBegin(Offset focal) {
+    _zStartScale = _scale;
+    final dr = _drawRect;
+    if (dr.width <= 0 || dr.height <= 0) {
+      _zStartFrac = const Offset(0.5, 0.5);
+      return;
+    }
+    _zStartFrac = Offset(
+      ((focal.dx - dr.left) / dr.width).clamp(0.0, 1.0).toDouble(),
+      ((focal.dy - dr.top) / dr.height).clamp(0.0, 1.0).toDouble(),
+    );
+  }
+
+  /// [factor] — отношение текущего расстояния между пальцами к стартовому.
+  /// Держим точку под фокусом на месте; «лист» не отрывается от краёв.
+  void zoomUpdate(double factor, Offset focal) {
+    final newScale = (_zStartScale * factor).clamp(1.0, 4.0).toDouble();
+    final newW = _baseRect.width * newScale;
+    final newH = _baseRect.height * newScale;
+    final left = focal.dx - _zStartFrac.dx * newW;
+    final top = focal.dy - _zStartFrac.dy * newH;
+    final pan = Offset(left + newW / 2, top + newH / 2) - _baseRect.center;
+    final maxX = _baseRect.width * (newScale - 1) / 2;
+    final maxY = _baseRect.height * (newScale - 1) / 2;
+    _scale = newScale;
+    _pan = Offset(
+      pan.dx.clamp(-maxX, maxX).toDouble(),
+      pan.dy.clamp(-maxY, maxY).toDouble(),
+    );
   }
 
   double _dabRadius(PaintTool t, int sizeIdx) {

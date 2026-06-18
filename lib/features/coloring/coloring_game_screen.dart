@@ -26,6 +26,8 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
   bool _locked = false; // детский замок: прячет навигацию, блокирует «Назад»
   final Map<int, Offset> _pointers = <int, Offset>{};
   bool _painting = false;
+  bool _zooming = false;
+  double _zoomStartDist = 0;
 
   @override
   void didChangeDependencies() {
@@ -57,29 +59,46 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
     setState(() => _locked = false);
   }
 
-  // ── Ввод холста: 1 палец рисует (зум 2 пальцами — следующий коммит) ──────────
+  // ── Ввод холста: 1 палец рисует/заливает, 2 пальца — зум/панорама ────────────
   void _onPointerDown(PointerDownEvent e) {
     _pointers[e.pointer] = e.localPosition;
     if (_game.mode.value != ColoringMode.fill || !_game.canPaintRaster) return;
-    if (_pointers.length == 1) {
+    if (_pointers.length >= 2) {
+      if (_painting) {
+        _painting = false;
+        _game.canvasCancel(); // лёг второй палец — мазок отменяем, идём в зум
+      }
+      _beginZoom();
+    } else if (_pointers.length == 1) {
       _painting = true;
       _game.canvasDown(e.localPosition);
-    } else if (_painting) {
-      _painting = false;
-      _game.canvasCancel(); // лёг второй палец — мазок отменяем
     }
+  }
+
+  void _beginZoom() {
+    final pts = _pointers.values.toList();
+    if (pts.length < 2) return;
+    _zooming = true;
+    _zoomStartDist = (pts[0] - pts[1]).distance;
+    _game.zoomBegin((pts[0] + pts[1]) / 2);
   }
 
   void _onPointerMove(PointerMoveEvent e) {
     if (!_pointers.containsKey(e.pointer)) return;
     _pointers[e.pointer] = e.localPosition;
-    if (_painting && _pointers.length == 1) {
+    if (_zooming && _pointers.length >= 2) {
+      final pts = _pointers.values.toList();
+      final dist = (pts[0] - pts[1]).distance;
+      final focal = (pts[0] + pts[1]) / 2;
+      if (_zoomStartDist > 0) _game.zoomUpdate(dist / _zoomStartDist, focal);
+    } else if (_painting && _pointers.length == 1) {
       _game.canvasMove(e.localPosition);
     }
   }
 
   void _onPointerUp(PointerUpEvent e) {
     _pointers.remove(e.pointer);
+    if (_zooming && _pointers.length < 2) _zooming = false;
     if (_painting && _pointers.isEmpty) {
       _painting = false;
       _game.canvasUp();
@@ -88,6 +107,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
 
   void _onPointerCancel(PointerCancelEvent e) {
     _pointers.remove(e.pointer);
+    if (_zooming && _pointers.length < 2) _zooming = false;
     if (_painting && _pointers.isEmpty) {
       _painting = false;
       _game.canvasUp();
@@ -158,7 +178,7 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
       child: Scaffold(
         body: Stack(
           children: <Widget>[
-            // Холст + ввод: 1 палец рисует/заливает, 2 пальца — зум (коммит 2).
+            // Холст + ввод: 1 палец рисует/заливает, 2 пальца — зум/панорама.
             Listener(
               behavior: HitTestBehavior.translucent,
               onPointerDown: _onPointerDown,
