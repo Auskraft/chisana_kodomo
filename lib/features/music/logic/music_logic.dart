@@ -47,6 +47,7 @@ class Instrument {
   const Instrument({
     required this.id,
     required this.name,
+    required this.emoji,
     required this.soundPrefix,
     required this.style,
   });
@@ -54,8 +55,12 @@ class Instrument {
   /// Технический id (для табов/сравнения).
   final String id;
 
-  /// Подпись таба.
+  /// Название (для Semantics/доступности; на табе — иконка [emoji]).
   final String name;
+
+  /// Иконка таба — эмодзи (как в раскраске мод-табы; кастомные арт-иконки можно
+  /// подключить позже вместо эмодзи).
+  final String emoji;
 
   /// Префикс файлов нот: `assets/notes/<soundPrefix>_N.wav`.
   final String soundPrefix;
@@ -63,31 +68,36 @@ class Instrument {
   /// Вид раскладки.
   final InstrumentStyle style;
 
-  /// Три инструмента в порядке табов.
+  /// Инструменты в порядке табов.
   static const List<Instrument> all = <Instrument>[
     Instrument(
         id: 'xylophone',
         name: 'Ксилофон',
+        emoji: '🎵',
         soundPrefix: 'note',
         style: InstrumentStyle.bars),
     Instrument(
         id: 'piano',
         name: 'Пианино',
+        emoji: '🎹',
         soundPrefix: 'piano',
         style: InstrumentStyle.keys),
     Instrument(
         id: 'organ',
         name: 'Орган',
+        emoji: '🪗',
         soundPrefix: 'organ',
         style: InstrumentStyle.keys),
     Instrument(
         id: 'bells',
         name: 'Колокольчики',
+        emoji: '🔔',
         soundPrefix: 'bells',
         style: InstrumentStyle.bars),
     Instrument(
         id: 'synth',
         name: 'Синтезатор',
+        emoji: '🎛️',
         soundPrefix: 'synth',
         style: InstrumentStyle.keys),
   ];

@@ -5,9 +5,9 @@ import '../../../core/theme/app_colors.dart';
 import '../logic/music_logic.dart';
 
 /// HUD «Музыки»: сегментированный таб-бар инструментов (как в раскраске — одна
-/// «пилюля», активный сегмент на заливке primary) + кнопка паузы. Пилюля
-/// горизонтально прокручивается (5 названий не влезают в строку в читаемом
-/// размере); SingleChildScrollView по высоте не тянется — HUD держится в шапке.
+/// «пилюля», сегменты — иконки-эмодзи, активный на заливке primary) + пауза.
+/// FittedBox (а не скролл): тень пилюли не режется, и на узких экранах группа
+/// чуть ужимается; по высоте не тянется — HUD держится в шапке.
 class MusicHud extends StatelessWidget {
   const MusicHud({
     super.key,
@@ -31,8 +31,9 @@ class MusicHud extends StatelessWidget {
         child: Row(
           children: <Widget>[
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
                 child: _InstrumentTabs(
                   instruments: instruments,
                   currentId: currentId,
@@ -50,8 +51,8 @@ class MusicHud extends StatelessWidget {
   }
 }
 
-/// Сегментированный таб-бар: одна «пилюля» с сегментами-названиями инструментов
-/// (как `_ModeTabs` в раскраске).
+/// Сегментированный таб-бар: одна «пилюля» с иконками-сегментами (как `_ModeTabs`
+/// в раскраске).
 class _InstrumentTabs extends StatelessWidget {
   const _InstrumentTabs({
     required this.instruments,
@@ -71,7 +72,7 @@ class _InstrumentTabs extends StatelessWidget {
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
         color: colors.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(24),
         boxShadow: <BoxShadow>[
           BoxShadow(
             color: colors.onBackground.withValues(alpha: 0.12),
@@ -85,6 +86,7 @@ class _InstrumentTabs extends StatelessWidget {
         children: <Widget>[
           for (final inst in instruments)
             _InstrumentSegment(
+              emoji: inst.emoji,
               label: inst.name,
               selected: inst.id == currentId,
               colors: colors,
@@ -96,15 +98,18 @@ class _InstrumentTabs extends StatelessWidget {
   }
 }
 
-/// Один сегмент таб-бара: активный — на заливке [primary], неактивный прозрачный.
+/// Один сегмент: иконка-эмодзи инструмента; активный — на заливке [primary].
+/// Название — в Semantics (доступность), визуально только иконка.
 class _InstrumentSegment extends StatelessWidget {
   const _InstrumentSegment({
+    required this.emoji,
     required this.label,
     required this.selected,
     required this.colors,
     required this.onTap,
   });
 
+  final String emoji;
   final String label;
   final bool selected;
   final AppColors colors;
@@ -112,24 +117,23 @@ class _InstrumentSegment extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? colors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected
-                    ? colors.onPrimary
-                    : colors.onSurface.withValues(alpha: 0.7),
-                fontWeight: FontWeight.w800,
-              ),
+    return Semantics(
+      label: label,
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 52,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? colors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(emoji, style: const TextStyle(fontSize: 24)),
         ),
       ),
     );
