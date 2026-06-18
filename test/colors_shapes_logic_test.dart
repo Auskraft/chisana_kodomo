@@ -16,12 +16,48 @@ bool _matches(CSItem o, CSItem t, MatchMode m) {
 
 void main() {
   group('CSSet.all', () {
+    test('ровно kColorsShapesLevels уровней', () {
+      expect(CSSet.all, hasLength(kColorsShapesLevels));
+    });
+
     test('наборы по порядку; кривая color → shape → both', () {
       for (var i = 0; i < CSSet.all.length; i++) {
         expect(CSSet.all[i].index, i);
       }
       expect(CSSet.all.first.mode, MatchMode.color);
       expect(CSSet.all.last.mode, MatchMode.both);
+    });
+
+    test('варианты заполнимы в каждом режиме и помещаются в один ряд', () {
+      final shapeKinds = ShapeKind.values.length;
+      for (final s in CSSet.all) {
+        expect(s.optionCount, greaterThanOrEqualTo(2));
+        expect(s.optionCount, lessThanOrEqualTo(5)); // варианты в один ряд
+        expect(s.colorCount, inInclusiveRange(2, kColorNameM.length));
+        switch (s.mode) {
+          case MatchMode.color:
+            // нужны (optionCount−1) других цветов из палитры набора
+            expect(s.optionCount, lessThanOrEqualTo(s.colorCount),
+                reason: 'набор ${s.index}');
+          case MatchMode.shape:
+            // нужны (optionCount−1) других форм из общего числа фигур
+            expect(s.optionCount, lessThanOrEqualTo(shapeKinds),
+                reason: 'набор ${s.index}');
+          case MatchMode.both:
+            // optionCount различных пар (цвет, форма)
+            expect(s.optionCount, lessThanOrEqualTo(s.colorCount * shapeKinds),
+                reason: 'набор ${s.index}');
+        }
+      }
+    });
+
+    test('сложность не убывает (число цветов и вариантов)', () {
+      for (var i = 1; i < CSSet.all.length; i++) {
+        expect(CSSet.all[i].colorCount,
+            greaterThanOrEqualTo(CSSet.all[i - 1].colorCount));
+        expect(CSSet.all[i].optionCount,
+            greaterThanOrEqualTo(CSSet.all[i - 1].optionCount));
+      }
     });
   });
 

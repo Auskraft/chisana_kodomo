@@ -112,7 +112,6 @@ class ColorsShapesGame extends FlameGame {
   final Random _rng;
 
   late final CSSession _session;
-  int _mistakes = 0;
   bool _locked = false;
 
   final ValueNotifier<CSPhase> phase = ValueNotifier<CSPhase>(CSPhase.ready);
@@ -131,7 +130,6 @@ class ColorsShapesGame extends FlameGame {
   }
 
   void start() {
-    _mistakes = 0;
     _locked = false;
     roundNumber.value = 1;
     phase.value = CSPhase.playing;
@@ -159,7 +157,6 @@ class ColorsShapesGame extends FlameGame {
       _solveRound();
       return true;
     }
-    _mistakes++;
     Sfx.play(SfxEvent.soft);
     onSay?.call('Попробуй ещё', flush: true);
     return false;
@@ -198,7 +195,7 @@ class ColorsShapesGame extends FlameGame {
 
   void _finishSet() {
     _clearRound();
-    earnedStars.value = Praise.starsForMistakes(_mistakes);
+    earnedStars.value = 1; // 1 звезда за пройденный уровень
     Sfx.play(SfxEvent.complete);
     onSay?.call(setDonePhrase);
     phase.value = CSPhase.setDone;

@@ -36,7 +36,7 @@ abstract final class RewardsCatalog {
   static final List<StarGame> games = <StarGame>[
     StarGame(id: 'counting', title: 'Счёт', emoji: '🔢', setCount: CountSet.all.length),
     StarGame(id: 'pairs', title: 'Парочки', emoji: '🃏', setCount: PairsSet.all.length, starsPerSet: 1),
-    StarGame(id: 'colors_shapes', title: 'Угадай-ка', emoji: '🎨', setCount: CSSet.all.length),
+    StarGame(id: 'colors_shapes', title: 'Угадай-ка', emoji: '🎨', setCount: CSSet.all.length, starsPerSet: 1),
     StarGame(id: 'animals', title: 'Звуки', emoji: '🐶', setCount: AnimalSet.all.length),
     StarGame(id: 'odd_one_out', title: 'Лишнее', emoji: '🔎', setCount: OddSet.all.length, starsPerSet: 1),
     StarGame(id: 'farm', title: 'Ферма', emoji: '🐮', setCount: AnimalSet.all.length),
@@ -99,6 +99,10 @@ abstract final class Stickers {
     Sticker('🦉', 423),
     Sticker('🐧', 441),
     Sticker('🎆', 459),
+    Sticker('🌺', 477),
+    Sticker('🐙', 494),
+    Sticker('🦜', 511),
+    Sticker('🎡', 528),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.

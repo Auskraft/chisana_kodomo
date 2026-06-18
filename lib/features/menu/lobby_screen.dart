@@ -103,7 +103,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             (int i) => PairsGameScreen(set: PairsSet.all[i]), starsPerSet: 1);
       case 'colors_shapes':
         await _openSets(g, CSSet.all.length,
-            (int i) => ColorsShapesGameScreen(set: CSSet.all[i]));
+            (int i) => ColorsShapesGameScreen(set: CSSet.all[i]), starsPerSet: 1);
       case 'animals':
         await _openSets(g, AnimalSet.all.length,
             (int i) => AnimalsGameScreen(set: AnimalSet.all[i]));

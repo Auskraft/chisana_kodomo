@@ -14,6 +14,10 @@ class CSItem {
   final ShapeKind shape;
 }
 
+/// Сколько уровней в «Угадай-ке»: длинная плавная кривая — по цвету, по форме,
+/// по обоим признакам, с ростом числа цветов и вариантов.
+const int kColorsShapesLevels = 99;
+
 /// Набор (ступень) игры «Цвета и формы».
 class CSSet {
   const CSSet({
@@ -33,20 +37,35 @@ class CSSet {
   /// Сколько цветов палитры задействовано (растёт по наборам).
   final int colorCount;
 
-  /// Плавная длинная кривая: сперва по цвету, потом по форме, затем по обоим
-  /// (сложнее), с ростом числа цветов и вариантов.
-  static const List<CSSet> all = <CSSet>[
-    CSSet(index: 0, mode: MatchMode.color, optionCount: 3, colorCount: 4),
-    CSSet(index: 1, mode: MatchMode.color, optionCount: 4, colorCount: 5),
-    CSSet(index: 2, mode: MatchMode.shape, optionCount: 3, colorCount: 4),
-    CSSet(index: 3, mode: MatchMode.shape, optionCount: 4, colorCount: 5),
-    CSSet(index: 4, mode: MatchMode.shape, optionCount: 5, colorCount: 6),
-    CSSet(index: 5, mode: MatchMode.both, optionCount: 3, colorCount: 5),
-    CSSet(index: 6, mode: MatchMode.both, optionCount: 4, colorCount: 6),
-    CSSet(index: 7, mode: MatchMode.both, optionCount: 4, colorCount: 7),
-    CSSet(index: 8, mode: MatchMode.both, optionCount: 5, colorCount: 7),
-    CSSet(index: 9, mode: MatchMode.both, optionCount: 5, colorCount: 8),
-  ];
+  /// Признак раунда по трети прогресса: цвет (легче) → форма → оба (сложнее).
+  static MatchMode _modeFor(int level) {
+    final third = kColorsShapesLevels / 3;
+    if (level < third) return MatchMode.color;
+    if (level < third * 2) return MatchMode.shape;
+    return MatchMode.both;
+  }
+
+  /// [kColorsShapesLevels] уровней одной плавной кривой: режим — третями
+  /// (цвет→форма→оба), число цветов 4→8 и вариантов 3→5 растут со сложностью.
+  /// Варианты всегда заполнимы: в режиме «цвет» optionCount ≤ colorCount (растёт
+  /// медленнее), формы (6) и пары (цвет×форма) с запасом покрывают 5 вариантов.
+  /// Вариантов держим ≤ 5 — они в один ряд (больше не влезает на узкий экран).
+  static List<CSSet> _build() {
+    final sets = <CSSet>[];
+    for (var i = 0; i < kColorsShapesLevels; i++) {
+      final t = i / (kColorsShapesLevels - 1); // 0..1
+      sets.add(CSSet(
+        index: i,
+        mode: _modeFor(i),
+        optionCount: 3 + (2 * t).round(), // 3 → 5
+        colorCount: 4 + (4 * t).round(), // 4 → 8
+      ));
+    }
+    return sets;
+  }
+
+  /// Все наборы по порядку ([kColorsShapesLevels] штук).
+  static final List<CSSet> all = _build();
 }
 
 /// Раунд: цель + варианты (перемешаны) + индекс верного.
