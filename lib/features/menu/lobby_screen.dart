@@ -182,11 +182,17 @@ class _LobbyScreenState extends State<LobbyScreen> {
                 final pad = (w * 0.05).clamp(12.0, 32.0).toDouble();
                 final gap = (shortest * 0.03).clamp(8.0, 18.0).toDouble();
                 const cols = 3;
-                // Подложка-плашка под витриной: её внутренний отступ учитываем в
-                // размере карточки, чтобы сетка не вылезала за плашку.
+                // Подложка-плашка: в размере карточки учитываем и внутренний
+                // отступ, и рамку плашки (+запас на округление) — иначе сетка
+                // переносится из 3×3 в 2 колонки.
                 final trayPad = gap;
-                final tile =
-                    (w - pad * 2 - trayPad * 2 - gap * (cols - 1)) / cols;
+                const trayBorder = 2.0; // фактически 1.5 + запас
+                final tile = (w -
+                        pad * 2 -
+                        trayPad * 2 -
+                        trayBorder * 2 -
+                        gap * (cols - 1)) /
+                    cols;
 
                 return Column(
                   children: <Widget>[
@@ -235,13 +241,15 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       child: Container(
                         padding: EdgeInsets.all(trayPad),
                         decoration: BoxDecoration(
-                          // Кремовая плашка чуть глубже фона — белые карточки на
-                          // ней читаются как «поднос» (цвета из темы, без хардкода).
+                          // Тёплая кремово-песочная плашка: фон + золотистый accent
+                          // (а не к коричневому — тот обесцвечивает в серость).
+                          // Цвета из темы → реколорятся со сменой темы.
                           color: Color.lerp(
-                              colors.background, colors.onBackground, 0.07),
-                          borderRadius: BorderRadius.circular(tile * 0.32),
+                              colors.background, colors.accent, 0.25),
+                          borderRadius: BorderRadius.circular(tile * 0.34),
                           border: Border.all(
-                            color: colors.onBackground.withValues(alpha: 0.10),
+                            color: Color.lerp(
+                                colors.background, colors.accent, 0.5)!,
                             width: 1.5,
                           ),
                           boxShadow: <BoxShadow>[
