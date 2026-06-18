@@ -40,9 +40,12 @@ def main() -> None:
     os.makedirs(a.dst, exist_ok=True)
     done = 0
     for ru, en in NAMES.items():
+        # Принимаем и RU-имя исходника, и уже-латинское (= id игры).
         src = os.path.join(a.src, ru + '.png')
         if not os.path.isfile(src):
-            print(f'  ПРОПУСК (нет файла): {ru}.png')
+            src = os.path.join(a.src, en + '.png')
+        if not os.path.isfile(src):
+            print(f'  ПРОПУСК (нет файла): {ru}.png / {en}.png')
             continue
         im = Image.open(src).convert('RGBA')
         if max(im.size) != a.size:
@@ -53,7 +56,7 @@ def main() -> None:
         out = os.path.join(a.dst, en + '.png')
         im.save(out, format='PNG', optimize=True)
         done += 1
-        print(f'  {ru}.png  ->  {en}.png  ({os.path.getsize(out) // 1024} KB)')
+        print(f'  {os.path.basename(src)}  ->  {en}.png  ({os.path.getsize(out) // 1024} KB)')
     print(f'==== ГОТОВО: {done} иконок в {a.dst}/ ====')
 
 
