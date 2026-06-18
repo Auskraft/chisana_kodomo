@@ -227,13 +227,31 @@ class _LobbyScreenState extends State<LobbyScreen> {
                       ),
                     ),
                     SizedBox(height: shortest * 0.012),
-                    Text(
-                      _tagline,
-                      textAlign: TextAlign.center,
-                      style: text.titleMedium?.copyWith(
-                        color: colors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
+                    Stack(
+                      alignment: Alignment.center,
+                      children: <Widget>[
+                        // Белая обводка ~3px — слоган читается на любом фоне.
+                        Text(
+                          _tagline,
+                          textAlign: TextAlign.center,
+                          style: text.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
+                            foreground: Paint()
+                              ..style = PaintingStyle.stroke
+                              ..strokeWidth = 3
+                              ..strokeJoin = StrokeJoin.round
+                              ..color = colors.surface,
+                          ),
+                        ),
+                        Text(
+                          _tagline,
+                          textAlign: TextAlign.center,
+                          style: text.titleMedium?.copyWith(
+                            color: colors.primary,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
                     ),
                     const Spacer(),
                     Padding(
