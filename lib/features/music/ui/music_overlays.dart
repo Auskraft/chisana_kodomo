@@ -33,7 +33,7 @@ class MusicHud extends StatelessWidget {
             Expanded(
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
+                alignment: Alignment.center,
                 child: _InstrumentTabs(
                   instruments: instruments,
                   currentId: currentId,
