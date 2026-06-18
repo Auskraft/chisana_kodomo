@@ -190,15 +190,21 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
             // Верхняя панель — режимы + замок.
             Align(
               alignment: Alignment.topCenter,
-              child: ValueListenableBuilder<ColoringMode>(
-                valueListenable: _game.mode,
-                builder: (context, mode, _) => ColoringTopBar(
-                  mode: mode,
+              child: ListenableBuilder(
+                listenable: Listenable.merge(<Listenable>[
+                  _game.mode,
+                  _game.category,
+                ]),
+                builder: (context, _) => ColoringTopBar(
+                  mode: _game.mode.value,
                   onMode: _game.setMode,
                   onHome: _exit,
                   locked: _locked,
                   onLock: _lock,
                   onUnlock: _unlock,
+                  category: _game.category.value,
+                  categories: _game.coloringCategories,
+                  onCategory: _game.setCategory,
                 ),
               ),
             ),
@@ -219,13 +225,10 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
                   mode: _game.mode.value,
                   selectedColor: _game.selectedColor.value,
                   pickedColor: _game.pickedColor.value,
-                  category: _game.category.value,
-                  categories: _game.coloringCategories,
                   level: _game.level.value,
                   availableLevels: _game.coloringLevels,
                   onColor: _game.setColor,
                   onPick: _openPicker,
-                  onCategory: _game.setCategory,
                   onLevel: _game.setLevel,
                   onUndo: _game.undo,
                   onRedo: _game.redo,

@@ -39,6 +39,9 @@ class ColoringTopBar extends StatelessWidget {
     required this.locked,
     required this.onLock,
     required this.onUnlock,
+    required this.category,
+    required this.categories,
+    required this.onCategory,
   });
 
   final ColoringMode mode;
@@ -47,6 +50,12 @@ class ColoringTopBar extends StatelessWidget {
   final bool locked;
   final VoidCallback onLock;
   final VoidCallback onUnlock;
+
+  /// Тема раскрасок (текущая) + список доступных + смена — для капсулы «Тематика»
+  /// в шапке (видна в режиме «Раскрасить» при ≥2 темах с картинками).
+  final String category;
+  final List<String> categories;
+  final ValueChanged<String> onCategory;
 
   @override
   Widget build(BuildContext context) {
@@ -62,23 +71,37 @@ class ColoringTopBar extends StatelessWidget {
         ),
       );
     }
+    // Капсула «Тематика» — только в «Раскрасить» и при ≥2 темах с картинками.
+    final showTheme = mode == ColoringMode.fill && categories.length >= 2;
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(10),
         child: Row(
           children: <Widget>[
             _RoundBtn(icon: Icons.home_rounded, colors: colors, onTap: onHome),
-            // Переключатель режимов — сегментированный таб-бар (иконки без текста).
-            // Центрируем через Row, а не Center/Align: те при ограниченной высоте
-            // растягиваются на весь экран и утягивают бар в середину.
+            // Центр: таб-бар режимов + (опц.) капсула «Тематика». FittedBox ужимает
+            // группу, чтобы всё умещалось в одну строку между «домой» и замком.
             Expanded(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: <Widget>[
-                  _ModeTabs(mode: mode, colors: colors, onMode: onMode),
-                ],
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    _ModeTabs(mode: mode, colors: colors, onMode: onMode),
+                    if (showTheme) ...<Widget>[
+                      const SizedBox(width: 8),
+                      _ThemeCapsule(
+                        category: category,
+                        categories: categories,
+                        colors: colors,
+                        onCategory: onCategory,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             _RoundBtn(
               icon: Icons.lock_outline_rounded,
               colors: colors,
@@ -198,13 +221,10 @@ class ColoringBottomBar extends StatelessWidget {
     required this.mode,
     required this.selectedColor,
     required this.pickedColor,
-    required this.category,
-    required this.categories,
     required this.level,
     required this.availableLevels,
     required this.onColor,
     required this.onPick,
-    required this.onCategory,
     required this.onLevel,
     required this.onUndo,
     required this.onRedo,
@@ -221,13 +241,10 @@ class ColoringBottomBar extends StatelessWidget {
   final ColoringMode mode;
   final int selectedColor;
   final Color? pickedColor;
-  final String category;
-  final List<String> categories;
   final int level;
   final List<int> availableLevels;
   final ValueChanged<int> onColor;
   final VoidCallback onPick;
-  final ValueChanged<String> onCategory;
   final ValueChanged<int> onLevel;
   final VoidCallback onUndo;
   final VoidCallback onRedo;
@@ -329,23 +346,7 @@ class ColoringBottomBar extends StatelessWidget {
                       ],
                       const SizedBox(height: 10),
                     ],
-                    // Лента выбора темы (показываем, если тем с картинками ≥ 2).
-                    if (categories.length >= 2) ...<Widget>[
-                      Wrap(
-                        spacing: 6,
-                        runSpacing: 6,
-                        children: <Widget>[
-                          for (final c in categories)
-                            _CategoryChip(
-                              categoryKey: c,
-                              selected: c == category,
-                              colors: colors,
-                              onTap: () => onCategory(c),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                    ],
+                    // Тема ушла в шапку (капсула «Тематика»).
                     // Уровень сложности временно скрыт (флаг _showLevelSelector выше).
                     if (_showLevelSelector && availableLevels.length >= 2) ...<Widget>[
                       Wrap(
@@ -687,34 +688,67 @@ class _LevelChip extends StatelessWidget {
   }
 }
 
-/// Чип выбора темы раскрасок: эмодзи + название (из [coloringCategoryMeta]).
-class _CategoryChip extends StatelessWidget {
-  const _CategoryChip({
-    required this.categoryKey,
-    required this.selected,
+/// Капсула «Тематика» в шапке: эмодзи текущей темы + подпись + стрелка; по тапу
+/// открывает выпадающий список тем (с картинками), текущая помечена галочкой.
+/// Стиль капсулы — как у таб-бара режимов (surface-пилюля с тенью).
+class _ThemeCapsule extends StatelessWidget {
+  const _ThemeCapsule({
+    required this.category,
+    required this.categories,
     required this.colors,
-    required this.onTap,
+    required this.onCategory,
   });
 
-  final String categoryKey;
-  final bool selected;
+  final String category;
+  final List<String> categories;
   final AppColors colors;
-  final VoidCallback onTap;
+  final ValueChanged<String> onCategory;
 
   @override
   Widget build(BuildContext context) {
-    final meta = coloringCategoryMeta(categoryKey);
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? colors.primary : colors.onSurface.withValues(alpha: 0.12),
-            width: 2,
+    final meta = coloringCategoryMeta(category);
+    return PopupMenuButton<String>(
+      onSelected: onCategory,
+      tooltip: 'Тематика',
+      color: colors.surface,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      itemBuilder: (context) => <PopupMenuEntry<String>>[
+        for (final c in categories)
+          PopupMenuItem<String>(
+            value: c,
+            child: Row(
+              children: <Widget>[
+                Text(coloringCategoryMeta(c).emoji,
+                    style: const TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Text(
+                  coloringCategoryMeta(c).label,
+                  style: TextStyle(
+                    color: colors.onSurface,
+                    fontWeight:
+                        c == category ? FontWeight.w900 : FontWeight.w700,
+                  ),
+                ),
+                if (c == category) ...<Widget>[
+                  const SizedBox(width: 10),
+                  Icon(Icons.check_rounded, size: 18, color: colors.primary),
+                ],
+              ],
+            ),
           ),
+      ],
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(12, 9, 8, 9),
+        decoration: BoxDecoration(
+          color: colors.surface.withValues(alpha: 0.92),
+          borderRadius: BorderRadius.circular(22),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.12),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -722,14 +756,14 @@ class _CategoryChip extends StatelessWidget {
             Text(meta.emoji, style: const TextStyle(fontSize: 18)),
             const SizedBox(width: 6),
             Text(
-              meta.label,
+              'Тематика',
               style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    color: selected
-                        ? colors.onPrimary
-                        : colors.onSurface.withValues(alpha: 0.8),
+                    color: colors.onSurface.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w800,
                   ),
             ),
+            Icon(Icons.arrow_drop_down_rounded,
+                size: 22, color: colors.onSurface.withValues(alpha: 0.7)),
           ],
         ),
       ),
