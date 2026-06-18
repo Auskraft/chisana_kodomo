@@ -57,8 +57,9 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/farm.png', playable: true),
     _Game('odd_one_out', 'Что лишнее?', '🧩',
         image: 'assets/games/odd_one_out.png', playable: true),
-    // 9-я игра — пока заглушка (нет логики/арта). Тап → «Скоро!».
-    _Game('puzzles', 'Пазлы', '🧩', playable: true),
+    // 9-я игра — иконка готова, но логики пока нет (тап → «Скоро!»).
+    _Game('puzzles', 'Пазлы', '🧩',
+        image: 'assets/games/puzzles.png', playable: true),
   ];
 
   late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
