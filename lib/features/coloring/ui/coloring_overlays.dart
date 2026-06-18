@@ -15,6 +15,19 @@ String _modeLabel(ColoringMode m) {
   }
 }
 
+/// Иконка режима для таб-бара (подпись ушла в Semantics — визуально без текста).
+/// Выбраны так, чтобы не путаться с иконками инструментов (ведро/карандаш/кисть).
+IconData _modeIcon(ColoringMode m) {
+  switch (m) {
+    case ColoringMode.fill:
+      return Icons.palette_rounded;
+    case ColoringMode.byNumber:
+      return Icons.format_list_numbered_rounded;
+    case ColoringMode.freeDraw:
+      return Icons.gesture_rounded;
+  }
+}
+
 /// Верхняя панель: «домой» + переключатель режима + замок. При включённом
 /// «детском замке» прячем всё, кроме «держи, чтобы открыть» (малыш не выйдет).
 class ColoringTopBar extends StatelessWidget {
@@ -55,29 +68,12 @@ class ColoringTopBar extends StatelessWidget {
         child: Row(
           children: <Widget>[
             _RoundBtn(icon: Icons.home_rounded, colors: colors, onTap: onHome),
-            const SizedBox(width: 8),
+            // Переключатель режимов — сегментированный таб-бар (иконки без текста).
             Expanded(
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: <Widget>[
-                    for (final m in ColoringMode.values)
-                      Padding(
-                        // Воздух сверху/снизу: иначе горизонтальный скролл
-                        // обрезает тень чипа снизу (выглядит как срез).
-                        padding: const EdgeInsets.fromLTRB(3, 4, 3, 10),
-                        child: _ModeChip(
-                          label: _modeLabel(m),
-                          selected: m == mode,
-                          colors: colors,
-                          onTap: () => onMode(m),
-                        ),
-                      ),
-                  ],
-                ),
+              child: Center(
+                child: _ModeTabs(mode: mode, colors: colors, onMode: onMode),
               ),
             ),
-            const SizedBox(width: 8),
             _RoundBtn(
               icon: Icons.lock_outline_rounded,
               colors: colors,
@@ -408,42 +404,87 @@ class ColoringBottomBar extends StatelessWidget {
   }
 }
 
-class _ModeChip extends StatelessWidget {
-  const _ModeChip({
-    required this.label,
+/// Переключатель режимов раскраски — сегментированный таб-бар: три иконки без
+/// подписей в одной «пилюле», активная на заливке [primary]. Названия режимов
+/// уходят в Semantics (доступность сохранена), визуально — только иконки.
+class _ModeTabs extends StatelessWidget {
+  const _ModeTabs({
+    required this.mode,
+    required this.colors,
+    required this.onMode,
+  });
+
+  final ColoringMode mode;
+  final AppColors colors;
+  final ValueChanged<ColoringMode> onMode;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: colors.surface.withValues(alpha: 0.92),
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.12),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          for (final m in ColoringMode.values)
+            _ModeTab(
+              mode: m,
+              selected: m == mode,
+              colors: colors,
+              onTap: () => onMode(m),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Один сегмент таб-бара: крупная иконка-кнопка (тап-цель 56×44 для малыша),
+/// активный режим — на заливке [primary], смена подсвечивается анимацией.
+class _ModeTab extends StatelessWidget {
+  const _ModeTab({
+    required this.mode,
     required this.selected,
     required this.colors,
     required this.onTap,
   });
 
-  final String label;
+  final ColoringMode mode;
   final bool selected;
   final AppColors colors;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-        decoration: BoxDecoration(
-          color: selected ? colors.primary : colors.surface.withValues(alpha: 0.92),
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: <BoxShadow>[
-            BoxShadow(
-              color: colors.onBackground.withValues(alpha: 0.12),
-              blurRadius: 8,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Text(
-          label,
-          style: Theme.of(context).textTheme.labelLarge?.copyWith(
-                color: selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.75),
-                fontWeight: FontWeight.w800,
-              ),
+    final fg =
+        selected ? colors.onPrimary : colors.onSurface.withValues(alpha: 0.6);
+    return Semantics(
+      label: _modeLabel(mode),
+      button: true,
+      selected: selected,
+      child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque, // вся плитка тапается, не только иконка
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 160),
+          width: 56,
+          height: 44,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: selected ? colors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Icon(_modeIcon(mode), size: 24, color: fg),
         ),
       ),
     );
