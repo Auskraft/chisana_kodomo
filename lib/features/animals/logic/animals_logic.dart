@@ -103,14 +103,16 @@ class AnimalSet {
   final int poolSize;
 
   /// [kAnimalLevels] уровней одной плавной кривой: число вариантов 2→5, пул
-  /// 4→(все звери). Пул всегда ≥ числа вариантов и ≤ [Animals.all].length.
+  /// **8**→(все звери). Пул всегда ≥ числа вариантов и ≤ [Animals.all].length.
+  /// Стартовый пул 8 (а не 4) — чтобы зверь-загадка не приедался уже на 1-м
+  /// уровне; первые звери в [Animals.all] — знакомые (собака/кошка/корова…).
   static List<AnimalSet> _build() {
     final n = Animals.all.length;
     final sets = <AnimalSet>[];
     for (var i = 0; i < kAnimalLevels; i++) {
       final t = i / (kAnimalLevels - 1); // 0..1
       final opts = (2 + 3 * t).round(); // 2 → 5
-      final pool = (4 + (n - 4) * t).round().clamp(opts, n); // 4 → n
+      final pool = (8 + (n - 8) * t).round().clamp(opts, n); // 8 → n
       sets.add(AnimalSet(index: i, optionCount: opts, poolSize: pool));
     }
     return sets;
@@ -151,6 +153,7 @@ class AnimalChoice {
 /// Чистая логика «Звуки животных» (только `dart:math`). Без таймеров/проигрыша.
 class AnimalSession {
   AnimalSession(this.set, {Random? random}) : _rng = random ?? Random() {
+    _bag = _shuffledPool();
     _round = _generate();
   }
 
@@ -160,12 +163,36 @@ class AnimalSession {
 
   AnimalRound get round => _round;
 
-  /// Чистая генерация раунда: уникальные звери из пула, ровно один — цель.
-  static AnimalRound generateRound(AnimalSet set, Random r) {
-    final pool = <int>[for (var i = 0; i < set.poolSize; i++) i]..shuffle(r);
-    final options = pool.take(set.optionCount).toList();
-    final target = options[r.nextInt(options.length)];
-    options.shuffle(r);
+  /// «Сумка» целей: проходим весь пул без повторов, затем тасуем заново (не
+  /// повторяя цель на стыке циклов). Так зверь-загадка не дублируется, пока не
+  /// показаны все, — минимум повторов в «Ферме»/«Звуках».
+  late List<int> _bag;
+  int _bagPos = 0;
+
+  List<int> _shuffledPool() =>
+      <int>[for (var i = 0; i < set.poolSize; i++) i]..shuffle(_rng);
+
+  int _nextTarget() {
+    if (_bagPos >= _bag.length) {
+      final last = _bag.isEmpty ? -1 : _bag.last;
+      _bag = _shuffledPool();
+      _bagPos = 0;
+      if (_bag.length > 1 && _bag.first == last) {
+        _bag.add(_bag.removeAt(0)); // без повтора на границе циклов
+      }
+    }
+    return _bag[_bagPos++];
+  }
+
+  /// Чистая генерация раунда под заданную [target]: цель + (optionCount−1)
+  /// различных «отвлекалок» из пула. Ровно один верный.
+  static AnimalRound generateRoundFor(AnimalSet set, int target, Random r) {
+    final others = <int>[
+      for (var i = 0; i < set.poolSize; i++)
+        if (i != target) i,
+    ]..shuffle(r);
+    final options = <int>[target, ...others.take(set.optionCount - 1)]
+      ..shuffle(r);
     return AnimalRound(
       targetIndex: target,
       options: options,
@@ -173,18 +200,11 @@ class AnimalSession {
     );
   }
 
-  int? _lastTarget;
+  /// Случайная цель (для тестов/совместимости).
+  static AnimalRound generateRound(AnimalSet set, Random r) =>
+      generateRoundFor(set, r.nextInt(set.poolSize), r);
 
-  /// Раунд без повтора цели подряд — соседние раунды не дублируются.
-  AnimalRound _generate() {
-    AnimalRound r;
-    var guard = 0;
-    do {
-      r = generateRound(set, _rng);
-    } while (r.targetIndex == _lastTarget && guard++ < 20);
-    _lastTarget = r.targetIndex;
-    return r;
-  }
+  AnimalRound _generate() => generateRoundFor(set, _nextTarget(), _rng);
 
   /// Выбор варианта. Состояние не меняется — переход решает хост.
   AnimalChoice choose(int optionIndex) => AnimalChoice(

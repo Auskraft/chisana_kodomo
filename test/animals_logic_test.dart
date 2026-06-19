@@ -72,6 +72,20 @@ void main() {
         prev = s.round.targetIndex;
       }
     });
+
+    test('цель не повторяется, пока не показаны все из пула (сумка)', () {
+      for (final seed in <int>[1, 7, 42]) {
+        final set = AnimalSet.all.first; // небольшой пул (8)
+        final s = AnimalSession(set, random: Random(seed));
+        final seen = <int>{s.round.targetIndex};
+        for (var i = 1; i < set.poolSize; i++) {
+          s.nextRound();
+          expect(seen.add(s.round.targetIndex), isTrue,
+              reason: 'цель ${s.round.targetIndex} повторилась внутри цикла пула');
+        }
+        expect(seen.length, set.poolSize); // показаны все, без дублей
+      }
+    });
   });
 
   group('имена', () {
