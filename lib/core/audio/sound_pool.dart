@@ -46,6 +46,17 @@ class SoundPool {
     } catch (_) {}
   }
 
+  /// Остановить всё, что сейчас играет (напр. звук-загадку при ответе) —
+  /// чтобы голос-реплика не накладывался на звук зверя.
+  Future<void> stopAll() async {
+    if (_inTest) return;
+    for (final p in _players) {
+      try {
+        await p.stop();
+      } catch (_) {}
+    }
+  }
+
   /// Есть ли ассет в бандле (с кэшем). Путь — как в [play] (относительно `assets/`).
   Future<bool> has(String asset) async {
     if (_inTest) return false;

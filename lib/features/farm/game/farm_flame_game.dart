@@ -30,6 +30,7 @@ class FarmGame extends FlameGame {
     this.roundsPerSet = 5,
     this.onSay,
     this.onCue,
+    this.onStopCue,
     this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
   }) : _rng = random ?? Random();
@@ -41,6 +42,10 @@ class FarmGame extends FlameGame {
 
   /// «Озвучить загадку» (звук зверя): хост играет CC0-`.wav`, а пока нет — имя.
   final void Function(Animal target)? onCue;
+
+  /// Остановить играющую загадку (хост зовёт `SoundPool.stopAll`) — чтобы при
+  /// ответе звук зверя не накладывался на голос-реплику.
+  final void Function()? onStopCue;
 
   /// Финальная похвала за набор (согласована по полу — задаёт хост).
   final String setDonePhrase;
@@ -98,6 +103,7 @@ class FarmGame extends FlameGame {
   /// Тап по варианту. true — верно (иначе карточка трясётся сама).
   bool onChoose(int index) {
     if (!_active || _locked) return true;
+    onStopCue?.call(); // глушим загадку-звук, чтобы реплика не наложилась
     if (_session.choose(index).isCorrect) {
       _solveRound();
       return true;

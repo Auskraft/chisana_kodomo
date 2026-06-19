@@ -125,12 +125,9 @@ class AnimalsGame extends FlameGame {
     Sfx.play(SfxEvent.correct);
     Haptics.success();
     _burst(Vector2(size.x / 2, size.y * 0.3));
-    // Звук зверя (если файл есть) + эхо имени голосом — имя работает всегда.
+    // Звук зверя — главная награда. Голос поверх НЕ накладываем: имя уже звучало
+    // в вопросе «Где …?», а похвала-TTS перебила бы сам звук (разные движки).
     onAnimalSound?.call(_session.round.target.soundKey);
-    onSay?.call('${animalNameCap(_session.round.target)}!', flush: true);
-    if (roundNumber.value < roundsPerSet) {
-      onSay?.call(Praise.pick(_rng));
-    }
     add(TimerComponent(period: 1.8, removeOnFinish: true, onTick: _advance));
   }
 

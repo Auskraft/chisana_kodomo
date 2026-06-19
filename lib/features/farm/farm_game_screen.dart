@@ -46,6 +46,7 @@ class _FarmGameScreenState extends State<FarmGameScreen> {
       onSay: (String text, {bool flush = false}) =>
           Voice.instance.say(text, flush: flush),
       onCue: _playCue,
+      onStopCue: _sounds.stopAll,
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
     );
     _game.phase.addListener(_onPhase);
