@@ -54,10 +54,18 @@ class Voice {
   /// Встроенные голоса для выбора пользователем (женские Silero v4_ru).
   /// Должен совпадать с `VOICES` в `tool/gen_voice_pack.py`.
   static const List<PackVoice> packVoices = <PackVoice>[
-    PackVoice('baya', 'Голос 1', '🦊'),
-    PackVoice('kseniya', 'Голос 2', '🐰'),
-    PackVoice('xenia', 'Голос 3', '🐱'),
+    PackVoice('baya', 'Марина', '🦊'),
+    PackVoice('kseniya', 'Ольга', '🐰'),
+    PackVoice('xenia', 'Маша', '🐱'),
   ];
+
+  /// Системные (онлайн) голоса телефона, которые показываем в Настройках, →
+  /// человеческое имя. Ключ — имя голоса движка в нижнем регистре. Остальные
+  /// ru-голоса прячем. Это сетевые голоса Google (нужен интернет).
+  static const Map<String, String> systemVoiceLabels = <String, String>{
+    'ru-ru-x-ruf-network': 'Артём',
+    'ru-ru-x-ruc-network': 'Светлана',
+  };
 
   /// Какой встроенный голос играть (папка `assets/voice/pack/<packVoice>/`).
   String packVoice = defaultPackVoice;
@@ -91,6 +99,10 @@ class Voice {
     'Посчитай!': 'prompt_count',
     'Сколько?': 'prompt_howmany',
     'Попробуй ещё': 'try_again',
+    'Найди пару!': 'prompt_pairs',
+    'Найди лишнее!': 'prompt_odd',
+    'Собери картинку!': 'prompt_puzzles',
+    'Готово! Красиво!': 'coloring_done',
     'Молодец! Ты справился!': 'set_done',
     'Молодец! Ты справилась!': 'set_done_girl',
     'Молодец! Всё получилось!': 'set_done_neutral',

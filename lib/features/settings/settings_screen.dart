@@ -448,7 +448,7 @@ class _SettingsScreenState extends State<SettingsScreen>
           _builtinList(colors),
           const SizedBox(height: 12),
           Text(
-            'ГОЛОСА ТЕЛЕФОНА',
+            'ОНЛАЙН-ГОЛОСА · НУЖЕН ИНТЕРНЕТ',
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
@@ -553,7 +553,11 @@ class _SettingsScreenState extends State<SettingsScreen>
         ),
       );
     }
-    if (_voices.isEmpty) {
+    final shown = _voices
+        .where((v) =>
+            Voice.systemVoiceLabels.containsKey(v.name.toLowerCase()))
+        .toList();
+    if (shown.isEmpty) {
       return Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
@@ -570,7 +574,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
                   Text(
-                    'Русские голоса не найдены',
+                    'Онлайн-голоса недоступны',
                     style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -579,8 +583,8 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    'Поставь рус. голос: Настройки телефона → Язык и ввод → '
-                    'Синтез речи.',
+                    'Это сетевые голоса Google — нужен Google TTS и интернет. '
+                    'Встроенные голоса выше работают офлайн.',
                     style: TextStyle(
                       fontSize: 11.5,
                       color: colors.onSurface.withValues(alpha: 0.6),
@@ -595,14 +599,15 @@ class _SettingsScreenState extends State<SettingsScreen>
     }
     return Column(
       children: <Widget>[
-        for (final v in _voices) _voiceTile(colors, v),
+        for (final v in shown) _voiceTile(colors, v),
       ],
     );
   }
 
   Widget _voiceTile(AppColors colors, VoiceOption v) {
     final selected = !_usePack && v.name == _selected;
-    final initial = v.name.isNotEmpty ? v.name.substring(0, 1).toUpperCase() : '?';
+    final label = Voice.systemVoiceLabels[v.name.toLowerCase()] ?? v.name;
+    final initial = label.isNotEmpty ? label.substring(0, 1).toUpperCase() : '?';
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: GestureDetector(
@@ -643,7 +648,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
                     Text(
-                      v.name,
+                      label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
@@ -653,7 +658,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     Text(
-                      v.locale,
+                      'Онлайн · нужен интернет',
                       style: TextStyle(
                         fontSize: 11,
                         color: colors.onSurface.withValues(alpha: 0.55),
