@@ -16,12 +16,20 @@ const String kCountingGameId = 'counting';
 /// Экран-хост игры «Счёт»: Flame-канвас + оверлеи по фазе/паузе, голосовые
 /// подсказки и запись прогресса (звёзды/наборы).
 class CountingGameScreen extends StatefulWidget {
-  const CountingGameScreen({super.key, required this.set, this.autoStart = false});
+  const CountingGameScreen({
+    super.key,
+    required this.set,
+    this.autoStart = false,
+    this.useAnimals = false,
+  });
 
   final CountSet set;
 
   /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
   final bool autoStart;
+
+  /// Колода «Животные» (картинки зверей) вместо эмодзи — отдельный трек прогресса.
+  final bool useAnimals;
 
   @override
   State<CountingGameScreen> createState() => _CountingGameScreenState();
@@ -31,6 +39,9 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
   late final CountingGame _game;
   bool _created = false;
 
+  /// id прогресса: у «Животных» — свой (`counting_animals`).
+  String get _gameId => widget.useAnimals ? 'counting_animals' : kCountingGameId;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -39,6 +50,7 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
     _game = CountingGame(
       set: widget.set,
       colors: context.appColors,
+      useAnimals: widget.useAnimals,
       onSay: (String text, {bool flush = false}) =>
           Voice.instance.say(text, flush: flush),
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
@@ -55,9 +67,9 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
   void _onPhase() {
     if (_game.phase.value != CountPhase.setDone) return;
     final storage = GameStorage.instance;
-    storage.recordSetStars(kCountingGameId, widget.set.index, _game.earnedStars.value);
+    storage.recordSetStars(_gameId, widget.set.index, _game.earnedStars.value);
     // Открыть следующий набор (unlockedSets — это КОЛИЧЕСТВО доступных).
-    storage.unlockSets(kCountingGameId, widget.set.index + 2);
+    storage.unlockSets(_gameId, widget.set.index + 2);
   }
 
   bool get _hasNext => widget.set.index + 1 < CountSet.all.length;
@@ -68,7 +80,9 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => CountingGameScreen(
-              set: CountSet.all[widget.set.index + 1], autoStart: true),
+              set: CountSet.all[widget.set.index + 1],
+              autoStart: true,
+              useAnimals: widget.useAnimals),
         ),
       );
     } else {

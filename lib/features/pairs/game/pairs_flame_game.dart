@@ -11,6 +11,8 @@ import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../animals/animal_icons.dart';
+import '../../animals/logic/animals_logic.dart';
 import '../logic/pairs_logic.dart';
 
 /// Фаза экрана игры «Парочки».
@@ -25,6 +27,7 @@ class PairsGame extends FlameGame {
   PairsGame({
     required this.set,
     required this.colors,
+    this.useAnimals = false,
     this.onSay,
     this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
@@ -32,6 +35,9 @@ class PairsGame extends FlameGame {
 
   final PairsSet set;
   final AppColors colors;
+
+  /// Колода «Животные» (картинки зверей) вместо эмодзи.
+  final bool useAnimals;
 
   /// Голосовой хук (хост подключает к `Voice.instance.say`).
   final void Function(String text, {bool flush})? onSay;
@@ -46,6 +52,9 @@ class PairsGame extends FlameGame {
 
   /// Эмодзи для каждого символа набора (перемешаны на старте — для разнообразия).
   late List<String> _symbolEmoji;
+
+  /// Ключ арт-иконки зверя на символ (для колоды «Животные»), иначе null.
+  late List<String?> _symbolIconKey;
   final Map<int, _Card> _cardViews = <int, _Card>{};
 
   final ValueNotifier<PairsPhase> phase = ValueNotifier<PairsPhase>(
@@ -66,13 +75,29 @@ class PairsGame extends FlameGame {
 
   String emojiFor(int symbol) => _symbolEmoji[symbol % _symbolEmoji.length];
 
+  /// Ключ иконки зверя для символа (или null — рисуем эмодзи).
+  String? iconKeyFor(int symbol) =>
+      _symbolIconKey[symbol % _symbolIconKey.length];
+
   @override
   Color backgroundColor() => colors.background;
 
   /// Начать/перезапустить набор (новая перемешанная колода).
   void start() {
     _session = PairsSession(set, random: _rng);
-    _symbolEmoji = (<String>[..._emojiPool]..shuffle(_rng)).take(set.pairs).toList();
+    if (useAnimals) {
+      final picked =
+          (Animals.all.toList()..shuffle(_rng)).take(set.pairs).toList();
+      _symbolEmoji = <String>[for (final a in picked) a.emoji];
+      _symbolIconKey = <String?>[for (final a in picked) a.soundKey];
+      for (final a in picked) {
+        AnimalIcons.load(a.soundKey); // прогреть кэш к моменту переворота
+      }
+    } else {
+      _symbolEmoji =
+          (<String>[..._emojiPool]..shuffle(_rng)).take(set.pairs).toList();
+      _symbolIconKey = List<String?>.filled(set.pairs, null);
+    }
     _locked = false;
     matchedPairs.value = 0;
     phase.value = PairsPhase.playing;
@@ -249,6 +274,7 @@ class _Board extends PositionComponent {
       final view = _Card(
         index: i,
         emoji: owner.emojiFor(cards[i].symbol),
+        iconKey: owner.iconKeyFor(cards[i].symbol),
         colors: owner.colors,
         side: side,
         position: pos,
@@ -268,6 +294,7 @@ class _Card extends PositionComponent with TapCallbacks {
   _Card({
     required this.index,
     required this.emoji,
+    required this.iconKey,
     required this.colors,
     required double side,
     required Vector2 position,
@@ -280,6 +307,9 @@ class _Card extends PositionComponent with TapCallbacks {
 
   final int index;
   final String emoji;
+
+  /// Ключ арт-иконки зверя (колода «Животные») или null — тогда эмодзи.
+  final String? iconKey;
   final AppColors colors;
   final void Function(int index) onTapCard;
 
@@ -300,12 +330,21 @@ class _Card extends PositionComponent with TapCallbacks {
     );
     if (_faceUp || _matched) {
       canvas.drawRRect(rrect, Paint()..color = colors.surface);
-      _emojiPaint.render(
-        canvas,
-        emoji,
-        Vector2(size.x / 2, size.y / 2),
-        anchor: Anchor.center,
-      );
+      final icon = iconKey != null ? AnimalIcons.cached(iconKey!) : null;
+      if (icon != null) {
+        // Картинка зверя по центру карточки (с отступом).
+        canvas.save();
+        canvas.translate(size.x * 0.1, size.y * 0.1);
+        AnimalIcons.paintContained(canvas, icon, size.x * 0.8);
+        canvas.restore();
+      } else {
+        _emojiPaint.render(
+          canvas,
+          emoji,
+          Vector2(size.x / 2, size.y / 2),
+          anchor: Anchor.center,
+        );
+      }
       if (_matched) {
         canvas.drawRRect(
           rrect,

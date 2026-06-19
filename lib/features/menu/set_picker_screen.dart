@@ -5,42 +5,92 @@ import '../../core/feedback/haptics.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
 
-/// Универсальный выбор набора для игр со звёздами. Открытые наборы доступны,
-/// будущие — притушены с замком («без проигрышей»: первый всегда открыт, новые
-/// открываются по мере прохождения). Звёзды за набор показаны на карточке.
-class SetPickerScreen extends StatefulWidget {
-  const SetPickerScreen({
-    super.key,
+/// Одна вкладка выбора уровня: своя «колода» и свой прогресс (отдельный
+/// [gameId] в хранилище). Напр. «Иконки» (`pairs`) и «Животные» (`pairs_animals`).
+class SetPickerTab {
+  const SetPickerTab({
+    required this.label,
     required this.gameId,
-    required this.title,
     required this.setCount,
     required this.buildGame,
     this.starsPerSet = 3,
   });
 
-  final String gameId;
-  final String title;
-  final int setCount;
+  /// Подпись на табе.
+  final String label;
 
-  /// Сколько звёзд даёт набор (кружки на карточке; у «Пазлов» — 1).
+  /// id для прогресса в `GameStorage` (открытые уровни + звёзды).
+  final String gameId;
+
+  final int setCount;
   final int starsPerSet;
 
-  /// Построить экран игры для набора [index].
+  /// Построить экран игры для уровня [index].
   final Widget Function(int index) buildGame;
-
-  @override
-  State<SetPickerScreen> createState() => _SetPickerScreenState();
 }
 
-class _SetPickerScreenState extends State<SetPickerScreen> {
+/// Выбор уровня для игр со звёздами. Если вкладок больше одной (напр.
+/// Иконки/Животные) — показывает табы; каждая вкладка ведёт **свой** прогресс.
+/// «Без проигрышей»: первый уровень открыт, новые открываются по прохождению.
+class SetPickerScreen extends StatelessWidget {
+  const SetPickerScreen({super.key, required this.title, required this.tabs})
+      : assert(tabs.length > 0);
+
+  final String title;
+  final List<SetPickerTab> tabs;
+
+  @override
+  Widget build(BuildContext context) {
+    if (tabs.length == 1) {
+      return Scaffold(
+        appBar: AppBar(title: Text(title)),
+        body: SafeArea(child: _LevelGrid(tab: tabs.first)),
+      );
+    }
+    final colors = context.appColors;
+    return DefaultTabController(
+      length: tabs.length,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(title),
+          bottom: TabBar(
+            labelColor: colors.primary,
+            unselectedLabelColor: colors.onBackground.withValues(alpha: 0.5),
+            indicatorColor: colors.primary,
+            indicatorWeight: 3,
+            labelStyle: const TextStyle(fontWeight: FontWeight.w800),
+            tabs: <Widget>[for (final t in tabs) Tab(text: t.label)],
+          ),
+        ),
+        body: SafeArea(
+          child: TabBarView(
+            children: <Widget>[for (final t in tabs) _LevelGrid(tab: t)],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Сетка уровней одной вкладки.
+class _LevelGrid extends StatefulWidget {
+  const _LevelGrid({required this.tab});
+
+  final SetPickerTab tab;
+
+  @override
+  State<_LevelGrid> createState() => _LevelGridState();
+}
+
+class _LevelGridState extends State<_LevelGrid> {
   final GameStorage _s = GameStorage.instance;
 
   Future<void> _openSet(int index) async {
     Haptics.select();
     await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => widget.buildGame(index)),
+      MaterialPageRoute<void>(builder: (_) => widget.tab.buildGame(index)),
     );
-    // Вернулись — звёзды/открытые наборы могли измениться.
+    // Вернулись — звёзды/открытые уровни могли измениться.
     if (mounted) setState(() {});
   }
 
@@ -48,54 +98,50 @@ class _SetPickerScreenState extends State<SetPickerScreen> {
   Widget build(BuildContext context) {
     final colors = context.appColors;
     final text = Theme.of(context).textTheme;
-    final unlocked = _s.unlockedSets(widget.gameId);
+    final tab = widget.tab;
+    final unlocked = _s.unlockedSets(tab.gameId);
 
-    return Scaffold(
-      appBar: AppBar(title: Text(widget.title)),
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, c) {
-            final pad = (c.maxWidth * 0.05).clamp(12.0, 28.0).toDouble();
-            const cols = 5;
-            final gap = pad * 0.5;
-            final tile = (c.maxWidth - pad * 2 - gap * (cols - 1)) / cols;
-            return SingleChildScrollView(
-              padding: EdgeInsets.all(pad),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+    return LayoutBuilder(
+      builder: (context, c) {
+        final pad = (c.maxWidth * 0.05).clamp(12.0, 28.0).toDouble();
+        const cols = 5;
+        final gap = pad * 0.5;
+        final tile = (c.maxWidth - pad * 2 - gap * (cols - 1)) / cols;
+        return SingleChildScrollView(
+          padding: EdgeInsets.all(pad),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              Padding(
+                padding: EdgeInsets.only(bottom: pad, left: 4),
+                child: Text(
+                  'Выбери уровень',
+                  style: text.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: colors.onBackground.withValues(alpha: 0.8),
+                  ),
+                ),
+              ),
+              Wrap(
+                spacing: gap,
+                runSpacing: gap,
                 children: <Widget>[
-                  Padding(
-                    padding: EdgeInsets.only(bottom: pad, left: 4),
-                    child: Text(
-                      'Выбери уровень',
-                      style: text.titleMedium?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        color: colors.onBackground.withValues(alpha: 0.8),
-                      ),
+                  for (var i = 0; i < tab.setCount; i++)
+                    _SetCard(
+                      number: i + 1,
+                      size: tile,
+                      colors: colors,
+                      locked: i >= unlocked,
+                      stars: _s.setStars(tab.gameId, i),
+                      starsPerSet: tab.starsPerSet,
+                      onTap: i >= unlocked ? null : () => _openSet(i),
                     ),
-                  ),
-                  Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children: <Widget>[
-                      for (var i = 0; i < widget.setCount; i++)
-                        _SetCard(
-                          number: i + 1,
-                          size: tile,
-                          colors: colors,
-                          locked: i >= unlocked,
-                          stars: _s.setStars(widget.gameId, i),
-                          starsPerSet: widget.starsPerSet,
-                          onTap: i >= unlocked ? null : () => _openSet(i),
-                        ),
-                    ],
-                  ),
                 ],
               ),
-            );
-          },
-        ),
-      ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

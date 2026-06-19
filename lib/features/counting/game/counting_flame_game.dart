@@ -11,6 +11,8 @@ import '../../../core/audio/sfx.dart';
 import '../../../core/feedback/haptics.dart';
 import '../../../core/praise/praise.dart';
 import '../../../core/theme/app_colors.dart';
+import '../../animals/animal_icons.dart';
+import '../../animals/logic/animals_logic.dart';
 import '../logic/counting_logic.dart';
 
 /// Фаза экрана игры «Счёт».
@@ -28,6 +30,7 @@ class CountingGame extends FlameGame {
     required this.set,
     required this.colors,
     this.roundsPerSet = 5,
+    this.useAnimals = false,
     this.onSay,
     this.setDonePhrase = 'Молодец! Всё получилось!',
     Random? random,
@@ -36,6 +39,9 @@ class CountingGame extends FlameGame {
   final CountSet set;
   final AppColors colors;
   final int roundsPerSet;
+
+  /// Колода «Животные» (картинки зверей) вместо эмодзи-объектов.
+  final bool useAnimals;
 
   /// Голосовой хук (хост подключает к `Voice.instance.say`). `flush: true` —
   /// сказать сразу (счёт/цифра); по умолчанию — в очередь, без перебивания.
@@ -50,6 +56,7 @@ class CountingGame extends FlameGame {
   bool _locked = false; // блокировка после завершения раунда
   bool _choosing = false; // идёт фаза выбора цифры
   String? _lastEmoji; // чтобы соседние раунды не повторяли эмодзи
+  String? _lastKey; // то же для звериной колоды
   _RoundComponent? _roundComp;
 
   /// Текущая фаза (ready → playing → setDone).
@@ -169,12 +176,28 @@ class CountingGame extends FlameGame {
     return e;
   }
 
+  /// Лицо объекта раунда: эмодзи или (для колоды «Животные») картинка зверя.
+  (String, String?) _pickFace() {
+    if (useAnimals) {
+      Animal a;
+      do {
+        a = Animals.all[_rng.nextInt(Animals.all.length)];
+      } while (a.soundKey == _lastKey && Animals.all.length > 1);
+      _lastKey = a.soundKey;
+      AnimalIcons.load(a.soundKey); // прогреть кэш к рендеру
+      return (a.emoji, a.soundKey);
+    }
+    return (_pickEmoji(), null);
+  }
+
   void _buildRound() {
     _locked = false;
     _choosing = false;
     _clearRound();
     final round = _session.round;
-    _roundComp = _RoundComponent(owner: this, round: round, emoji: _pickEmoji());
+    final (emoji, iconKey) = _pickFace();
+    _roundComp = _RoundComponent(
+        owner: this, round: round, emoji: emoji, iconKey: iconKey);
     add(_roundComp!);
     onSay?.call('Посчитай!', flush: roundNumber.value == 1);
   }
@@ -259,11 +282,15 @@ class _RoundComponent extends PositionComponent {
     required this.owner,
     required this.round,
     required this.emoji,
+    required this.iconKey,
   });
 
   final CountingGame owner;
   final CountRound round;
   final String emoji;
+
+  /// Ключ арт-иконки зверя (колода «Животные») или null — рисуем эмодзи.
+  final String? iconKey;
 
   int? _digit; // показанная крупная цифра (ранние уровни)
   List<int>? _buttons; // показанные кнопки-цифры (поздние уровни)
@@ -332,6 +359,7 @@ class _RoundComponent extends PositionComponent {
       add(_TapEmoji(
         side: side,
         emoji: emoji,
+        iconKey: iconKey,
         colors: owner.colors,
         position: Vector2(cx, cy),
         onCount: owner.onObjectCounted,
@@ -401,24 +429,33 @@ class _TapEmoji extends PositionComponent with TapCallbacks {
   _TapEmoji({
     required double side,
     required this.emoji,
+    required this.iconKey,
     required this.colors,
     required this.onCount,
     super.position,
   }) : super(size: Vector2.all(side), anchor: Anchor.center);
 
   final String emoji;
+  final String? iconKey;
   final AppColors colors;
   final VoidCallback onCount;
   bool _counted = false;
+  late final TextPaint _paint;
 
   @override
   Future<void> onLoad() async {
-    add(TextComponent(
-      text: emoji,
-      anchor: Anchor.center,
-      position: size / 2,
-      textRenderer: TextPaint(style: TextStyle(fontSize: size.x * 0.82)),
-    ));
+    _paint = TextPaint(style: TextStyle(fontSize: size.x * 0.82));
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final icon = iconKey != null ? AnimalIcons.cached(iconKey!) : null;
+    if (icon != null) {
+      AnimalIcons.paintContained(canvas, icon, size.x);
+    } else {
+      _paint.render(canvas, emoji,
+          Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
+    }
   }
 
   @override

@@ -16,12 +16,20 @@ const String kPairsGameId = 'pairs';
 /// Экран-хост «Парочки»: Flame-канвас + оверлеи по фазе/паузе, голос и запись
 /// прогресса (звёзды/наборы).
 class PairsGameScreen extends StatefulWidget {
-  const PairsGameScreen({super.key, required this.set, this.autoStart = false});
+  const PairsGameScreen({
+    super.key,
+    required this.set,
+    this.autoStart = false,
+    this.useAnimals = false,
+  });
 
   final PairsSet set;
 
   /// Стартовать сразу (переход «Дальше» на след. уровень — без панели «Играть»).
   final bool autoStart;
+
+  /// Колода «Животные» (картинки зверей) вместо эмодзи — отдельный трек прогресса.
+  final bool useAnimals;
 
   @override
   State<PairsGameScreen> createState() => _PairsGameScreenState();
@@ -31,6 +39,9 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
   late final PairsGame _game;
   bool _created = false;
 
+  /// id прогресса: у «Животных» — свой (`pairs_animals`).
+  String get _gameId => widget.useAnimals ? 'pairs_animals' : kPairsGameId;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -39,6 +50,7 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
     _game = PairsGame(
       set: widget.set,
       colors: context.appColors,
+      useAnimals: widget.useAnimals,
       onSay: (String text, {bool flush = false}) =>
           Voice.instance.say(text, flush: flush),
       setDonePhrase: Praise.setDone(Gender.fromId(GameStorage.instance.childGender)),
@@ -55,8 +67,8 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
   void _onPhase() {
     if (_game.phase.value != PairsPhase.setDone) return;
     final storage = GameStorage.instance;
-    storage.recordSetStars(kPairsGameId, widget.set.index, _game.earnedStars.value);
-    storage.unlockSets(kPairsGameId, widget.set.index + 2);
+    storage.recordSetStars(_gameId, widget.set.index, _game.earnedStars.value);
+    storage.unlockSets(_gameId, widget.set.index + 2);
   }
 
   bool get _hasNext => widget.set.index + 1 < PairsSet.all.length;
@@ -67,7 +79,9 @@ class _PairsGameScreenState extends State<PairsGameScreen> {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute<void>(
           builder: (_) => PairsGameScreen(
-              set: PairsSet.all[widget.set.index + 1], autoStart: true),
+              set: PairsSet.all[widget.set.index + 1],
+              autoStart: true,
+              useAnimals: widget.useAnimals),
         ),
       );
     } else {

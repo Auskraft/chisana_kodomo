@@ -91,11 +91,25 @@ class _LobbyScreenState extends State<LobbyScreen> {
   Future<void> _openGame(_Game g) async {
     switch (g.id) {
       case 'counting':
-        await _openSets(g, CountSet.all.length,
-            (int i) => CountingGameScreen(set: CountSet.all[i]), starsPerSet: 1);
+        await _openPicker(g, <SetPickerTab>[
+          SetPickerTab(label: 'Иконки', gameId: 'counting', starsPerSet: 1,
+              setCount: CountSet.all.length,
+              buildGame: (int i) => CountingGameScreen(set: CountSet.all[i])),
+          SetPickerTab(label: 'Животные', gameId: 'counting_animals', starsPerSet: 1,
+              setCount: CountSet.all.length,
+              buildGame: (int i) =>
+                  CountingGameScreen(set: CountSet.all[i], useAnimals: true)),
+        ]);
       case 'pairs':
-        await _openSets(g, PairsSet.all.length,
-            (int i) => PairsGameScreen(set: PairsSet.all[i]), starsPerSet: 1);
+        await _openPicker(g, <SetPickerTab>[
+          SetPickerTab(label: 'Иконки', gameId: 'pairs', starsPerSet: 1,
+              setCount: PairsSet.all.length,
+              buildGame: (int i) => PairsGameScreen(set: PairsSet.all[i])),
+          SetPickerTab(label: 'Животные', gameId: 'pairs_animals', starsPerSet: 1,
+              setCount: PairsSet.all.length,
+              buildGame: (int i) =>
+                  PairsGameScreen(set: PairsSet.all[i], useAnimals: true)),
+        ]);
       case 'colors_shapes':
         await _openSets(g, CSSet.all.length,
             (int i) => ColorsShapesGameScreen(set: CSSet.all[i]), starsPerSet: 1);
@@ -124,17 +138,24 @@ class _LobbyScreenState extends State<LobbyScreen> {
     if (mounted) setState(() => _stars = _computeStars());
   }
 
+  Future<void> _openPicker(_Game g, List<SetPickerTab> tabs) {
+    return Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => SetPickerScreen(title: g.title, tabs: tabs),
+    ));
+  }
+
+  /// Игры без вариантов — одна вкладка (gameId = id игры).
   Future<void> _openSets(_Game g, int setCount, Widget Function(int) build,
       {int starsPerSet = 3}) {
-    return Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => SetPickerScreen(
+    return _openPicker(g, <SetPickerTab>[
+      SetPickerTab(
+        label: g.title,
         gameId: g.id,
-        title: g.title,
         setCount: setCount,
         buildGame: build,
         starsPerSet: starsPerSet,
       ),
-    ));
+    ]);
   }
 
   @override
