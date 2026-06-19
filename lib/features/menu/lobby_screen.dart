@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
@@ -44,46 +45,93 @@ class _LobbyScreenState extends State<LobbyScreen> {
   static const String _tagline = 'Играем, учимся, растём!';
 
   static const List<_Game> _games = <_Game>[
-    _Game('counting', 'Счёт', '🔢',
-        image: 'assets/games/counting.png', playable: true),
-    _Game('pairs', 'Парочки', '🃏',
-        image: 'assets/games/pairs.png', playable: true),
-    _Game('colors_shapes', 'Угадай-ка', '🎨',
-        image: 'assets/games/colors_shapes.png', playable: true),
-    _Game('animals', 'Звуки', '🐶',
-        image: 'assets/games/animals.png', playable: true),
-    _Game('music', 'Музыка', '🎹',
-        image: 'assets/games/music.png', playable: true),
-    _Game('coloring', 'Раскраска', '🖍️',
-        image: 'assets/games/coloring.png', playable: true),
-    _Game('farm', 'Ферма', '🐮',
-        image: 'assets/games/farm.png', playable: true),
-    _Game('odd_one_out', 'Лишнее', '🔎',
-        image: 'assets/games/odd_one_out.png', playable: true),
-    _Game('puzzles', 'Пазлы', '🧩',
-        image: 'assets/games/puzzles.png', playable: true),
+    _Game(
+      'counting',
+      'Счёт',
+      '🔢',
+      image: 'assets/games/counting.png',
+      playable: true,
+    ),
+    _Game(
+      'pairs',
+      'Парочки',
+      '🃏',
+      image: 'assets/games/pairs.png',
+      playable: true,
+    ),
+    _Game(
+      'colors_shapes',
+      'Угадай-ка',
+      '🎨',
+      image: 'assets/games/colors_shapes.png',
+      playable: true,
+    ),
+    _Game(
+      'animals',
+      'Звуки',
+      '🐶',
+      image: 'assets/games/animals.png',
+      playable: true,
+    ),
+    _Game(
+      'music',
+      'Музыка',
+      '🎹',
+      image: 'assets/games/music.png',
+      playable: true,
+    ),
+    _Game(
+      'coloring',
+      'Раскраска',
+      '🖍️',
+      image: 'assets/games/coloring.png',
+      playable: true,
+    ),
+    _Game(
+      'farm',
+      'Ферма',
+      '🐮',
+      image: 'assets/games/farm.png',
+      playable: true,
+    ),
+    _Game(
+      'odd_one_out',
+      'Лишнее',
+      '🔎',
+      image: 'assets/games/odd_one_out.png',
+      playable: true,
+    ),
+    _Game(
+      'puzzles',
+      'Пазлы',
+      '🧩',
+      image: 'assets/games/puzzles.png',
+      playable: true,
+    ),
   ];
 
   late int _stars = _computeStars();
 
   int _computeStars() {
     final s = GameStorage.instance;
-    return RewardsCatalog.games
-        .fold<int>(0, (int a, StarGame g) => a + s.totalStars(g.id, g.setCount));
+    return RewardsCatalog.games.fold<int>(
+      0,
+      (int a, StarGame g) => a + s.totalStars(g.id, g.setCount),
+    );
   }
 
   Future<void> _openSettings() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SettingsScreen()));
     // Вернулись из настроек — прогресс мог сброситься.
     if (mounted) setState(() => _stars = _computeStars());
   }
 
   Future<void> _openRewards() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const RewardsScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const RewardsScreen()));
     if (mounted) setState(() => _stars = _computeStars());
   }
 
@@ -92,61 +140,100 @@ class _LobbyScreenState extends State<LobbyScreen> {
     switch (g.id) {
       case 'counting':
         await _openPicker(g, <SetPickerTab>[
-          SetPickerTab(label: 'Иконки', gameId: 'counting', starsPerSet: 1,
-              setCount: CountSet.all.length,
-              buildGame: (int i) => CountingGameScreen(set: CountSet.all[i])),
-          SetPickerTab(label: 'Животные', gameId: 'counting_animals', starsPerSet: 1,
-              setCount: CountSet.all.length,
-              buildGame: (int i) =>
-                  CountingGameScreen(set: CountSet.all[i], useAnimals: true)),
+          SetPickerTab(
+            label: 'Иконки',
+            gameId: 'counting',
+            starsPerSet: 1,
+            setCount: CountSet.all.length,
+            buildGame: (int i) => CountingGameScreen(set: CountSet.all[i]),
+          ),
+          SetPickerTab(
+            label: 'Животные',
+            gameId: 'counting_animals',
+            starsPerSet: 1,
+            setCount: CountSet.all.length,
+            buildGame: (int i) =>
+                CountingGameScreen(set: CountSet.all[i], useAnimals: true),
+          ),
         ]);
       case 'pairs':
         await _openPicker(g, <SetPickerTab>[
-          SetPickerTab(label: 'Иконки', gameId: 'pairs', starsPerSet: 1,
-              setCount: PairsSet.all.length,
-              buildGame: (int i) => PairsGameScreen(set: PairsSet.all[i])),
-          SetPickerTab(label: 'Животные', gameId: 'pairs_animals', starsPerSet: 1,
-              setCount: PairsSet.all.length,
-              buildGame: (int i) =>
-                  PairsGameScreen(set: PairsSet.all[i], useAnimals: true)),
+          SetPickerTab(
+            label: 'Иконки',
+            gameId: 'pairs',
+            starsPerSet: 1,
+            setCount: PairsSet.all.length,
+            buildGame: (int i) => PairsGameScreen(set: PairsSet.all[i]),
+          ),
+          SetPickerTab(
+            label: 'Животные',
+            gameId: 'pairs_animals',
+            starsPerSet: 1,
+            setCount: PairsSet.all.length,
+            buildGame: (int i) =>
+                PairsGameScreen(set: PairsSet.all[i], useAnimals: true),
+          ),
         ]);
       case 'colors_shapes':
-        await _openSets(g, CSSet.all.length,
-            (int i) => ColorsShapesGameScreen(set: CSSet.all[i]), starsPerSet: 1);
+        await _openSets(
+          g,
+          CSSet.all.length,
+          (int i) => ColorsShapesGameScreen(set: CSSet.all[i]),
+          starsPerSet: 1,
+        );
       case 'animals':
-        await _openSets(g, AnimalSet.all.length,
-            (int i) => AnimalsGameScreen(set: AnimalSet.all[i]));
+        await _openSets(
+          g,
+          AnimalSet.all.length,
+          (int i) => AnimalsGameScreen(set: AnimalSet.all[i]),
+        );
       case 'music':
-        await Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const MusicGameScreen(),
-        ));
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const MusicGameScreen()),
+        );
       case 'coloring':
-        await Navigator.of(context).push(MaterialPageRoute<void>(
-          builder: (_) => const ColoringGameScreen(),
-        ));
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(builder: (_) => const ColoringGameScreen()),
+        );
       case 'farm':
-        await _openSets(g, AnimalSet.all.length,
-            (int i) => FarmGameScreen(set: AnimalSet.all[i]));
+        await _openSets(
+          g,
+          AnimalSet.all.length,
+          (int i) => FarmGameScreen(set: AnimalSet.all[i]),
+        );
       case 'odd_one_out':
-        await _openSets(g, OddSet.all.length,
-            (int i) => OddOneOutGameScreen(set: OddSet.all[i]), starsPerSet: 1);
+        await _openSets(
+          g,
+          OddSet.all.length,
+          (int i) => OddOneOutGameScreen(set: OddSet.all[i]),
+          starsPerSet: 1,
+        );
       case 'puzzles':
-        await _openSets(g, PuzzleSet.all.length,
-            (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]),
-            starsPerSet: 1);
+        await _openSets(
+          g,
+          PuzzleSet.all.length,
+          (int i) => PuzzlesGameScreen(set: PuzzleSet.all[i]),
+          starsPerSet: 1,
+        );
     }
     if (mounted) setState(() => _stars = _computeStars());
   }
 
   Future<void> _openPicker(_Game g, List<SetPickerTab> tabs) {
-    return Navigator.of(context).push(MaterialPageRoute<void>(
-      builder: (_) => SetPickerScreen(title: g.title, tabs: tabs),
-    ));
+    return Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => SetPickerScreen(title: g.title, tabs: tabs),
+      ),
+    );
   }
 
   /// Игры без вариантов — одна вкладка (gameId = id игры).
-  Future<void> _openSets(_Game g, int setCount, Widget Function(int) build,
-      {int starsPerSet = 3}) {
+  Future<void> _openSets(
+    _Game g,
+    int setCount,
+    Widget Function(int) build, {
+    int starsPerSet = 3,
+  }) {
     return _openPicker(g, <SetPickerTab>[
       SetPickerTab(
         label: g.title,
@@ -163,170 +250,226 @@ class _LobbyScreenState extends State<LobbyScreen> {
     final colors = context.appColors;
     final text = Theme.of(context).textTheme;
 
-    return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
-        children: <Widget>[
-          // Выбранный фон, слегка приподнят (маскот/сюжет — в свободном месте над
-          // карточками). Якорь по низу: поднимает и чуть увеличивает, края целы.
-          Transform.scale(
-            scale: _kBgRaiseScale,
-            alignment: Alignment.bottomCenter,
-            child: Image.asset(
-              kLobbyBackground,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
+    // На главном «назад» (свайп/кнопка) не закрывает приложение молча — спросим
+    // подтверждение (малыши случайно свайпают). canPop:false → перехватываем pop.
+    return PopScope<Object?>(
+      canPop: false,
+      onPopInvokedWithResult: (bool didPop, Object? result) =>
+          _confirmExit(context, didPop),
+      child: Scaffold(
+        body: Stack(
+          fit: StackFit.expand,
+          children: <Widget>[
+            // Выбранный фон, слегка приподнят (маскот/сюжет — в свободном месте над
+            // карточками). Якорь по низу: поднимает и чуть увеличивает, края целы.
+            Transform.scale(
+              scale: _kBgRaiseScale,
+              alignment: Alignment.bottomCenter,
+              child: Image.asset(
+                kLobbyBackground,
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
+              ),
             ),
-          ),
-          // Лёгкий скрим сверху — читаемость заголовка на любом фоне.
-          IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.center,
-                  colors: <Color>[
-                    colors.background.withValues(alpha: 0.5),
-                    Colors.transparent,
-                  ],
+            // Лёгкий скрим сверху — читаемость заголовка на любом фоне.
+            IgnorePointer(
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.center,
+                    colors: <Color>[
+                      colors.background.withValues(alpha: 0.5),
+                      Colors.transparent,
+                    ],
+                  ),
                 ),
               ),
             ),
-          ),
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, c) {
-                final w = c.maxWidth;
-                final shortest = c.biggest.shortestSide;
-                final pad = (w * 0.05).clamp(12.0, 32.0).toDouble();
-                final gap = (shortest * 0.03).clamp(8.0, 18.0).toDouble();
-                const cols = 3;
-                // Подложка-плашка: в размере карточки учитываем и внутренний
-                // отступ, и рамку плашки (+запас на округление) — иначе сетка
-                // переносится из 3×3 в 2 колонки.
-                final trayPad = gap;
-                const trayBorder = 2.0; // фактически 1.5 + запас
-                final tile = (w -
-                        pad * 2 -
-                        trayPad * 2 -
-                        trayBorder * 2 -
-                        gap * (cols - 1)) /
-                    cols;
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, c) {
+                  final w = c.maxWidth;
+                  final shortest = c.biggest.shortestSide;
+                  final pad = (w * 0.05).clamp(12.0, 32.0).toDouble();
+                  final gap = (shortest * 0.03).clamp(8.0, 18.0).toDouble();
+                  const cols = 3;
+                  // Подложка-плашка: в размере карточки учитываем и внутренний
+                  // отступ, и рамку плашки (+запас на округление) — иначе сетка
+                  // переносится из 3×3 в 2 колонки.
+                  final trayPad = gap;
+                  const trayBorder = 2.0; // фактически 1.5 + запас
+                  final tile =
+                      (w -
+                          pad * 2 -
+                          trayPad * 2 -
+                          trayBorder * 2 -
+                          gap * (cols - 1)) /
+                      cols;
 
-                return Column(
-                  children: <Widget>[
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(pad, 4, pad, 0),
-                      child: Row(
+                  return Column(
+                    children: <Widget>[
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(pad, 4, pad, 0),
+                        child: Row(
+                          children: <Widget>[
+                            _StarsPill(
+                              stars: _stars,
+                              colors: colors,
+                              onTap: _openRewards,
+                            ),
+                            const Spacer(),
+                            GestureDetector(
+                              onTap: _openSettings,
+                              child: Image.asset(
+                                'assets/ui/settings.png',
+                                width: 48,
+                                height: 48,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        'Chisana\nkodomo',
+                        textAlign: TextAlign.center,
+                        style: text.displaySmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          height: 1.05,
+                          color: colors.onBackground,
+                        ),
+                      ),
+                      SizedBox(height: shortest * 0.012),
+                      Stack(
+                        alignment: Alignment.center,
                         children: <Widget>[
-                          _StarsPill(
-                            stars: _stars,
-                            colors: colors,
-                            onTap: _openRewards,
+                          // Белая обводка ~3px — слоган читается на любом фоне.
+                          Text(
+                            _tagline,
+                            textAlign: TextAlign.center,
+                            style: text.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              foreground: Paint()
+                                ..style = PaintingStyle.stroke
+                                ..strokeWidth = 3
+                                ..strokeJoin = StrokeJoin.round
+                                ..color = colors.surface,
+                            ),
                           ),
-                          const Spacer(),
-                          GestureDetector(
-                            onTap: _openSettings,
-                            child: Image.asset(
-                              'assets/ui/settings.png',
-                              width: 48,
-                              height: 48,
+                          Text(
+                            _tagline,
+                            textAlign: TextAlign.center,
+                            style: text.titleMedium?.copyWith(
+                              color: colors.primary,
+                              fontWeight: FontWeight.w700,
                             ),
                           ),
                         ],
                       ),
-                    ),
-                    Text(
-                      'Chisana\nkodomo',
-                      textAlign: TextAlign.center,
-                      style: text.displaySmall?.copyWith(
-                        fontWeight: FontWeight.w800,
-                        height: 1.05,
-                        color: colors.onBackground,
-                      ),
-                    ),
-                    SizedBox(height: shortest * 0.012),
-                    Stack(
-                      alignment: Alignment.center,
-                      children: <Widget>[
-                        // Белая обводка ~3px — слоган читается на любом фоне.
-                        Text(
-                          _tagline,
-                          textAlign: TextAlign.center,
-                          style: text.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            foreground: Paint()
-                              ..style = PaintingStyle.stroke
-                              ..strokeWidth = 3
-                              ..strokeJoin = StrokeJoin.round
-                              ..color = colors.surface,
-                          ),
-                        ),
-                        Text(
-                          _tagline,
-                          textAlign: TextAlign.center,
-                          style: text.titleMedium?.copyWith(
-                            color: colors.primary,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Padding(
-                      padding: EdgeInsets.fromLTRB(pad, 0, pad, gap * 1.4),
-                      child: Container(
-                        padding: EdgeInsets.all(trayPad),
-                        decoration: BoxDecoration(
-                          // Тёплая кремово-песочная плашка: фон + золотистый accent
-                          // (а не к коричневому — тот обесцвечивает в серость).
-                          // Цвета из темы → реколорятся со сменой темы.
-                          color: Color.lerp(
-                              colors.background, colors.accent, 0.25),
-                          borderRadius: BorderRadius.circular(tile * 0.34),
-                          border: Border.all(
+                      const Spacer(),
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(pad, 0, pad, gap * 1.4),
+                        child: Container(
+                          padding: EdgeInsets.all(trayPad),
+                          decoration: BoxDecoration(
+                            // Тёплая кремово-песочная плашка: фон + золотистый accent
+                            // (а не к коричневому — тот обесцвечивает в серость).
+                            // Цвета из темы → реколорятся со сменой темы.
                             color: Color.lerp(
-                                colors.background, colors.accent, 0.5)!,
-                            width: 1.5,
-                          ),
-                          boxShadow: <BoxShadow>[
-                            BoxShadow(
-                              color: colors.onBackground.withValues(alpha: 0.14),
-                              blurRadius: 18,
-                              offset: const Offset(0, 8),
+                              colors.background,
+                              colors.accent,
+                              0.25,
                             ),
-                          ],
-                        ),
-                        child: Wrap(
-                          spacing: gap,
-                          runSpacing: gap,
-                          alignment: WrapAlignment.center,
-                          children: <Widget>[
-                            for (final _Game g in _games)
-                              _GameCard(
-                                game: g,
-                                size: tile,
-                                colors: colors,
-                                onTap: () => _openGame(g),
+                            borderRadius: BorderRadius.circular(tile * 0.34),
+                            border: Border.all(
+                              color: Color.lerp(
+                                colors.background,
+                                colors.accent,
+                                0.5,
+                              )!,
+                              width: 1.5,
+                            ),
+                            boxShadow: <BoxShadow>[
+                              BoxShadow(
+                                color: colors.onBackground.withValues(
+                                  alpha: 0.14,
+                                ),
+                                blurRadius: 18,
+                                offset: const Offset(0, 8),
                               ),
-                          ],
+                            ],
+                          ),
+                          child: Wrap(
+                            spacing: gap,
+                            runSpacing: gap,
+                            alignment: WrapAlignment.center,
+                            children: <Widget>[
+                              for (final _Game g in _games)
+                                _GameCard(
+                                  game: g,
+                                  size: tile,
+                                  colors: colors,
+                                  onTap: () => _openGame(g),
+                                ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                  ],
-                );
-              },
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Назад с главного: не закрываем приложение молча — подтверждаем выход.
+  Future<void> _confirmExit(BuildContext context, bool didPop) async {
+    if (didPop) return;
+    final colors = context.appColors;
+    final exit = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext ctx) => AlertDialog(
+        title: const Text('Выйти из приложения?'),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(
+              'Остаться',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(
+              'Выйти',
+              style: TextStyle(color: colors.onSurface.withValues(alpha: 0.7)),
             ),
           ),
         ],
       ),
     );
+    if (exit == true) {
+      await SystemNavigator.pop();
+    }
   }
 }
 
 /// Запись об игре в витрине.
 class _Game {
-  const _Game(this.id, this.title, this.emoji, {this.image, this.playable = false});
+  const _Game(
+    this.id,
+    this.title,
+    this.emoji, {
+    this.image,
+    this.playable = false,
+  });
 
   final String id;
   final String title;
@@ -362,9 +505,9 @@ class _GameCard extends StatelessWidget {
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
         style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              color: colors.onSurface.withValues(alpha: 0.85),
-              fontWeight: FontWeight.w700,
-            ),
+          color: colors.onSurface.withValues(alpha: 0.85),
+          fontWeight: FontWeight.w700,
+        ),
       ),
     );
 
@@ -380,8 +523,10 @@ class _GameCard extends StatelessWidget {
                   game.image!,
                   fit: BoxFit.contain,
                   errorBuilder: (_, _, _) => Center(
-                    child: Text(game.emoji,
-                        style: TextStyle(fontSize: size * 0.34)),
+                    child: Text(
+                      game.emoji,
+                      style: TextStyle(fontSize: size * 0.34),
+                    ),
                   ),
                 ),
               ),
@@ -440,7 +585,11 @@ class _GameCard extends StatelessWidget {
 
 /// Пилюля со звёздами (поверх фона) — открывает экран наград.
 class _StarsPill extends StatelessWidget {
-  const _StarsPill({required this.stars, required this.colors, required this.onTap});
+  const _StarsPill({
+    required this.stars,
+    required this.colors,
+    required this.onTap,
+  });
 
   final int stars;
   final AppColors colors;
@@ -465,9 +614,9 @@ class _StarsPill extends StatelessWidget {
               Text(
                 '$stars',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w900,
-                      color: colors.onSurface,
-                    ),
+                  fontWeight: FontWeight.w900,
+                  color: colors.onSurface,
+                ),
               ),
             ],
           ),
@@ -476,4 +625,3 @@ class _StarsPill extends StatelessWidget {
     );
   }
 }
-
