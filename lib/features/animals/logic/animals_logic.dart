@@ -31,8 +31,59 @@ abstract final class Animals {
     Animal('🐴', 'лошадка', 'horse'),
     Animal('🐤', 'цыплёнок', 'chick'),
     Animal('🐰', 'зайка', 'rabbit'),
+    // Расширение: арт-иконки `assets/animals/<key>.png` (звук — CC0 по мере
+    // готовности; пока называются голосом). Порядок: от знакомых к экзотике —
+    // ранние уровни (малый пул) берут зверей с начала.
+    Animal('🦁', 'львёнок', 'lion'),
+    Animal('🐯', 'тигрёнок', 'tiger'),
+    Animal('🐘', 'слонёнок', 'elephant'),
+    Animal('🐵', 'обезьянка', 'monkey'),
+    Animal('🐻', 'мишка', 'bear'),
+    Animal('🐺', 'волчок', 'wolf'),
+    Animal('🦊', 'лисёнок', 'fox'),
+    Animal('🦉', 'совёнок', 'owl'),
+    Animal('🦆', 'уточка', 'duck'),
+    Animal('🐓', 'петушок', 'rooster'),
+    Animal('🐐', 'козлик', 'goat'),
+    Animal('🫏', 'ослик', 'donkey'),
+    Animal('🐭', 'мышка', 'mouse'),
+    Animal('🐍', 'змейка', 'snake'),
+    Animal('🐝', 'пчёлка', 'bee'),
+    Animal('🦒', 'жирафик', 'giraffe'),
+    Animal('🦓', 'зебра', 'zebra'),
+    Animal('🦛', 'бегемотик', 'hippo'),
+    Animal('🦏', 'носорог', 'rhino'),
+    Animal('🐼', 'панда', 'panda'),
+    Animal('🐨', 'коала', 'koala'),
+    Animal('🦘', 'кенгурёнок', 'kangaroo'),
+    Animal('🐊', 'крокодильчик', 'crocodile'),
+    Animal('🐫', 'верблюжонок', 'camel'),
+    Animal('🦌', 'оленёнок', 'deer'),
+    Animal('🦝', 'енотик', 'raccoon'),
+    Animal('🦔', 'ёжик', 'hedgehog'),
+    Animal('🐿️', 'белочка', 'squirrel'),
+    Animal('🦥', 'ленивец', 'sloth'),
+    Animal('🐬', 'дельфинчик', 'dolphin'),
+    Animal('🐋', 'китёнок', 'whale'),
+    Animal('🦭', 'тюлень', 'seal'),
+    Animal('🦭', 'морж', 'walrus'),
+    Animal('🐧', 'пингвинёнок', 'penguin'),
+    Animal('🐻‍❄️', 'белый мишка', 'polar_bear'),
+    Animal('🐢', 'черепашка', 'turtle'),
+    Animal('🦀', 'крабик', 'crab'),
+    Animal('🦜', 'попугайчик', 'parrot'),
+    Animal('🦚', 'павлин', 'peacock'),
+    Animal('🦩', 'фламинго', 'flamingo'),
+    Animal('🦢', 'лебедь', 'swan'),
+    Animal('🦋', 'бабочка', 'butterfly'),
+    Animal('🐞', 'божья коровка', 'ladybug'),
+    Animal('🐌', 'улитка', 'snail'),
   ];
 }
+
+/// Сколько уровней в «Звуках»/«Ферме». Кривая растягивается автоматически под
+/// число зверей в [Animals.all] (добавил арт — стало больше уровней).
+const int kAnimalLevels = 24;
 
 /// Набор (ступень) игры «Звуки животных».
 class AnimalSet {
@@ -51,17 +102,22 @@ class AnimalSet {
   /// Сколько зверей из [Animals.all] задействовано (растёт по наборам).
   final int poolSize;
 
-  /// Плавная длинная кривая: больше вариантов и больше зверей в пуле (пул не
-  /// превышает число зверей в [Animals.all] = 10).
-  static const List<AnimalSet> all = <AnimalSet>[
-    AnimalSet(index: 0, optionCount: 2, poolSize: 4),
-    AnimalSet(index: 1, optionCount: 3, poolSize: 5),
-    AnimalSet(index: 2, optionCount: 3, poolSize: 6),
-    AnimalSet(index: 3, optionCount: 4, poolSize: 7),
-    AnimalSet(index: 4, optionCount: 4, poolSize: 8),
-    AnimalSet(index: 5, optionCount: 4, poolSize: 9),
-    AnimalSet(index: 6, optionCount: 4, poolSize: 10),
-  ];
+  /// [kAnimalLevels] уровней одной плавной кривой: число вариантов 2→5, пул
+  /// 4→(все звери). Пул всегда ≥ числа вариантов и ≤ [Animals.all].length.
+  static List<AnimalSet> _build() {
+    final n = Animals.all.length;
+    final sets = <AnimalSet>[];
+    for (var i = 0; i < kAnimalLevels; i++) {
+      final t = i / (kAnimalLevels - 1); // 0..1
+      final opts = (2 + 3 * t).round(); // 2 → 5
+      final pool = (4 + (n - 4) * t).round().clamp(opts, n); // 4 → n
+      sets.add(AnimalSet(index: i, optionCount: opts, poolSize: pool));
+    }
+    return sets;
+  }
+
+  /// Все наборы по порядку ([kAnimalLevels] штук).
+  static final List<AnimalSet> all = _build();
 }
 
 /// Раунд: какого зверя искать + варианты (перемешаны) + индекс верного.

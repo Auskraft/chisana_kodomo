@@ -103,6 +103,12 @@ abstract final class Stickers {
     Sticker('🐙', 494),
     Sticker('🦜', 511),
     Sticker('🎡', 537),
+    Sticker('🌻', 554),
+    Sticker('🍉', 571),
+    Sticker('🎏', 588),
+    Sticker('🪁', 605),
+    Sticker('🧸', 622),
+    Sticker('🎀', 639),
   ];
 
   /// Открыта ли наклейка при [totalStars] звёздах.
