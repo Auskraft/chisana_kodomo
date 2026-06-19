@@ -8,6 +8,7 @@ import 'core/legal/consent_screen.dart';
 import 'core/onboarding/gender_screen.dart';
 import 'core/storage/game_storage.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_controller.dart';
 import 'core/voice/voice.dart';
 import 'features/menu/lobby_screen.dart';
 
@@ -28,6 +29,7 @@ Future<void> main() async {
 
   await GameStorage.init();
   final storage = GameStorage.instance;
+  ThemeController.instance.load(); // активная тема из хранилища
   Haptics.enabled = storage.hapticsOn;
   Sfx.enabled = storage.soundOn;
   Voice.instance.enabled = storage.voiceOn;
@@ -76,18 +78,21 @@ Future<void> _enableHighRefreshRate() async {
   }
 }
 
-/// Корень приложения. Светлая тёплая тема [AppTheme.daylight]
-/// (переключение тем — позже, на этапе настроек).
+/// Корень приложения. Тема берётся из активного выбора [ThemeController] и
+/// пересобирается при смене (живой реколор всего UI через `context.appColors`).
 class ChisanaKodomoApp extends StatelessWidget {
   const ChisanaKodomoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Chisana kodomo',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.daylight,
-      home: const _RootGate(),
+    return ValueListenableBuilder<String>(
+      valueListenable: ThemeController.instance.themeId,
+      builder: (context, id, _) => MaterialApp(
+        title: 'Chisana kodomo',
+        debugShowCheckedModeBanner: false,
+        theme: AppThemes.byId(id).theme,
+        home: const _RootGate(),
+      ),
     );
   }
 }

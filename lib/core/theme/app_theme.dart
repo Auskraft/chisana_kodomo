@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'app_colors.dart';
+import 'theme_palettes.dart';
 
 /// Сборка [ThemeData] из палитры [AppColors] + реестр визуальных тем.
 ///
@@ -60,6 +61,7 @@ class AppThemeOption {
     required this.id,
     required this.name,
     required this.colors,
+    this.category = 'Базовые',
   });
 
   /// Стабильный ключ для сохранения выбора в storage.
@@ -67,6 +69,9 @@ class AppThemeOption {
 
   /// Имя для экрана выбора темы.
   final String name;
+
+  /// Группа для галереи тем (заголовок секции).
+  final String category;
 
   /// Палитра темы.
   final AppColors colors;
@@ -94,14 +99,25 @@ abstract final class AppThemes {
     colors: AppColors.bubblegum,
   );
 
-  /// Все темы по порядку (первая — дефолт).
-  static const List<AppThemeOption> all = <AppThemeOption>[
+  /// Все темы по порядку: сперва базовые, затем портированные палитры
+  /// (`kPortedThemes` из `theme_palettes.dart`, генератор `tool/gen_themes.py`).
+  static final List<AppThemeOption> all = <AppThemeOption>[
     daylight,
     meadow,
     bubblegum,
+    ...kPortedThemes,
   ];
 
   /// Тема по id (или дефолт, если id неизвестен/`null`).
   static AppThemeOption byId(String? id) =>
       all.firstWhere((t) => t.id == id, orElse: () => daylight);
+
+  /// Темы, сгруппированные по категории (для галереи), в порядке [all].
+  static Map<String, List<AppThemeOption>> get byCategory {
+    final map = <String, List<AppThemeOption>>{};
+    for (final t in all) {
+      (map[t.category] ??= <AppThemeOption>[]).add(t);
+    }
+    return map;
+  }
 }

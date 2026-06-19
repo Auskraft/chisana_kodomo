@@ -7,7 +7,10 @@ import '../../core/praise/praise.dart';
 import '../../core/rating/parent_zone_screen.dart';
 import '../../core/storage/game_storage.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/theme/app_theme.dart';
+import '../../core/theme/theme_controller.dart';
 import '../../core/voice/voice.dart';
+import 'theme_gallery_screen.dart';
 
 /// Экран настроек — редизайн «Цветные секции» (вариант B, Claude Design):
 /// тёплые секции-карточки (звук/голос · кто играет · внешний вид · голос
@@ -317,64 +320,84 @@ class _SettingsScreenState extends State<SettingsScreen>
       emoji: '🎨',
       title: 'Внешний вид',
       subtitle: 'Тема оформления',
-      child: _themePlaceholder(colors),
+      child: _themeTile(colors),
     );
   }
 
-  /// Задел под будущий выбор темы оформления (5–10 тем) — заглушка «СКОРО».
-  Widget _themePlaceholder(AppColors colors) {
-    final dots = <Color>[
-      colors.primary,
-      colors.secondary,
-      colors.success,
-      colors.accent,
-      colors.onSurface.withValues(alpha: 0.45),
-    ];
-    return Opacity(
-      opacity: 0.55,
-      child: Row(
-        children: <Widget>[
-          Text(
-            'Тема оформления',
-            style: TextStyle(
-              fontSize: 12.5,
-              fontWeight: FontWeight.w600,
-              color: colors.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-          const SizedBox(width: 8),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: colors.primary.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Text(
-              'СКОРО',
-              style: TextStyle(
-                fontSize: 9.5,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 0.5,
-                color: colors.primary,
-              ),
-            ),
-          ),
-          const Spacer(),
-          for (final c in dots)
-            Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Container(
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: c,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 2),
+  /// Текущая тема + переход в галерею выбора (живой реколор при выборе).
+  Widget _themeTile(AppColors colors) {
+    return ValueListenableBuilder<String>(
+      valueListenable: ThemeController.instance.themeId,
+      builder: (context, id, _) {
+        final current = AppThemes.byId(id);
+        final dots = <Color>[
+          current.colors.primary,
+          current.colors.secondary,
+          current.colors.accent,
+          current.colors.success,
+        ];
+        return Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              Haptics.select();
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const ThemeGalleryScreen(),
                 ),
+              );
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: <Widget>[
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: <Widget>[
+                        Text(
+                          current.name,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            color: colors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 1),
+                        Text(
+                          '${AppThemes.all.length} тем — выбрать',
+                          style: TextStyle(
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w600,
+                            color: colors.onSurface.withValues(alpha: 0.55),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  for (final c in dots)
+                    Padding(
+                      padding: const EdgeInsets.only(left: 6),
+                      child: Container(
+                        width: 20,
+                        height: 20,
+                        decoration: BoxDecoration(
+                          color: c,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 2),
+                        ),
+                      ),
+                    ),
+                  SizedBox(width: 6),
+                  Icon(Icons.chevron_right_rounded,
+                      color: colors.onSurface.withValues(alpha: 0.5)),
+                ],
               ),
             ),
-        ],
-      ),
+          ),
+        );
+      },
     );
   }
 
