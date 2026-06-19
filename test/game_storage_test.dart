@@ -56,6 +56,28 @@ void main() {
       expect(s.setStars('counting', 0), 3);
     });
 
+    test('недавние цвета пикера: новые впереди, без дублей, максимум 10', () async {
+      final s = GameStorage.instance;
+      expect(s.coloringRecentColors, isEmpty);
+
+      await s.addColoringRecentColor(0xFFE53935);
+      await s.addColoringRecentColor(0xFF42A5F5);
+      // Новый цвет — первым.
+      expect(s.coloringRecentColors, <int>[0xFF42A5F5, 0xFFE53935]);
+
+      // Повтор — поднимается вперёд, без дубля.
+      await s.addColoringRecentColor(0xFFE53935);
+      expect(s.coloringRecentColors, <int>[0xFFE53935, 0xFF42A5F5]);
+
+      // Переполнение — держим только последние kColoringRecentMax.
+      for (var i = 0; i < 15; i++) {
+        await s.addColoringRecentColor(0xFF000000 + i);
+      }
+      expect(s.coloringRecentColors, hasLength(GameStorage.kColoringRecentMax));
+      // Самый свежий — впереди.
+      expect(s.coloringRecentColors.first, 0xFF000000 + 14);
+    });
+
     test('избранные раскраски: переключение и персист', () async {
       final s = GameStorage.instance;
       const a = 'assets/coloring/animals/1/cat.png';

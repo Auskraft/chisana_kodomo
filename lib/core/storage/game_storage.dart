@@ -95,6 +95,28 @@ class GameStorage {
     return !removed;
   }
 
+  // ── Недавние цвета колор-пикера (раскраска) ─────────────────────────────────
+  /// Сколько кастомных цветов помним в пикере.
+  static const int kColoringRecentMax = 10;
+  static const String _kColoringRecent = 'coloring_recent_colors';
+
+  /// Последние выбранные в пикере цвета (ARGB int), новые — первыми, ≤ [kColoringRecentMax].
+  List<int> get coloringRecentColors =>
+      (_prefs.getStringList(_kColoringRecent) ?? const <String>[])
+          .map(int.tryParse)
+          .whereType<int>()
+          .toList();
+
+  /// Добавить цвет в недавние: вперёд, без дублей, не больше [kColoringRecentMax].
+  Future<void> addColoringRecentColor(int argb) async {
+    final list = <int>[argb, ...coloringRecentColors.where((c) => c != argb)];
+    if (list.length > kColoringRecentMax) {
+      list.removeRange(kColoringRecentMax, list.length);
+    }
+    await _prefs.setStringList(
+        _kColoringRecent, list.map((c) => c.toString()).toList());
+  }
+
   // ── Прогресс по играм: открытые наборы + звёзды за набор ────────────────────
   // Ключи живут по id игры (= папка/feature), как и в сборнике-эталоне.
 

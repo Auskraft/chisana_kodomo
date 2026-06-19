@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../core/components/overlay_kit.dart';
 import '../../core/feedback/haptics.dart';
@@ -156,35 +155,20 @@ class _ColoringGameScreenState extends State<ColoringGameScreen> {
     }
   }
 
-  /// Колор-пикер: выбрать произвольный цвет кисти.
+  /// Круговой колор-пикер: кольцо оттенков + недавние цвета (последние 10).
   Future<void> _openPicker() async {
-    var picked = _game.brushColor;
-    final result = await showDialog<Color>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Выбери цвет'),
-        content: SingleChildScrollView(
-          child: ColorPicker(
-            pickerColor: picked,
-            onColorChanged: (Color c) => picked = c,
-            enableAlpha: false,
-            labelTypes: const <ColorLabelType>[],
-            pickerAreaHeightPercent: 0.7,
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Отмена'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(picked),
-            child: const Text('Готово'),
-          ),
-        ],
-      ),
+    final storage = GameStorage.instance;
+    final recent =
+        storage.coloringRecentColors.map((int v) => Color(v)).toList();
+    final result = await showColoringColorPicker(
+      context,
+      initial: _game.brushColor,
+      recent: recent,
     );
-    if (result != null) _game.setPickedColor(result);
+    if (result != null) {
+      _game.setPickedColor(result);
+      await storage.addColoringRecentColor(result.toARGB32());
+    }
   }
 
   /// Кнопка «Картинка»: в растровом режиме — пикер-карусель (выбор по уровню);

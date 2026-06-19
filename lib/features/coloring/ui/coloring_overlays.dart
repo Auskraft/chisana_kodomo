@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 import '../../../core/theme/app_colors.dart';
 import '../game/coloring_pictures.dart';
@@ -1232,6 +1233,248 @@ class _PicturePickerCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+// ── Колор-пикер (круговой) ────────────────────────────────────────────────────
+
+/// Стильный круговой колор-пикер (bottom sheet): кольцо оттенков
+/// ([HueRingPicker]) + живое превью + ряд недавних цветов (последние 10).
+/// Возвращает выбранный цвет или `null` (отмена/закрытие свайпом).
+Future<Color?> showColoringColorPicker(
+  BuildContext context, {
+  required Color initial,
+  required List<Color> recent,
+}) {
+  return showModalBottomSheet<Color>(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.transparent,
+    builder: (ctx) => _ColorPickerSheet(initial: initial, recent: recent),
+  );
+}
+
+class _ColorPickerSheet extends StatefulWidget {
+  const _ColorPickerSheet({required this.initial, required this.recent});
+
+  final Color initial;
+  final List<Color> recent;
+
+  @override
+  State<_ColorPickerSheet> createState() => _ColorPickerSheetState();
+}
+
+class _ColorPickerSheetState extends State<_ColorPickerSheet> {
+  late Color _picked = widget.initial;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = context.appColors;
+    final text = Theme.of(context).textTheme;
+    // Кольцо — доля ширины экрана (адаптивно), в разумных границах.
+    final ring =
+        (MediaQuery.of(context).size.width * 0.66).clamp(220.0, 300.0).toDouble();
+
+    return Container(
+      decoration: BoxDecoration(
+        color: colors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.18),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
+      ),
+      child: SafeArea(
+        top: false,
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 18),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                // Хваталка.
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: colors.onSurface.withValues(alpha: 0.18),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                // Заголовок + живое превью выбранного цвета.
+                Row(
+                  children: <Widget>[
+                    Text(
+                      'Выбери цвет',
+                      style: text.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    const Spacer(),
+                    _PreviewDot(color: _picked, colors: colors),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                // Кольцо оттенков (круговой пикер).
+                HueRingPicker(
+                  pickerColor: _picked,
+                  onColorChanged: (Color c) => setState(() => _picked = c),
+                  enableAlpha: false,
+                  displayThumbColor: true,
+                  colorPickerHeight: ring,
+                  hueRingStrokeWidth: 22,
+                  pickerAreaBorderRadius:
+                      const BorderRadius.all(Radius.circular(18)),
+                ),
+                // Недавние цвета (последние 10).
+                if (widget.recent.isNotEmpty) ...<Widget>[
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      'Недавние',
+                      style: text.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: colors.onSurface.withValues(alpha: 0.7),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  SizedBox(
+                    height: 44,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: widget.recent.length,
+                      separatorBuilder: (_, _) => const SizedBox(width: 10),
+                      itemBuilder: (_, int i) => _RecentColorDot(
+                        color: widget.recent[i],
+                        selected:
+                            widget.recent[i].toARGB32() == _picked.toARGB32(),
+                        colors: colors,
+                        onTap: () => setState(() => _picked = widget.recent[i]),
+                      ),
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                // Действия.
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: TextButton.styleFrom(
+                          foregroundColor: colors.onSurface.withValues(alpha: 0.7),
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                        ),
+                        child: const Text('Отмена'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: FilledButton(
+                        onPressed: () => Navigator.of(context).pop(_picked),
+                        style: FilledButton.styleFrom(
+                          backgroundColor: colors.primary,
+                          foregroundColor: colors.onPrimary,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Готово',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Превью текущего цвета (кружок с мягкой обводкой) рядом с заголовком.
+class _PreviewDot extends StatelessWidget {
+  const _PreviewDot({required this.color, required this.colors});
+
+  final Color color;
+  final AppColors colors;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 36,
+      height: 36,
+      decoration: BoxDecoration(
+        color: color,
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white.withValues(alpha: 0.9), width: 3),
+        boxShadow: <BoxShadow>[
+          BoxShadow(
+            color: colors.onBackground.withValues(alpha: 0.2),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Кружок недавнего цвета: тап — выбрать; рамка толще у выбранного.
+class _RecentColorDot extends StatelessWidget {
+  const _RecentColorDot({
+    required this.color,
+    required this.selected,
+    required this.colors,
+    required this.onTap,
+  });
+
+  final Color color;
+  final bool selected;
+  final AppColors colors;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: selected ? colors.onSurface : Colors.white.withValues(alpha: 0.8),
+            width: selected ? 4 : 2,
+          ),
+          boxShadow: <BoxShadow>[
+            BoxShadow(
+              color: colors.onBackground.withValues(alpha: 0.18),
+              blurRadius: 5,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
       ),
     );
   }
