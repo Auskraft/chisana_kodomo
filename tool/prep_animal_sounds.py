@@ -22,6 +22,7 @@ DST = Path(r"A:\StudioProjects\chisana_kodomo\assets\animals")
 
 # Папки-источники в порядке приоритета (раньше = лучше).
 DIRS = [
+    Path(r"C:\Users\Auskraft_PC\Downloads\сырые\Новая папка (2)"),
     Path(r"C:\Users\Auskraft_PC\Downloads\сырые\Новая папка\Обрезанные"),
     Path(r"C:\Users\Auskraft_PC\Downloads\сырые"),
     Path(r"C:\Users\Auskraft_PC\Downloads\сырые\Новая папка"),
@@ -46,6 +47,10 @@ KEYWORDS = {
     "коров": "cow", "петух": "rooster", "kitty": "cat", "meow": "cat",
     "pig": "pig", "horse": "horse", "neigh": "horse", "rooster": "rooster",
     "wolf": "wolf", "monkey": "monkey", "donkey": "donkey", "goat": "goat",
+    # русские имена остатков
+    "куриц": "hen", "курочк": "hen", "лягушк": "frog", "овц": "sheep",
+    "овечк": "sheep", "слон": "elephant", "утк": "duck", "уточк": "duck",
+    "цыпл": "chick", "ципл": "chick", "лев": "lion", "собак": "dog",
 }
 
 
