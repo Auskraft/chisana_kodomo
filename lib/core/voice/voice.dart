@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert' show utf8;
 import 'dart:io' show Platform;
 
 import 'package:audioplayers/audioplayers.dart';
@@ -74,7 +75,7 @@ class Voice {
   bool _draining = false;
   final Map<String, bool> _clipReadyCache = <String, bool>{};
 
-  /// Текст фразы → имя файла клипа (`assets/voice/pack/<voice>/<key>.wav`). Должен
+  /// Текст фразы → имя файла клипа (`assets/voice/pack/<voice>/<key>.mp3`). Должен
   /// совпадать с тем, что произносят игры (см. `_numberWord`, `Praise.phrases`).
   static const Map<String, String> _clipKeys = <String, String>{
     'ноль': 'num_0',
@@ -108,6 +109,23 @@ class Voice {
     'Молодец! Всё получилось!': 'set_done_neutral',
     'Привет! Давай посчитаем!': 'greet',
   };
+
+  /// Ключ клипа для фраз ВНЕ [_clipKeys] (композиционные: «Это цифра три!»,
+  /// «Где собачка?», «Жёлтая звезда!»…). Контент-адресация: FNV-1a 64-бит по
+  /// UTF-8 → 16 hex-символов. Должен совпадать с `fnv1a` в
+  /// `tool/gen_voice_pack.py` (генератор кладёт клип под этим же именем).
+  static String clipKey(String text) {
+    var h = 0xcbf29ce484222325; // FNV offset basis (unsigned-битовый шаблон)
+    for (final b in utf8.encode(text)) {
+      h = (h ^ b) * 0x100000001b3; // FNV prime; int 64-бит на VM оборачивается
+    }
+    // 64-бит как unsigned hex: Dart int знаковый, потому печатаем половинами
+    // (`>>>` — логический сдвиг, без знакового расширения).
+    final hi = h >>> 32;
+    final lo = h & 0xFFFFFFFF;
+    return hi.toRadixString(16).padLeft(8, '0') +
+        lo.toRadixString(16).padLeft(8, '0');
+  }
 
   /// Инициализация (вызывать из `main()` после `GameStorage.init()`).
   Future<void> init({
@@ -201,7 +219,8 @@ class Voice {
     try {
       while (_queue.isNotEmpty) {
         final text = _queue.removeAt(0);
-        final key = usePack ? _clipKeys[text.trim()] : null;
+        final t = text.trim();
+        final key = usePack ? (_clipKeys[t] ?? clipKey(t)) : null;
         if (key != null && await _clipReady(key)) {
           await _playClip(key);
         } else {
@@ -223,7 +242,7 @@ class Voice {
     if (cached != null) return cached;
     var ok = false;
     try {
-      await rootBundle.load('assets/voice/pack/$packVoice/$key.wav');
+      await rootBundle.load('assets/voice/pack/$packVoice/$key.mp3');
       ok = true;
     } catch (_) {
       ok = false;
@@ -241,7 +260,7 @@ class Voice {
         if (!done.isCompleted) done.complete();
       });
       await p.stop();
-      await p.play(AssetSource('voice/pack/$packVoice/$key.wav'));
+      await p.play(AssetSource('voice/pack/$packVoice/$key.mp3'));
       await done.future.timeout(const Duration(seconds: 5), onTimeout: () {});
     } catch (_) {
       // не удалось — тихо (фолбэк уже не нужен, фраза пропускается)
