@@ -94,7 +94,9 @@ flutter:
   assets:
     - assets/games/
     - assets/puzzles/
-    - assets/voice/pack/
+    - assets/voice/pack/baya/
+    - assets/voice/pack/kseniya/
+    - assets/voice/pack/xenia/
     # Только сцена-осьминог: выбор фона убран, остальные сцены не бандлим
     # (файлы 1–4,6–9 остаются в репо). Сова #4 копируется в assets/icon/splash.png.
     - assets/backgrounds/5.png

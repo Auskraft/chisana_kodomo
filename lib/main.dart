@@ -39,6 +39,7 @@ Future<void> main() async {
       voiceName: storage.voiceName,
       voiceLocale: storage.voiceLocale,
       usePack: storage.voiceUsePack,
+      packVoice: storage.voicePackId,
     ),
     _enableHighRefreshRate(),
     // Минимальная выдержка сплэша, чтобы он не мелькал на быстрых устройствах.

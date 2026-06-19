@@ -16,6 +16,16 @@ class VoiceOption {
   final String locale;
 }
 
+/// Встроенный (офлайн) голос: id спикера Silero + ярлык/эмодзи для Настроек.
+/// Список должен совпадать с `VOICES` в `tool/gen_voice_pack.py` и папками
+/// `assets/voice/pack/<id>/`.
+class PackVoice {
+  const PackVoice(this.id, this.label, this.emoji);
+  final String id;
+  final String label;
+  final String emoji;
+}
+
 /// Голос помощника: произносит фиксированный набор фраз (числа, похвала,
 /// подсказки) одним из двух способов:
 /// - **встроенный пак** (`usePack`) — заранее озвученные клипы `assets/voice/pack/`
@@ -38,11 +48,25 @@ class Voice {
   /// Использовать встроенный пак клипов вместо системного TTS.
   bool usePack = false;
 
+  /// Голос по умолчанию, если ничего не сохранено.
+  static const String defaultPackVoice = 'baya';
+
+  /// Встроенные голоса для выбора пользователем (женские Silero v4_ru).
+  /// Должен совпадать с `VOICES` в `tool/gen_voice_pack.py`.
+  static const List<PackVoice> packVoices = <PackVoice>[
+    PackVoice('baya', 'Голос 1', '🦊'),
+    PackVoice('kseniya', 'Голос 2', '🐰'),
+    PackVoice('xenia', 'Голос 3', '🐱'),
+  ];
+
+  /// Какой встроенный голос играть (папка `assets/voice/pack/<packVoice>/`).
+  String packVoice = defaultPackVoice;
+
   final List<String> _queue = <String>[];
   bool _draining = false;
   final Map<String, bool> _clipReadyCache = <String, bool>{};
 
-  /// Текст фразы → имя файла клипа (`assets/voice/pack/<key>.wav`). Должен
+  /// Текст фразы → имя файла клипа (`assets/voice/pack/<voice>/<key>.wav`). Должен
   /// совпадать с тем, что произносят игры (см. `_numberWord`, `Praise.phrases`).
   static const Map<String, String> _clipKeys = <String, String>{
     'ноль': 'num_0',
@@ -78,8 +102,10 @@ class Voice {
     String? voiceName,
     String? voiceLocale,
     bool usePack = false,
+    String? packVoice,
   }) async {
     this.usePack = usePack;
+    if (packVoice != null && packVoice.isNotEmpty) this.packVoice = packVoice;
     if (_inTest || _tts != null) return;
     try {
       final t = FlutterTts();
@@ -98,6 +124,14 @@ class Voice {
   }
 
   void setUsePack(bool value) => usePack = value;
+
+  /// Сменить встроенный голос (папку клипов). Чистим кэш готовности клипов —
+  /// у разных голосов свои файлы.
+  void setPackVoice(String id) {
+    if (id.isEmpty || id == packVoice) return;
+    packVoice = id;
+    _clipReadyCache.clear();
+  }
 
   /// Доступные русские голоса устройства (для экрана настроек).
   Future<List<VoiceOption>> russianVoices() async {
@@ -177,7 +211,7 @@ class Voice {
     if (cached != null) return cached;
     var ok = false;
     try {
-      await rootBundle.load('assets/voice/pack/$key.wav');
+      await rootBundle.load('assets/voice/pack/$packVoice/$key.wav');
       ok = true;
     } catch (_) {
       ok = false;
@@ -195,7 +229,7 @@ class Voice {
         if (!done.isCompleted) done.complete();
       });
       await p.stop();
-      await p.play(AssetSource('voice/pack/$key.wav'));
+      await p.play(AssetSource('voice/pack/$packVoice/$key.wav'));
       await done.future.timeout(const Duration(seconds: 5), onTimeout: () {});
     } catch (_) {
       // не удалось — тихо (фолбэк уже не нужен, фраза пропускается)

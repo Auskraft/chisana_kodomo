@@ -34,6 +34,7 @@ class _SettingsScreenState extends State<SettingsScreen>
   List<VoiceOption> _voices = const <VoiceOption>[];
   String? _selected = GameStorage.instance.voiceName;
   bool _usePack = GameStorage.instance.voiceUsePack;
+  String _packVoice = GameStorage.instance.voicePackId;
   bool _loading = true;
 
   late final AnimationController _bob = AnimationController(
@@ -81,11 +82,16 @@ class _SettingsScreenState extends State<SettingsScreen>
     await Voice.instance.say('Привет! Давай посчитаем!', flush: true);
   }
 
-  Future<void> _pickPack() async {
+  Future<void> _pickPack(String voiceId) async {
     Voice.instance.setUsePack(true);
+    Voice.instance.setPackVoice(voiceId);
     await _s.setVoiceUsePack(true);
+    await _s.setVoicePackId(voiceId);
     Haptics.select();
-    setState(() => _usePack = true);
+    setState(() {
+      _usePack = true;
+      _packVoice = voiceId;
+    });
     await Voice.instance.say('Привет! Давай посчитаем!', flush: true);
   }
 
@@ -429,7 +435,17 @@ class _SettingsScreenState extends State<SettingsScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
-          _builtinRow(colors),
+          Text(
+            'ВСТРОЕННЫЕ ГОЛОСА · ОФЛАЙН',
+            style: TextStyle(
+              fontSize: 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              color: colors.onSurface.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 8),
+          _builtinList(colors),
           const SizedBox(height: 12),
           Text(
             'ГОЛОСА ТЕЛЕФОНА',
@@ -447,51 +463,65 @@ class _SettingsScreenState extends State<SettingsScreen>
     );
   }
 
-  Widget _builtinRow(AppColors colors) {
-    final selected = _usePack;
-    return GestureDetector(
-      onTap: _pickPack,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? colors.primary.withValues(alpha: 0.12) : colors.surface,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
+  Widget _builtinList(AppColors colors) {
+    return Column(
+      children: <Widget>[
+        for (final pv in Voice.packVoices) _builtinTile(colors, pv),
+      ],
+    );
+  }
+
+  Widget _builtinTile(AppColors colors, PackVoice pv) {
+    final selected = _usePack && _packVoice == pv.id;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: () => _pickPack(pv.id),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          decoration: BoxDecoration(
             color: selected
-                ? colors.primary
-                : colors.onSurface.withValues(alpha: 0.10),
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          children: <Widget>[
-            const Text('🦊', style: TextStyle(fontSize: 22)),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    'Встроенный голос',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: colors.onSurface,
-                    ),
-                  ),
-                  Text(
-                    'Работает офлайн · рекомендуем',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: colors.onSurface.withValues(alpha: 0.55),
-                    ),
-                  ),
-                ],
-              ),
+                ? colors.primary.withValues(alpha: 0.12)
+                : colors.surface,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: selected
+                  ? colors.primary
+                  : colors.onSurface.withValues(alpha: 0.10),
+              width: selected ? 2 : 1,
             ),
-            if (selected)
-              Icon(Icons.check_circle_rounded, size: 20, color: colors.success),
-          ],
+          ),
+          child: Row(
+            children: <Widget>[
+              Text(pv.emoji, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      pv.label,
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: colors.onSurface,
+                      ),
+                    ),
+                    Text(
+                      'Офлайн · нажми, чтобы послушать',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: colors.onSurface.withValues(alpha: 0.55),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected)
+                Icon(Icons.check_circle_rounded,
+                    size: 20, color: colors.success),
+            ],
+          ),
         ),
       ),
     );

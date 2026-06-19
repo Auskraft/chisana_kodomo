@@ -70,6 +70,10 @@ class GameStorage {
   bool get voiceUsePack => _prefs.getBool('voice_use_pack') ?? false;
   Future<void> setVoiceUsePack(bool v) => _prefs.setBool('voice_use_pack', v);
 
+  /// Выбранный встроенный голос (id спикера Silero: baya/kseniya/xenia).
+  String get voicePackId => _prefs.getString('voice_pack_id') ?? 'baya';
+  Future<void> setVoicePackId(String id) => _prefs.setString('voice_pack_id', id);
+
   // ── Избранные раскраски (пути-ассеты `assets/coloring/...`) ─────────────────
   // Заготовка под фичу «Избранное»: отмечаются сердечком в пикере картинок.
   // Полноценный фильтр/раздел избранного — в бэклоге.

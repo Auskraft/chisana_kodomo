@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:chisana_kodomo/core/storage/game_storage.dart';
+import 'package:chisana_kodomo/core/voice/voice.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -76,6 +77,27 @@ void main() {
       expect(s.coloringRecentColors, hasLength(GameStorage.kColoringRecentMax));
       // Самый свежий — впереди.
       expect(s.coloringRecentColors.first, 0xFF000000 + 14);
+    });
+
+    test('встроенный голос: дефолт baya, персист, id из реестра Voice', () async {
+      final s = GameStorage.instance;
+      // Дефолты.
+      expect(s.voiceUsePack, isFalse);
+      expect(s.voicePackId, 'baya');
+      // Реестр голосов и дефолт согласованы (защита от рассинхрона с паками).
+      expect(Voice.packVoices, hasLength(3));
+      expect(
+        Voice.packVoices.map((PackVoice v) => v.id),
+        containsAll(<String>['baya', 'kseniya', 'xenia']),
+      );
+      expect(Voice.packVoices.map((PackVoice v) => v.id),
+          contains(Voice.defaultPackVoice));
+      expect(s.voicePackId, Voice.defaultPackVoice);
+      // Персист.
+      await s.setVoiceUsePack(true);
+      await s.setVoicePackId('xenia');
+      expect(s.voiceUsePack, isTrue);
+      expect(s.voicePackId, 'xenia');
     });
 
     test('избранные раскраски: переключение и персист', () async {

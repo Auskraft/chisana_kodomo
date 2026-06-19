@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
-"""Полный голосовой пак для приложения (Silero TTS, русский) — ОДИН голос.
+"""Встроенные голосовые паки для приложения (Silero TTS, русский).
 
-После того как выбрал голос в gen_voice_samples.py — поставь его в VOICE ниже и:
+Генерит ОДИН пак на каждый голос из VOICES — в подпапку
+assets/voice/pack/<voice>/<key>.wav. В Настройках приложения пользователь
+выбирает «Встроенный голос» и конкретный голос (раздел «Голос помощника»);
+без пака — фолбэк на системный TTS.
+
     pip install torch soundfile numpy omegaconf
     python tool/gen_voice_pack.py
 
 (omegaconf нужен Silero v4; без него torch.hub падает ModuleNotFoundError.)
 
-Файлы лягут в assets/voice/pack/<key>.wav и попадут в сборку. В Настройках
-приложения выбери «Встроенный голос (офлайн)» — будет играть этот пак.
-
-Ключи (<key>) и фразы должны совпадать с картой в lib/core/voice/voice.dart.
-Лицензия Silero — открытая, годится для публикации.
+Ключи (<key>) и фразы должны совпадать с картой в lib/core/voice/voice.dart,
+а список голосов — со списком в settings (см. Voice.packVoices). Лицензия
+Silero — открытая, годится для публикации.
 """
 
 import os
@@ -26,8 +28,10 @@ try:
 except Exception:
     pass
 
-# ← поставь выбранный голос: baya / kseniya / xenia (жен.) · aidar / eugene (муж.)
-VOICE = "baya"
+# Голоса, которые попадут в выбор пользователя (женские Silero v4_ru).
+# Мужские (aidar/eugene) намеренно не включаем. Чтобы добавить/убрать —
+# правь и этот список, и Voice.packVoices в lib/core/voice/voice.dart.
+VOICES = ["baya", "kseniya", "xenia"]
 SAMPLE_RATE = 48000
 
 PHRASES = {
@@ -65,7 +69,7 @@ OUT = os.path.join(_ROOT, "assets", "voice", "pack")
 
 def main() -> None:
     torch.set_num_threads(4)
-    print(f"Голос: {VOICE}. Загружаю модель Silero v4_ru…")
+    print(f"Голоса: {', '.join(VOICES)}. Загружаю модель Silero v4_ru…")
     model, _ = torch.hub.load(
         repo_or_dir="snakers4/silero-models",
         model="silero_tts",
@@ -75,20 +79,22 @@ def main() -> None:
     )
     model.to(torch.device("cpu"))
 
-    os.makedirs(OUT, exist_ok=True)
-    for key, text in PHRASES.items():
-        audio = model.apply_tts(
-            text=text,
-            speaker=VOICE,
-            sample_rate=SAMPLE_RATE,
-            put_accent=True,
-            put_yo=True,
-        )
-        sf.write(os.path.join(OUT, f"{key}.wav"), audio.numpy(), SAMPLE_RATE)
-        print("  ok", key)
+    for voice in VOICES:
+        vdir = os.path.join(OUT, voice)
+        os.makedirs(vdir, exist_ok=True)
+        for key, text in PHRASES.items():
+            audio = model.apply_tts(
+                text=text,
+                speaker=voice,
+                sample_rate=SAMPLE_RATE,
+                put_accent=True,
+                put_yo=True,
+            )
+            sf.write(os.path.join(vdir, f"{key}.wav"), audio.numpy(), SAMPLE_RATE)
+        print(f"  готово: {voice} ({len(PHRASES)} клипов)")
 
-    print(f"\nГотово → {OUT}  (голос: {VOICE})")
-    print("В приложении: Настройки → «Встроенный голос (офлайн)».")
+    print(f"\nГотово → {OUT}/<voice>/  (голоса: {', '.join(VOICES)})")
+    print("В приложении: Настройки → «Голос помощника» → встроенный голос.")
 
 
 if __name__ == "__main__":
