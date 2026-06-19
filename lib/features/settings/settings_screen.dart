@@ -31,15 +31,12 @@ class _SettingsScreenState extends State<SettingsScreen>
   List<VoiceOption> _voices = const <VoiceOption>[];
   String? _selected = GameStorage.instance.voiceName;
   bool _usePack = GameStorage.instance.voiceUsePack;
-  int _bgIndex = GameStorage.instance.backgroundIndex;
   bool _loading = true;
 
   late final AnimationController _bob = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 3400),
   )..repeat(reverse: true);
-
-  static const int _bgCount = 9;
 
   @override
   void initState() {
@@ -319,68 +316,8 @@ class _SettingsScreenState extends State<SettingsScreen>
       tint: colors.success,
       emoji: '🎨',
       title: 'Внешний вид',
-      subtitle: 'Фон главного экрана',
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: <Widget>[
-          SizedBox(
-            height: 80,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              itemCount: _bgCount,
-              separatorBuilder: (_, _) => const SizedBox(width: 11),
-              itemBuilder: (context, i) => _bgTile(colors, i),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _rowDivider(colors),
-          const SizedBox(height: 8),
-          _themePlaceholder(colors),
-        ],
-      ),
-    );
-  }
-
-  Widget _bgTile(AppColors colors, int i) {
-    final selected = i == _bgIndex;
-    return GestureDetector(
-      onTap: () {
-        GameStorage.instance.setBackgroundIndex(i);
-        Haptics.select();
-        setState(() => _bgIndex = i);
-      },
-      child: Stack(
-        children: <Widget>[
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 150),
-            width: 70,
-            height: 70,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: selected ? colors.primary : Colors.transparent,
-                width: 3,
-              ),
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(15),
-              child: Image.asset(
-                'assets/backgrounds/${i + 1}.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, _, _) => ColoredBox(color: colors.surface),
-              ),
-            ),
-          ),
-          if (selected)
-            Positioned(
-              top: 2,
-              right: 2,
-              child: Icon(Icons.check_circle_rounded,
-                  size: 20, color: colors.primary),
-            ),
-        ],
-      ),
+      subtitle: 'Тема оформления',
+      child: _themePlaceholder(colors),
     );
   }
 

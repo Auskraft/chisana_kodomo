@@ -22,8 +22,9 @@ import '../rewards/rewards_screen.dart';
 import '../settings/settings_screen.dart';
 import 'set_picker_screen.dart';
 
-/// Кол-во фоновых сцен (`assets/backgrounds/1..N.png`). Переключаются в Настройках.
-const int kBackgroundCount = 9;
+/// Единый фон лобби — сцена с осьминогом. Выбор фона убран: остальные сцены
+/// не адаптированы под текущий вид.
+const String kLobbyBackground = 'assets/backgrounds/5.png';
 
 /// Насколько приподнять фон (масштаб с якорем по низу): сюжет/маскот уходит в
 /// свободное место над карточками, края не оголяются. 1.0 = как есть; больше =
@@ -63,7 +64,6 @@ class _LobbyScreenState extends State<LobbyScreen> {
         image: 'assets/games/puzzles.png', playable: true),
   ];
 
-  late int _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
   late int _stars = _computeStars();
 
   int _computeStars() {
@@ -76,13 +76,8 @@ class _LobbyScreenState extends State<LobbyScreen> {
     await Navigator.of(context).push(
       MaterialPageRoute<void>(builder: (_) => const SettingsScreen()),
     );
-    // Вернулись из настроек — фон мог поменяться, прогресс мог сброситься.
-    if (mounted) {
-      setState(() {
-        _bg = GameStorage.instance.backgroundIndex.clamp(0, kBackgroundCount - 1);
-        _stars = _computeStars();
-      });
-    }
+    // Вернулись из настроек — прогресс мог сброситься.
+    if (mounted) setState(() => _stars = _computeStars());
   }
 
   Future<void> _openRewards() async {
@@ -157,7 +152,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
             scale: _kBgRaiseScale,
             alignment: Alignment.bottomCenter,
             child: Image.asset(
-              'assets/backgrounds/${_bg + 1}.png',
+              kLobbyBackground,
               fit: BoxFit.cover,
               errorBuilder: (_, _, _) => ColoredBox(color: colors.background),
             ),

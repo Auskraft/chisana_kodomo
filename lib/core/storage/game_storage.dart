@@ -70,10 +70,6 @@ class GameStorage {
   bool get voiceUsePack => _prefs.getBool('voice_use_pack') ?? false;
   Future<void> setVoiceUsePack(bool v) => _prefs.setBool('voice_use_pack', v);
 
-  // ── Выбранный фон главного экрана (0-based) ─────────────────────────────────
-  int get backgroundIndex => _prefs.getInt('bg_index') ?? 0;
-  Future<void> setBackgroundIndex(int i) => _prefs.setInt('bg_index', i);
-
   // ── Избранные раскраски (пути-ассеты `assets/coloring/...`) ─────────────────
   // Заготовка под фичу «Избранное»: отмечаются сердечком в пикере картинок.
   // Полноценный фильтр/раздел избранного — в бэклоге.

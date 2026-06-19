@@ -17,6 +17,11 @@ import 'features/menu/lobby_screen.dart';
 /// офлайн. Инициализирует хранилище/голос/настройки и бутит в лобби.
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Мгновенный полноэкранный сплэш (та же сова, что в нативном сплэше) — пока
+  // идёт инициализация. Переход нативный сплэш → этот → лобби бесшовный.
+  runApp(const _SplashApp());
+
   await SystemChrome.setPreferredOrientations(
     <DeviceOrientation>[DeviceOrientation.portraitUp],
   );
@@ -34,9 +39,33 @@ Future<void> main() async {
       usePack: storage.voiceUsePack,
     ),
     _enableHighRefreshRate(),
+    // Минимальная выдержка сплэша, чтобы он не мелькал на быстрых устройствах.
+    Future<void>.delayed(const Duration(milliseconds: 1200)),
   ]);
 
   runApp(const ChisanaKodomoApp());
+}
+
+/// Полноэкранный сплэш на время загрузки. Та же картинка-сова, что в нативном
+/// сплэше, — переход бесшовный. `BoxFit.cover` растягивает на весь экран.
+class _SplashApp extends StatelessWidget {
+  const _SplashApp();
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFFFBE6C0),
+        body: SizedBox.expand(
+          child: Image(
+            image: AssetImage('assets/icon/splash.png'),
+            fit: BoxFit.cover,
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 Future<void> _enableHighRefreshRate() async {
