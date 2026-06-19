@@ -42,6 +42,16 @@ class AppTheme {
         centerTitle: true,
         elevation: 0,
       ),
+      // Попапы/шторки — мягкий оттенок темы (а не белый по умолчанию).
+      // surfaceTintColor прозрачный: M3 не подмешивает свой тон поверх card.
+      dialogTheme: DialogThemeData(
+        backgroundColor: c.card,
+        surfaceTintColor: Colors.transparent,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: c.card,
+        surfaceTintColor: Colors.transparent,
+      ),
       textTheme: Typography.blackMountainView.apply(
         fontFamily: _fontFamily,
         bodyColor: c.onBackground,

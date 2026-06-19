@@ -53,6 +53,16 @@ void main() {
       }
     });
 
+    test('попапы/шторки тонированы темой (не белые по умолчанию)', () {
+      for (final t in AppThemes.all) {
+        final td = t.theme;
+        expect(td.dialogTheme.backgroundColor, t.colors.card,
+            reason: 'dialog ${t.id}');
+        expect(td.bottomSheetTheme.backgroundColor, t.colors.card,
+            reason: 'sheet ${t.id}');
+      }
+    });
+
     test('byCategory: суммарно = все темы, первая группа — Базовые', () {
       final groups = AppThemes.byCategory;
       final total = groups.values.fold<int>(0, (a, g) => a + g.length);
