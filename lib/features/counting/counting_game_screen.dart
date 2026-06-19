@@ -85,9 +85,9 @@ class _CountingGameScreenState extends State<CountingGameScreen> {
     Navigator.of(context).pop();
   }
 
-  String _subtitle() => widget.set.mode == CountMode.tapCount
-      ? 'Нажимай на каждый и считай!'
-      : 'Сколько тут? Выбери цифру!';
+  String _subtitle() => widget.set.chooseDigit
+      ? 'Посчитай и найди цифру!'
+      : 'Нажимай и считай вслух!';
 
   @override
   void dispose() {

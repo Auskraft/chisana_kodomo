@@ -19,45 +19,31 @@ void main() {
       for (final s in CountSet.all) {
         expect(s.minCount, greaterThanOrEqualTo(1));
         expect(s.maxCount, greaterThanOrEqualTo(s.minCount));
-        if (s.mode == CountMode.chooseNumeral) {
-          // Вариантов не больше, чем различных чисел в диапазоне 1..maxCount.
+        if (s.chooseDigit) {
           expect(s.optionCount, greaterThanOrEqualTo(2));
           expect(s.optionCount, lessThanOrEqualTo(s.maxCount));
         }
       }
     });
 
-    test('счёт тапом идёт сплошным префиксом, потом только выбор цифры', () {
+    test('сперва только счёт, потом счёт+выбор цифры (без возврата)', () {
+      expect(CountSet.all.first.chooseDigit, isFalse);
+      expect(CountSet.all.last.chooseDigit, isTrue);
+      expect(CountSet.all.last.maxCount, 10);
       var seenChoose = false;
       for (final s in CountSet.all) {
-        if (s.mode == CountMode.chooseNumeral) seenChoose = true;
+        if (s.chooseDigit) seenChoose = true;
         if (seenChoose) {
-          expect(s.mode, CountMode.chooseNumeral,
-              reason: 'после выбора цифры счёт тапом не возвращается');
+          expect(s.chooseDigit, isTrue,
+              reason: 'после выбора цифры счёт-без-цифры не возвращается');
         }
       }
     });
 
     test('в фазе выбора цифры диапазон не убывает', () {
-      final choose =
-          CountSet.all.where((s) => s.mode == CountMode.chooseNumeral).toList();
+      final choose = CountSet.all.where((s) => s.chooseDigit).toList();
       for (var i = 1; i < choose.length; i++) {
         expect(choose[i].maxCount, greaterThanOrEqualTo(choose[i - 1].maxCount));
-      }
-    });
-
-    test('плавная кривая: начинаем счётом тапом, заканчиваем выбором до 10', () {
-      expect(CountSet.all.first.mode, CountMode.tapCount);
-      final last = CountSet.all.last;
-      expect(last.mode, CountMode.chooseNumeral);
-      expect(last.maxCount, 10);
-    });
-
-    test('у режима выбора цифры всегда ≥2 вариантов', () {
-      for (final s in CountSet.all) {
-        if (s.mode == CountMode.chooseNumeral) {
-          expect(s.optionCount, greaterThanOrEqualTo(2));
-        }
       }
     });
   });
@@ -81,16 +67,17 @@ void main() {
       expect(a.options, b.options);
     });
 
-    test('tapCount: вариантов нет', () {
-      final r = CountingSession.generateRound(CountSet.all[0], Random(1));
-      expect(r.mode, CountMode.tapCount);
+    test('только счёт: вариантов нет', () {
+      final s = CountSet.all.firstWhere((e) => !e.chooseDigit);
+      final r = CountingSession.generateRound(s, Random(1));
+      expect(r.chooseDigit, isFalse);
       expect(r.options, isEmpty);
     });
   });
 
   group('варианты выбора цифры', () {
     test('всегда содержат правильный ответ, нужной длины, без повторов', () {
-      for (final s in CountSet.all.where((e) => e.mode == CountMode.chooseNumeral)) {
+      for (final s in CountSet.all.where((e) => e.chooseDigit)) {
         for (var seed = 0; seed < 200; seed++) {
           final r = CountingSession.generateRound(s, Random(seed));
           expect(r.options, contains(r.count), reason: 'набор ${s.index}');
@@ -105,9 +92,8 @@ void main() {
     });
   });
 
-  group('режим tapCount', () {
+  group('фаза счёта (тап)', () {
     test('каждый тап считает на один больше, isComplete при достижении числа', () {
-      // Набор 0 (1–3). Подбираем seed, дающий count == 3, чтобы проверить путь.
       final session = CountingSession(CountSet.all[0], random: Random(0));
       final target = session.round.count;
       expect(session.counted, 0);
@@ -140,9 +126,8 @@ void main() {
     });
   });
 
-  group('режим chooseNumeral', () {
-    final chooseSet =
-        CountSet.all.firstWhere((s) => s.mode == CountMode.chooseNumeral);
+  group('фаза выбора цифры', () {
+    final chooseSet = CountSet.all.firstWhere((s) => s.chooseDigit);
 
     test('правильная цифра распознаётся, состояние не меняется', () {
       final session = CountingSession(chooseSet, random: Random(3));
