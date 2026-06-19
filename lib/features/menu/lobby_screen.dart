@@ -92,7 +92,7 @@ class _LobbyScreenState extends State<LobbyScreen> {
     switch (g.id) {
       case 'counting':
         await _openSets(g, CountSet.all.length,
-            (int i) => CountingGameScreen(set: CountSet.all[i]));
+            (int i) => CountingGameScreen(set: CountSet.all[i]), starsPerSet: 1);
       case 'pairs':
         await _openSets(g, PairsSet.all.length,
             (int i) => PairsGameScreen(set: PairsSet.all[i]), starsPerSet: 1);

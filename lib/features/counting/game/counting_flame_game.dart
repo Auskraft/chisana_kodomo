@@ -47,7 +47,6 @@ class CountingGame extends FlameGame {
   final Random _rng;
 
   late final CountingSession _session;
-  int _mistakes = 0;
   bool _locked = false; // блокировка после завершения раунда
   bool _choosing = false; // идёт фаза выбора цифры
   String? _lastEmoji; // чтобы соседние раунды не повторяли эмодзи
@@ -83,7 +82,6 @@ class CountingGame extends FlameGame {
 
   /// Начать/перезапустить набор (вызывает хост по кнопке «Играть»).
   void start() {
-    _mistakes = 0;
     _locked = false;
     _choosing = false;
     roundNumber.value = 1;
@@ -155,7 +153,6 @@ class CountingGame extends FlameGame {
       _finishRound(admire: 1.4);
       return true;
     }
-    _mistakes++;
     Sfx.play(SfxEvent.soft);
     return false;
   }
@@ -206,7 +203,7 @@ class CountingGame extends FlameGame {
 
   void _finishSet() {
     _clearRound();
-    earnedStars.value = Praise.starsForMistakes(_mistakes);
+    earnedStars.value = 1; // 1 звезда за пройденный уровень
     Sfx.play(SfxEvent.complete);
     onSay?.call(setDonePhrase);
     phase.value = CountPhase.setDone;
