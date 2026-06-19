@@ -127,7 +127,7 @@ class _HoldToUnlockState extends State<_HoldToUnlock>
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 9),
         decoration: BoxDecoration(
-          color: colors.surface.withValues(alpha: 0.94),
+          color: colors.card.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(22),
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -252,7 +252,7 @@ class ColoringBottomBar extends StatelessWidget {
         margin: const EdgeInsets.fromLTRB(10, 8, 10, 14),
         padding: const EdgeInsets.fromLTRB(14, 16, 14, 20),
         decoration: BoxDecoration(
-          color: colors.surface.withValues(alpha: 0.94),
+          color: colors.card.withValues(alpha: 0.94),
           borderRadius: BorderRadius.circular(26),
           boxShadow: <BoxShadow>[
             BoxShadow(
@@ -428,7 +428,7 @@ class _ModeTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: colors.surface.withValues(alpha: 0.92),
+        color: colors.card.withValues(alpha: 0.92),
         borderRadius: BorderRadius.circular(24),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -882,7 +882,7 @@ class _PicturePickerSheetState extends State<_PicturePickerSheet> {
       builder: (context, scrollController) {
         return Container(
           decoration: BoxDecoration(
-            color: colors.surface,
+            color: colors.card,
             borderRadius:
                 const BorderRadius.vertical(top: Radius.circular(26)),
             boxShadow: <BoxShadow>[
@@ -1279,7 +1279,7 @@ class _ColorPickerSheetState extends State<_ColorPickerSheet> {
 
     return Container(
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.card,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(26)),
         boxShadow: <BoxShadow>[
           BoxShadow(

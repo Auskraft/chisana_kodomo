@@ -126,7 +126,7 @@ class _SetCard extends StatelessWidget {
       width: size,
       height: size * 0.74,
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.card,
         borderRadius: radius,
         boxShadow: <BoxShadow>[
           BoxShadow(

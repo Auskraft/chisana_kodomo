@@ -28,7 +28,7 @@ class RewardsScreen extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 22),
             decoration: BoxDecoration(
-              color: colors.surface,
+              color: colors.card,
               borderRadius: BorderRadius.circular(28),
               boxShadow: <BoxShadow>[
                 BoxShadow(

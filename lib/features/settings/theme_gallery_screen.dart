@@ -23,9 +23,9 @@ class ThemeGalleryScreen extends StatelessWidget {
         top: false,
         child: LayoutBuilder(
           builder: (context, c) {
-            const pad = 16.0;
-            const gap = 12.0;
-            final tile = (c.maxWidth - pad * 2 - gap * 2) / 3; // 3 в ряд
+            const pad = 14.0;
+            const gap = 9.0;
+            final tile = (c.maxWidth - pad * 2 - gap * 4) / 5; // 5 в ряд
             return ValueListenableBuilder<String>(
               valueListenable: ThemeController.instance.themeId,
               builder: (context, currentId, _) {
@@ -72,7 +72,8 @@ class ThemeGalleryScreen extends StatelessWidget {
   }
 }
 
-/// Мини-превью темы: фон + карточка + «кнопка» + точки-акценты, имя снизу.
+/// Компактное превью темы (квадрат, без названия): мазок primary + полоска
+/// акцентов (secondary/accent/success) на фоне темы; галочка у выбранной.
 class _ThemeCard extends StatelessWidget {
   const _ThemeCard({
     required this.option,
@@ -93,99 +94,85 @@ class _ThemeCard extends StatelessWidget {
     final c = option.colors;
     return GestureDetector(
       onTap: onTap,
-      child: SizedBox(
-        width: width,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Container(
-              height: width * 1.2,
-              padding: EdgeInsets.all(width * 0.1),
-              decoration: BoxDecoration(
-                color: c.background,
-                borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: selected
-                      ? outer.primary
-                      : outer.onBackground.withValues(alpha: 0.1),
-                  width: selected ? 3 : 1.5,
-                ),
-                boxShadow: <BoxShadow>[
-                  BoxShadow(
-                    color: outer.onBackground.withValues(alpha: 0.08),
-                    blurRadius: 6,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+      child: Stack(
+        children: <Widget>[
+          Container(
+            width: width,
+            height: width,
+            padding: EdgeInsets.all(width * 0.13),
+            decoration: BoxDecoration(
+              color: c.background,
+              borderRadius: BorderRadius.circular(width * 0.26),
+              border: Border.all(
+                color: selected
+                    ? outer.primary
+                    : outer.onBackground.withValues(alpha: 0.1),
+                width: selected ? 3 : 1.5,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  // Мини-карточка (surface).
-                  Container(
-                    height: width * 0.17,
-                    decoration: BoxDecoration(
-                      color: c.surface,
-                      borderRadius: BorderRadius.circular(7),
-                    ),
-                  ),
-                  const Spacer(),
-                  // «Кнопка» (primary) с текстом onPrimary.
-                  Container(
-                    height: width * 0.21,
-                    alignment: Alignment.center,
+              boxShadow: <BoxShadow>[
+                BoxShadow(
+                  color: outer.onBackground.withValues(alpha: 0.08),
+                  blurRadius: 5,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Column(
+              children: <Widget>[
+                // Крупный мазок основного цвета.
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
                     decoration: BoxDecoration(
                       color: c.primary,
-                      borderRadius: BorderRadius.circular(9),
-                    ),
-                    child: Text(
-                      'Аа',
-                      style: TextStyle(
-                        color: c.onPrimary,
-                        fontWeight: FontWeight.w800,
-                        fontSize: width * 0.11,
-                      ),
+                      borderRadius: BorderRadius.circular(width * 0.14),
                     ),
                   ),
-                  SizedBox(height: width * 0.08),
-                  // Точки-акценты + галочка выбранного.
-                  Row(
+                ),
+                SizedBox(height: width * 0.09),
+                // Полоска акцентов.
+                SizedBox(
+                  height: width * 0.13,
+                  child: Row(
                     children: <Widget>[
-                      _dot(c.secondary, width),
-                      SizedBox(width: width * 0.05),
-                      _dot(c.accent, width),
-                      SizedBox(width: width * 0.05),
-                      _dot(c.success, width),
-                      const Spacer(),
-                      if (selected)
-                        Icon(Icons.check_circle_rounded,
-                            size: width * 0.17, color: c.primary),
+                      _bar(c.secondary, width),
+                      SizedBox(width: width * 0.06),
+                      _bar(c.accent, width),
+                      SizedBox(width: width * 0.06),
+                      _bar(c.success, width),
                     ],
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          if (selected)
+            Positioned(
+              top: width * 0.05,
+              right: width * 0.05,
+              child: Container(
+                width: width * 0.3,
+                height: width * 0.3,
+                decoration: BoxDecoration(
+                  color: c.primary,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: c.onPrimary, width: width * 0.025),
+                ),
+                child: Icon(Icons.check_rounded,
+                    size: width * 0.18, color: c.onPrimary),
               ),
             ),
-            const SizedBox(height: 6),
-            Text(
-              option.name,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 11.5,
-                fontWeight: FontWeight.w700,
-                color: outer.onBackground.withValues(alpha: selected ? 1 : 0.7),
-              ),
-            ),
-          ],
-        ),
+        ],
       ),
     );
   }
 
-  Widget _dot(Color color, double w) => Container(
-        width: w * 0.11,
-        height: w * 0.11,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  Widget _bar(Color color, double w) => Expanded(
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            color: color,
+            borderRadius: BorderRadius.circular(w * 0.06),
+          ),
+        ),
       );
 }

@@ -43,7 +43,7 @@ class _PanelCard extends StatelessWidget {
       constraints: const BoxConstraints(maxWidth: 440),
       padding: EdgeInsets.all(_frac(context, 0.07, 20, 40)),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.card,
         borderRadius: BorderRadius.circular(_frac(context, 0.06, 20, 36)),
         boxShadow: <BoxShadow>[
           BoxShadow(
@@ -157,7 +157,7 @@ class StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: colors.surface,
+        color: colors.chip,
         borderRadius: BorderRadius.circular(20),
         boxShadow: <BoxShadow>[
           BoxShadow(

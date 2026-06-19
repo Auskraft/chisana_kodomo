@@ -43,6 +43,16 @@ void main() {
       }
     });
 
+    test('производные поверхности card/chip: текст уверенно читается', () {
+      for (final t in AppThemes.all) {
+        final c = t.colors;
+        expect(_contrast(c.onSurface, c.card), greaterThan(3.0),
+            reason: 'card ${t.id}');
+        expect(_contrast(c.onSurface, c.chip), greaterThan(3.0),
+            reason: 'chip ${t.id}');
+      }
+    });
+
     test('byCategory: суммарно = все темы, первая группа — Базовые', () {
       final groups = AppThemes.byCategory;
       final total = groups.values.fold<int>(0, (a, g) => a + g.length);
