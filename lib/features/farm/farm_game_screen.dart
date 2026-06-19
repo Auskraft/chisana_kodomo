@@ -62,6 +62,9 @@ class _FarmGameScreenState extends State<FarmGameScreen> {
   Future<void> _playCue(Animal a) async {
     final asset = 'animals/${a.soundKey}.wav';
     if (await _sounds.has(asset)) {
+      // Глушим голос (остаток имени/похвалы прошлого раунда), чтобы он не
+      // наложился на звук зверя — звук и реплика взаимоисключаемы.
+      await Voice.instance.stop();
       await _sounds.play(asset);
     } else {
       Voice.instance.say('${animalNameCap(a)}!', flush: true);

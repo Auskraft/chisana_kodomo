@@ -130,7 +130,9 @@ class FarmGame extends FlameGame {
     if (roundNumber.value < roundsPerSet) {
       onSay?.call(Praise.pick(_rng));
     }
-    add(TimerComponent(period: 1.8, removeOnFinish: true, onTick: _advance));
+    // Длиннее, чтобы имя зверя + похвала договорили до следующего звука-загадки
+    // (иначе остаток реплики накладывается на звук зверя нового раунда).
+    add(TimerComponent(period: 2.4, removeOnFinish: true, onTick: _advance));
   }
 
   void _advance() {
