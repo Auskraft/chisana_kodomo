@@ -441,13 +441,17 @@ class _ModeTabs extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
+          // «По номерам» временно скрыт из UI (код/логика на месте) — вернём,
+          // когда сделаем растровый режим из плоскоцветных мастеров
+          // (tool/gen_paint_by_number.py).
           for (final m in ColoringMode.values)
-            _ModeTab(
-              mode: m,
-              selected: m == mode,
-              colors: colors,
-              onTap: () => onMode(m),
-            ),
+            if (m != ColoringMode.byNumber)
+              _ModeTab(
+                mode: m,
+                selected: m == mode,
+                colors: colors,
+                onTap: () => onMode(m),
+              ),
         ],
       ),
     );
