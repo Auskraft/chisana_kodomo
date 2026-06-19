@@ -2,8 +2,10 @@
 """Полный голосовой пак для приложения (Silero TTS, русский) — ОДИН голос.
 
 После того как выбрал голос в gen_voice_samples.py — поставь его в VOICE ниже и:
-    pip install torch soundfile numpy
+    pip install torch soundfile numpy omegaconf
     python tool/gen_voice_pack.py
+
+(omegaconf нужен Silero v4; без него torch.hub падает ModuleNotFoundError.)
 
 Файлы лягут в assets/voice/pack/<key>.wav и попадут в сборку. В Настройках
 приложения выбери «Встроенный голос (офлайн)» — будет играть этот пак.
@@ -13,9 +15,16 @@
 """
 
 import os
+import sys
 
 import soundfile as sf
 import torch
+
+# Печать рус. текста/стрелок не должна падать на cp1251-консоли Windows.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 # ← поставь выбранный голос: baya / kseniya / xenia (жен.) · aidar / eugene (муж.)
 VOICE = "baya"
@@ -40,11 +49,13 @@ PHRASES = {
     "praise_4": "Супер!",
     "praise_5": "Класс!",
     "praise_6": "Получилось!",
-    "praise_7": "Ты справился!",
+    "praise_7": "Отлично!",
     "prompt_count": "Посчитай!",
     "prompt_howmany": "Сколько?",
     "try_again": "Попробуй ещё.",
     "set_done": "Молодец! Ты справился!",
+    "set_done_girl": "Молодец! Ты справилась!",
+    "set_done_neutral": "Молодец! Всё получилось!",
     "greet": "Привет! Давай посчитаем!",
 }
 
@@ -60,6 +71,7 @@ def main() -> None:
         model="silero_tts",
         language="ru",
         speaker="v4_ru",
+        trust_repo=True,  # иначе torch.hub зависает на «Do you trust…? (y/N)»
     )
     model.to(torch.device("cpu"))
 

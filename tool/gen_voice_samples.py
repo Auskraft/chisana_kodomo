@@ -5,8 +5,9 @@
 поставим в приложение. Это НЕ финальный пак — только короткие сэмплы на выбор.
 
 Запуск (как генератор джинглов в танках):
-    pip install torch soundfile numpy
+    pip install torch soundfile numpy omegaconf
     python tool/gen_voice_samples.py
+(omegaconf нужен Silero v4; без него torch.hub падает ModuleNotFoundError.)
 
 Результат: tool/voice_samples/<voice>/<key>.wav — послушай папки, выбери голос
 и скажи какой. Дальше я сгенерю полный пак этим голосом и подключу в игру
@@ -16,9 +17,16 @@
 """
 
 import os
+import sys
 
 import soundfile as sf
 import torch
+
+# Печать рус. текста/стрелок не должна падать на cp1251-консоли Windows.
+try:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+except Exception:
+    pass
 
 SAMPLE_RATE = 48000
 
@@ -46,6 +54,7 @@ def main() -> None:
         model="silero_tts",
         language="ru",
         speaker="v4_ru",
+        trust_repo=True,  # иначе torch.hub зависает на «Do you trust…? (y/N)»
     )
     model.to(torch.device("cpu"))
 
