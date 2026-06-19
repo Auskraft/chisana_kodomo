@@ -213,10 +213,14 @@ class _Board extends PositionComponent {
     final n = round.options.length;
     final cols = n <= 3 ? n : 2;
     final rows = (n / cols).ceil();
-    final tile = (min(s.x * 0.86 / cols, s.y * 0.46 / rows))
-        .clamp(64.0, 150.0)
-        .toDouble();
-    final gap = tile * 0.22;
+    const gapFactor = 0.22;
+    // Плитки + промежутки должны умещаться в ~0.84 ширины. Если делить только на
+    // cols, gap добавляется сверху и плитки подходят вплотную к левому/правому краю.
+    final tile = (min(
+      s.x * 0.84 / (cols + gapFactor * (cols - 1)),
+      s.y * 0.46 / rows,
+    )).clamp(64.0, 150.0).toDouble();
+    final gap = tile * gapFactor;
     final topY = s.y * 0.52;
     for (var i = 0; i < n; i++) {
       final r = i ~/ cols;

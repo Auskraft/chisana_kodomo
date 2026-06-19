@@ -332,10 +332,10 @@ class _Card extends PositionComponent with TapCallbacks {
       canvas.drawRRect(rrect, Paint()..color = colors.surface);
       final icon = iconKey != null ? AnimalIcons.cached(iconKey!) : null;
       if (icon != null) {
-        // Картинка зверя по центру карточки (с отступом).
+        // Картинка зверя по центру карточки (с отступом), скруглённой карточкой.
         canvas.save();
         canvas.translate(size.x * 0.1, size.y * 0.1);
-        AnimalIcons.paintContained(canvas, icon, size.x * 0.8);
+        AnimalIcons.paintRoundedCard(canvas, icon, size.x * 0.8);
         canvas.restore();
       } else {
         _emojiPaint.render(

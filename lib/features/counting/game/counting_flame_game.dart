@@ -451,7 +451,7 @@ class _TapEmoji extends PositionComponent with TapCallbacks {
   void render(Canvas canvas) {
     final icon = iconKey != null ? AnimalIcons.cached(iconKey!) : null;
     if (icon != null) {
-      AnimalIcons.paintContained(canvas, icon, size.x);
+      AnimalIcons.paintRoundedCard(canvas, icon, size.x);
     } else {
       _paint.render(canvas, emoji,
           Vector2(size.x / 2, size.y / 2), anchor: Anchor.center);
