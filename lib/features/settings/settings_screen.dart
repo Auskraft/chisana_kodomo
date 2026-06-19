@@ -508,7 +508,7 @@ class _SettingsScreenState extends State<SettingsScreen>
                       ),
                     ),
                     Text(
-                      'Офлайн · нажми, чтобы послушать',
+                      'Офлайн',
                       style: TextStyle(
                         fontSize: 11,
                         color: colors.onSurface.withValues(alpha: 0.55),
@@ -517,9 +517,35 @@ class _SettingsScreenState extends State<SettingsScreen>
                   ],
                 ),
               ),
-              if (selected)
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: colors.secondary.withValues(alpha: 0.16),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    Icon(Icons.play_arrow_rounded,
+                        size: 16, color: colors.secondary),
+                    const SizedBox(width: 2),
+                    Text(
+                      'Послушать',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: colors.secondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (selected) ...<Widget>[
+                const SizedBox(width: 6),
                 Icon(Icons.check_circle_rounded,
                     size: 20, color: colors.success),
+              ],
             ],
           ),
         ),

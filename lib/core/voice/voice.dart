@@ -44,6 +44,9 @@ class Voice {
 
   FlutterTts? _tts;
   AudioPlayer? _clip;
+  // Завершаем при stop(), чтобы прерванный клип не ждал 5-сек таймаут и очередь
+  // (следующий голос-превью при переключении) запускалась сразу.
+  Completer<void>? _clipDone;
   bool enabled = true;
 
   /// Использовать встроенный пак клипов вместо системного TTS.
@@ -254,6 +257,7 @@ class Voice {
   Future<void> _playClip(String key) async {
     final p = _clip ??= AudioPlayer();
     final done = Completer<void>();
+    _clipDone = done;
     StreamSubscription<void>? sub;
     try {
       sub = p.onPlayerComplete.listen((_) {
@@ -265,6 +269,7 @@ class Voice {
     } catch (_) {
       // не удалось — тихо (фолбэк уже не нужен, фраза пропускается)
     } finally {
+      if (identical(_clipDone, done)) _clipDone = null;
       await sub?.cancel();
     }
   }
@@ -276,6 +281,10 @@ class Voice {
     try {
       await _clip?.stop();
     } catch (_) {}
+    // stop() не шлёт onPlayerComplete — будим ожидающий _playClip сами, иначе
+    // очередь стоит до таймаута (баг «превью не сразу/не начинается»).
+    final d = _clipDone;
+    if (d != null && !d.isCompleted) d.complete();
   }
 
   /// Остановить речь и очистить очередь.
