@@ -217,7 +217,8 @@ ColoringCategoryMeta coloringCategoryMeta(String key) =>
   final lower = path.toLowerCase();
   if (!(lower.endsWith('.png') ||
       lower.endsWith('.jpg') ||
-      lower.endsWith('.jpeg'))) {
+      lower.endsWith('.jpeg') ||
+      lower.endsWith('.webp'))) {
     return null;
   }
   final parts = path.substring(prefix.length).split('/');

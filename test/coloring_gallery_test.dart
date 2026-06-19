@@ -10,11 +10,16 @@ void main() {
       expect(r.level, 2);
     });
 
-    test('jpg/jpeg и верхний регистр расширения принимаются', () {
+    test('jpg/jpeg/webp и верхний регистр расширения принимаются', () {
       expect(parseColoringAsset('assets/coloring/cars/1/x.jpg')?.level, 1);
       expect(
           parseColoringAsset('assets/coloring/cars/3/x.JPEG')?.category, 'cars');
       expect(parseColoringAsset('assets/coloring/food/5/A.PNG')?.level, 5);
+      expect(
+          parseColoringAsset('assets/coloring/animals/2/belochka.webp')?.level,
+          2);
+      expect(
+          parseColoringAsset('assets/coloring/sea/1/x.WEBP')?.category, 'sea');
     });
 
     test('вложенность глубже уровня всё равно даёт тему и уровень', () {
